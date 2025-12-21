@@ -1,0 +1,62 @@
+﻿@layout MainLayout
+
+@page "/OnlineEgitimIndex"
+
+@inject IJSRuntime js
+
+<style>
+    #main, #footer {
+        margin-left: 0px !important;
+    }
+</style>
+
+<section>
+    @if (kullaniciForLoginDTO.Tip == 2)
+    {
+        <div class="row text-center" style="padding:10rem;">
+            @foreach (var menuLink in MenuLinkler)
+            {
+                <div class="col-md-12">
+                    <a href=@("/Main/OnlineEgitimCanli/" + menuLink.Id)>
+                        <div class="card">
+                            <div class="card-body p-3">
+                                <h3 class="card-title" style="font-size: 2rem;"><i class="bi bi-mortarboard-fill" style="font-size:4rem; padding-right:1rem"></i>@menuLink.Ad</h3>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+            }
+        </div>
+    }
+</section>
+
+@code
+{
+    [Inject] protected IRolService rolService { get; set; }
+    [Inject] protected ILoginService loginService { get; set; }
+
+    KullaniciForLoginDTO kullaniciForLoginDTO = new KullaniciForLoginDTO() { Tip = 0 };
+
+    List<MenuLinkDTO> MenuLinkler = new List<MenuLinkDTO>();
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            kullaniciForLoginDTO = await rolService.GetKullaniciForLogin();
+
+            var resultKullanici = await loginService.GetKisiMenu(kullaniciForLoginDTO.Id);
+
+            if (resultKullanici.Success)
+            {
+                MenuLinkler = resultKullanici.Value.MenuLinkler;
+            }
+            else
+            {
+                await js.InvokeVoidAsync("SweetToast", resultKullanici.Message, "error");
+            }
+
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+}

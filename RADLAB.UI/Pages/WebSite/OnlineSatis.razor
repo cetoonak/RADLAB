@@ -1,0 +1,101 @@
+﻿@layout WebSiteLayout
+
+@page "/OnlineSatis"
+
+@using Newtonsoft.Json
+
+@inject IJSRuntime js
+@inject ILocalStorageService localStorageService
+@inject NavigationManager navManager
+
+<section class="section">
+    <div class="container">
+        <div class="row justify-content-center">
+            @foreach (var cihaz in DSCihaz)
+            {
+                <div class="icon-box-item text-center col-lg-4 col-md-6 mb-4">
+                    <div class="rounded shadow py-5 px-4">
+                        <a href="@("Cihaz/" + cihaz.Id.ToString())">
+                            <img src=@("data:image/" + cihaz.ResimUzanti + ";base64," + cihaz.ResimDosya) type=@("image/" + cihaz.ResimUzanti) style="max-width:8rem; height:8rem;">
+                        </a>
+                        <h3 class="mb-3">@(cihaz.Marka + " " + cihaz.Model)</h3>
+                        <p class="mb-4">@cihaz.Fiyat.ToString("###,##0.#0₺")</p>
+                        @if (cihaz.StokMiktari > cihaz.KritikStok)
+                        {
+                            <button class="btn btn-sm btn-outline-primary" @onclick="@(async () => { await SepeteEkle(cihaz); })"><i class="fas fa-shopping-cart"></i>&nbsp;&nbsp;Sepete Ekle</button>
+                        }
+                        else
+                        {
+                            <button class="btn btn-sm btn-outline-danger" disabled>&nbsp;&nbsp;Stokta Yok</button>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</section>
+
+@code
+{
+    [Inject] protected ICihazService cihazService { get; set; }
+
+    List<CihazDTO> DSCihaz = new List<CihazDTO>();
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            DSCihaz = await cihazService.GetCihazSatisList();
+
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    async Task SepeteEkle(CihazDTO dto)
+    {
+        if (navManager.Uri.StartsWith("http://radlab.com.tr") || navManager.Uri.StartsWith("https://radlab.com.tr"))
+        {
+            await js.InvokeVoidAsync("SweetMessage", "Bilgi", "Cihaz satış bölümü yapım aşamasındadır. Çok yakında hizmete açılacaktır.", "warning");
+            return;
+        }
+
+        var CihazSatisList = new List<CihazSatisDTO>();
+
+        string RadlabCihazSatisList = await localStorageService.GetItemAsStringAsync("RadlabCihazSatisList");
+
+        if (string.IsNullOrEmpty(RadlabCihazSatisList) == false)
+        {
+            RadlabCihazSatisList = RadlabCihazSatisList.Replace("\\u0022", "").Replace("\"", "");
+
+            try
+            {
+                CihazSatisList = JsonConvert.DeserializeObject<List<CihazSatisDTO>>(RadlabCihazSatisList);
+            }
+            catch
+            {
+
+            }
+        }
+
+        var existCihaz = CihazSatisList.SingleOrDefault(x => x.Id == dto.Id);
+
+        if (existCihaz == null)
+        {
+            CihazSatisList.Add(new CihazSatisDTO() { Id = dto.Id, Miktar = 1 });
+        }
+        else
+        {
+            existCihaz.Miktar++;
+        }
+
+        RadlabCihazSatisList = JsonConvert.SerializeObject(CihazSatisList);
+
+        await localStorageService.SetItemAsync("RadlabCihazSatisList", RadlabCihazSatisList);
+
+        navManager.NavigateTo(navManager.Uri, false);
+
+        await InvokeAsync(StateHasChanged);
+
+        await js.InvokeVoidAsync("SweetToast", "Cihaz sepete eklendi", "success");
+    }
+}

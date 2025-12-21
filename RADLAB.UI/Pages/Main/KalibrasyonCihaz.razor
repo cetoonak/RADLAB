@@ -1,0 +1,796 @@
+﻿@page "/Main/KalibrasyonCihaz"
+
+@inject IJSRuntime js
+@inject NavigationManager navManager
+
+@using System.Threading
+@using System.Threading.Tasks
+@using System.Net.Http
+@using System.Text.Json
+
+<style>
+    .badge {
+    font-size: 0.9em;
+    }
+
+    .form-floating > label {
+    left: 0.8rem
+    }
+
+    .form-floating > .form-select {
+    padding-left: 0.8rem;
+    }
+</style>
+
+<div class="btn-group mb-4" role="group" aria-label="Basic radio toggle button group">
+    @{
+        int itemCount = DSSayfa.Count();
+        int itemWidth = itemCount == 0 ? 10 : 100 / itemCount;
+    }
+
+    @foreach (var item in DSSayfa)
+    {
+        if (filterDTO.Sayfa == item.Id.ToString())
+        {
+            <input type="radio" class="btn-check" name="btnradio" id=@("btn" + item.Id.ToString()) autocomplete="off" checked @onchange="@(async () => { await CihazDurumuChange(item.Id); })">
+        }
+        else
+        {
+            <input type="radio" class="btn-check" name="btnradio" id=@("btn" + item.Id.ToString()) autocomplete="off" @onchange="@(async () => { await CihazDurumuChange(item.Id); })">
+        }
+
+        <label class="btn btn-outline-primary btn-sm" for=@("btn" + item.Id.ToString()) style=@("width:" + itemWidth.ToString() + "%; align-content:center;")>@item.Ad</label>
+    }
+</div>
+
+<div class="card info-card">
+    <div class="table-responsive">
+        <table class="table table-bordered table-hover">
+            <thead>
+                <tr>
+                    <td width="6%" align="center">Cihaz ID</td>
+                    <td width="6%" align="center">Başvuru ID</td>
+                    <td width="10%" align="center">Başvuru Takip No</td>
+                    <td width="10%" align="center">Marka</td>
+                    <td width="10%" align="center">Model</td>
+                    <td width="10%" align="center">Seri No</td>
+                    <td width="12%" align="center">Cihaz Durumu</td>
+                    <td width="10%" align="center">Türkak Bilgileri</td>
+                    <td width="26%"></td>
+                </tr>
+                <tr>
+                    <td width="6%">
+                        <input class="form-control form-control-sm text-center" type="text" @bind-value="filterDTO.Id">
+                    </td>
+                    <td width="6%">
+                        <input class="form-control form-control-sm text-center" type="text" @bind-value="filterDTO.KalibrasyonId">
+                    </td>
+                    <td width="10%">
+                        <input class="form-control form-control-sm" type="text" @bind-value="filterDTO.BasvuruTakipNo">
+                    </td>
+                    <td width="10%">
+                        <select class="form-select form-select-sm" @onchange="async eventArgs => { await MarkaSec(eventArgs.Value); }">
+                            <option value="0"></option>
+                            @foreach (var item in DSMarka)
+                            {
+                                if (filterDTO.MarkaId == item.Id)
+                                {
+                                    <option selected value="@item.Id">@item.Ad</option>
+                                }
+                                else
+                                {
+                                    <option value="@item.Id">@item.Ad</option>
+                                }
+                            }
+                        </select>
+                    </td>
+                    <td width="10%">
+                        <select class="form-select form-select-sm" @onchange="async eventArgs => { await ModelSec(eventArgs.Value); }">
+                            <option value="0"></option>
+                            @foreach (var item in DSModel)
+                            {
+                                if (filterDTO.ModelId == item.Id)
+                                {
+                                    <option selected value="@item.Id">@item.Ad</option>
+                                }
+                                else
+                                {
+                                    <option value="@item.Id">@item.Ad</option>
+                                }
+                            }
+                        </select>
+                    </td>
+                    <td width="10%">
+                        <input class="form-control form-control-sm" type="text" @bind-value="filterDTO.SeriNo">
+                    </td>
+                    <td width="12%">
+                        @*<select class="form-select form-select-sm" @onchange="eventArgs => { SayfaSecSorgu(eventArgs.Value); }">
+                            <option value="0"></option>
+                            @foreach (var item in DSSayfa)
+                            {
+                                if (filterDTO.Sayfa == item.Id.ToString())
+                                {
+                                    <option selected value="@item.Id">@item.Ad</option>
+                                }
+                                else
+                                {
+                                    <option value="@item.Id">@item.Ad</option>
+                                }
+                            }
+                        </select>*@
+                    </td>
+                    <td width="10%">
+                    </td>
+                    <td width="16%" align="center">
+                        <div class="btn-group">
+                            <button class="btn text-success grid-command" @onclick="Sorgula"><i class="bi bi-search"></i></button>
+                            <button class="btn text-success grid-command" @onclick="ExportToExcel"><i class="bi bi-file-earmark-excel"></i></button>
+                        </div>
+                    </td>
+                </tr>
+            </thead>
+            @if (DSKalibrasyonCihaz.ToList().Count == 0)
+            {
+                <tbody>
+                    <tr>
+                        <td colspan="9" align="center" valign="bottom" height="64px">
+                            <h6>Görüntülenecek Veri Yok</h6>
+                        </td>
+                    </tr>
+                </tbody>
+            }
+            else
+            {
+                <tbody>
+                    @foreach (var data in DSKalibrasyonCihaz)
+                    {
+                        string cihazDurumuBadge = "";
+
+                        if (data.CihazDurumu == "Başvuru Alındı") cihazDurumuBadge = "badge bg-primary";
+                        else if (data.CihazDurumu == "SMS Onayı Bekleniyor") cihazDurumuBadge = "badge bg-warning";
+                        else if (data.CihazDurumu == "Borç Tahakkuk Ettirildi") cihazDurumuBadge = "badge bg-warning";
+                        else if (data.CihazDurumu == "Sekreter Laboratuvara Gönderdi") cihazDurumuBadge = "badge bg-primary";
+                        else if (data.CihazDurumu == "Müşteriye İade Edildi") cihazDurumuBadge = "badge bg-danger";
+                        else if (data.CihazDurumu == "Laboratuvar Görevlisi Kalibrasyon Listesine Aldı") cihazDurumuBadge = "badge bg-info";
+                        else if (data.CihazDurumu == "Laboratuvar Görevlisi Kalibrasyon Kaydını Yaptı") cihazDurumuBadge = "badge bg-info";
+                        else if (data.CihazDurumu == "Borç Tahakkuk Ettirildi") cihazDurumuBadge = "badge bg-warning";
+                        else if (data.CihazDurumu == "Laboratuvar Görevlisi Sekretere İade Etti") cihazDurumuBadge = "badge bg-warning";
+                        else if (data.CihazDurumu == "Laboratuvar Sorumlusu Laboratuvar Görevlisine İade Etti") cihazDurumuBadge = "badge bg-warning";
+                        else if (data.CihazDurumu == "Laboratuvar Sorumlusu Sonuçlandırdı (Olumlu)") cihazDurumuBadge = "badge bg-success";
+                        else if (data.CihazDurumu == "Laboratuvar Sorumlusu Sonuçlandırdı (Olumsuz)") cihazDurumuBadge = "badge bg-danger";
+
+                        bool KabulIcinUygunDurumLaboratuvarGorevlisi = data.CihazDurumu == "Sekreter Laboratuvara Gönderdi" || data.CihazDurumu == "Laboratuvar Sorumlusu Laboratuvar Görevlisine İade Etti";
+                        bool OlcumIcinUygunDurumLaboratuvarGorevlisi = data.CihazDurumu == "Laboratuvar Görevlisi Kalibrasyon Listesine Aldı" || data.CihazDurumu == "Laboratuvar Görevlisi Kalibrasyon Kaydını Yaptı";
+                        bool OlcumIcinUygunDurumLaboratuvarSorumlusu = data.CihazDurumu == "Laboratuvar Görevlisi Kalibrasyon Kaydını Yaptı" || data.CihazDurumu.StartsWith("Laboratuvar Sorumlusu Sonuçlandırdı");
+                        bool IadeIcinUygunDurumLaboratuvarGorevlisi = data.CihazDurumu == "Sekreter Laboratuvara Gönderdi" || data.CihazDurumu == "Laboratuvar Görevlisi Kalibrasyon Listesine Aldı" || data.CihazDurumu == "Laboratuvar Sorumlusu Laboratuvar Görevlisine İade Etti";
+                        bool IadeIcinUygunDurumLaboratuvarSorumlusu = data.CihazDurumu == "Laboratuvar Görevlisi Kalibrasyon Kaydını Yaptı";
+
+                        <tr>
+                            <td width="6%" align="center">@data.Id</td>
+                            <td width="6%" align="center">@data.KalibrasyonId</td>
+                            <td width="10%" align="center">@data.BasvuruTakipNo</td>
+                            <td width="10%" align="center">@data.Marka</td>
+                            <td width="10%" align="center">@data.Model</td>
+                            <td width="10%" align="center">@data.SeriNo</td>
+                            <td width="12%" align="center"><span class=@cihazDurumuBadge>@data.CihazDurumu</span></td>
+                            <td width="10%" align="center">@(data.TurkakCertificateGuid + " TBDS No: " + (string.IsNullOrEmpty(data.TurkakTBDSNumber) ? "Alınmadı" : data.TurkakTBDSNumber))</td>
+                            <td width="26%" align="center">
+                                <div class="btn-group">
+                                    @if (YetkiLaboratuvarGorevlisi & KabulIcinUygunDurumLaboratuvarGorevlisi)
+                                    {
+                                        <button class="btn btn-sm btn-success" @onclick="@(async () => { await KabulEt(data); })"><i class="bi bi-check"></i>&nbsp;Kabul Et</button>
+                                    }
+                                    @if (YetkiLaboratuvarGorevlisi & OlcumIcinUygunDurumLaboratuvarGorevlisi) 
+                                    {
+                                        <a href=@("/Main/KalibrasyonCihazOlcum/LaboratuvarGorevlisi/" + data.Id.ToString()) class="btn btn-sm btn-success">
+                                            <i class="bi bi-check"></i>&nbsp;Ölçüm
+                                        </a>
+                                    }
+                                    @if (YetkiLaboratuvarSorumlusu & OlcumIcinUygunDurumLaboratuvarSorumlusu)
+                                    {
+                                        <a href=@("/Main/KalibrasyonCihazOlcum/LaboratuvarSorumlusu/" + data.Id.ToString()) class="btn btn-sm btn-primary">
+                                            <i class="bi bi-check"></i>&nbsp;Kontrol
+                                        </a>
+                                    }
+                                    @if (YetkiLaboratuvarGorevlisi & IadeIcinUygunDurumLaboratuvarGorevlisi)
+                                    {
+                                        <button class="btn btn-sm btn-danger" @onclick="@(async () => { await IadeEt(data, "Sekretere"); })"><i class="bi bi-x"></i>&nbsp;Sekretere İade Et</button>
+                                    }
+                                    @if (YetkiLaboratuvarSorumlusu & IadeIcinUygunDurumLaboratuvarSorumlusu)
+                                    {
+                                        <button class="btn btn-sm btn-danger" @onclick="@(async () => { await IadeEt(data, "LaboratuvarGorevlisine"); })"><i class="bi bi-x"></i>&nbsp;Laboratuvara İade Et</button>
+                                    }
+                                    @if (YetkiLaboratuvarGorevlisi & (OlcumIcinUygunDurumLaboratuvarSorumlusu || IadeIcinUygunDurumLaboratuvarSorumlusu))
+                                    {
+                                        if (data.CihazDurumu == "Laboratuvar Sorumlusu Sonuçlandırdı (Olumlu)")
+                                        {
+                                            if (string.IsNullOrEmpty(data.TurkakCertificateGuid))
+                                            {
+                                                <button class="btn btn-sm btn-warning" @onclick="@(async () => { await TurkakakGonder(data); })"><i class="bi bi-check"></i>&nbsp;Türkaka Gönder</button>
+                                            }
+                                            else if (string.IsNullOrEmpty(data.TurkakTBDSNumber))
+                                            {
+                                                 <button class="btn btn-sm btn-warning" @onclick="@(async () => { await QRKodAl(data); })"><i class="bi bi-check"></i>&nbsp;QRKod Al</button>
+                                            }
+                                        }
+
+                                        <button class="btn btn-sm btn-info" @onclick="@(async () => { await Yazdir(data); })"><i class="bi bi-printer"></i>&nbsp;Yazdır</button>
+                                    }
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            }
+            <thead>
+                <tr>
+                    <td colspan="9" align="center">
+                        <Pager RowCount="@RowCount" PageNo="@PageNo" PageSize="@PageSize" 
+                        PageNoChanged="@((int pageNo) => PageNoChanged(pageNo))"
+                        PageSizeChanged="@((int pageSize) => PageSizeChanged(pageSize))"></Pager>
+                    </td>
+                </tr>
+            </thead>
+        </table>
+    </div>
+</div>
+
+<button id="popupAciklamaKaydiAc" type="button" data-bs-toggle="modal" data-bs-target="#popupAciklamaKaydi" style="visibility:hidden;">
+</button>
+
+<div class="modal fade" id="popupAciklamaKaydi" tabindex="-1" aria-labelledby="popupAciklamaKaydiLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="popupAciklamaKaydiLabel">@(currentKalibrasyonCihazHareketDTO.KalibrasyonCihazId.ToString() + " IDli Cihaz İçin İade Kaydı")</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" style="padding-bottom:0">
+                <div class="row">
+                    <div class="col-md-12 mb-3">
+                        <InputTextArea class="form-control form-control-sm" type="text" @bind-Value="currentKalibrasyonCihazHareketDTO.Aciklama" rows="10" placeholder="Açıklama giriniz..">
+                        </InputTextArea>
+                    </div>
+                    <div class="col-md-12 mb-3">
+                        <InputFile OnChange="HandleFileUpload" multiple></InputFile>
+                    </div>
+                    @if (currentKalibrasyonCihazHareketDTO.KalibrasyonCihazHareketDosyaList != null)
+                    {
+                        foreach (var item in currentKalibrasyonCihazHareketDTO.KalibrasyonCihazHareketDosyaList)
+                        {
+                            <div class="col-md-2 mb-3">
+                                <div style="border:1px dashed silver; text-align:center">
+                                    @if (item.Uzanti == "png" || item.Uzanti == "jpg" || item.Uzanti == "jpeg" || item.Uzanti == "bmp" || item.Uzanti == "svg" || item.Uzanti == "gif" || item.Uzanti == "ico")
+                                    {
+                                        <a href="javascript:void()" @onclick="@(async () => { await ShowImageOpen(item.Id); })">
+                                            <img src=@("data:image/" + item.Uzanti + ";base64," + item.Dosya) type=@("image/" + item.Uzanti) style="width:100px;">
+                                        </a>
+                                        <br />
+                                    }
+                                    @item.DosyaAdi
+                                    <br />
+                                    @((item.Boyut / 1024).ToString("###,##0") + "KB")
+                                    <br/>
+                                    <button class="btn btn-sm" @onclick="@(async () => { await DeleteKalibrasyonCihazHareketDosya(item); })"><i class="bi bi-trash"></i></button>
+                                </div>
+                            </div>
+                        }
+                    }
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="submit" class="btn btn-success btn-sm" @onclick="KaydetIadeEt"><i class="bi bi-check-circle"></i>&nbsp;Kaydet</button>
+                <button id="popupAciklamaKaydiKapat" type="button" class="btn btn-danger btn-sm" data-bs-dismiss="modal"><i class="bi bi-x-circle"></i>&nbsp;Vazgeç</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (currentKalibrasyonCihazHareketDosyaDTO.DosyaAdi != "")
+{
+    <div class="showImageBackground">
+        <div class="showImagePopup">
+            <div class="showImageClose">
+                <i class="bi bi-x-circle-fill" @onclick="ShowImageClose"></i>
+            </div>
+            <img src=@("data:image/" + currentKalibrasyonCihazHareketDosyaDTO.Uzanti + ";base64," + currentKalibrasyonCihazHareketDosyaDTO.Dosya) type=@("image/" + currentKalibrasyonCihazHareketDosyaDTO.Uzanti) style="max-width:100%; max-height: calc(100vh - 3.5rem);">
+        </div>
+    </div>
+}
+
+<button id="popupOnizleAc" type="button" data-bs-toggle="modal" data-bs-target="#popupOnizle" style="visibility:hidden;">
+</button>
+
+<div class="modal fade" id="popupOnizle" tabindex="-1" aria-labelledby="popupOnizleLabel" aria-hidden="true">
+    <div class="modal-dialog modal-fullscreen">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="popupOnizleLabel">Belge Önizleme</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <embed src="@pdf" type="application/pdf" style="width:100%; height:calc(100vh - 10.4rem);" />
+            </div>
+            <div class="modal-footer">
+                <button id="popupOnizleKapat" type="button" class="btn btn-primary btn-sm" data-bs-dismiss="modal">Kapat</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (loading)
+{
+    <div class="progressBackground">
+        <div class="progressPopup">
+            <img alt="Bekleyiniz..." src="img/loading.gif" width="100" height="100" />
+        </div>
+    </div>
+}
+
+@code
+{
+    [Inject] protected ILookupService lookupService { get; set; }
+    [Inject] protected IRolService rolService { get; set; }
+    [Inject] protected IKalibrasyonService kalibrasyonService { get; set; }
+    [Inject] protected IFRService frService { get; set; }
+
+    List<KalibrasyonCihazDTO> DSKalibrasyonCihaz = new List<KalibrasyonCihazDTO>();
+    List<KalibrasyonCihazHareketDTO> DSKalibrasyonCihazHareket = new List<KalibrasyonCihazHareketDTO>();
+    List<LookupBasicDTO> DSMarka = new List<LookupBasicDTO>();
+    List<LookupBasicDTO> DSModel = new List<LookupBasicDTO>();
+
+    List<LookupBasicDTO> DSSayfa = new List<LookupBasicDTO>()
+    {
+        new LookupBasicDTO() { Id = 0, Ad = "Tüm Cihazlar" },
+    };
+
+    KalibrasyonCihazDTO currentDTO = new KalibrasyonCihazDTO();
+    KalibrasyonCihazFilterDTO filterDTO = new KalibrasyonCihazFilterDTO() { PageNo = 1, PageSize = 25, Sayfa = "0" };
+    KalibrasyonCihazHareketDTO currentKalibrasyonCihazHareketDTO = new KalibrasyonCihazHareketDTO();
+    KalibrasyonCihazHareketDosyaDTO currentKalibrasyonCihazHareketDosyaDTO = new KalibrasyonCihazHareketDosyaDTO();
+
+    InputFileChangeEventArgs FileArgs { get; set; }
+
+    bool loading = false;
+
+    bool YetkiGor = false;
+    bool YetkiLaboratuvarGorevlisi = false;
+    bool YetkiLaboratuvarSorumlusu = false;
+
+    int RowCount = 0;
+    int PageNo = 1;
+    int PageSize = 25;
+
+    string pdf = "";
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            YetkiGor = await rolService.YetkiKontrolByYetki("Kalibrasyon - Cihazlar - Gör");
+            YetkiLaboratuvarGorevlisi = await rolService.YetkiKontrolByYetki("Kalibrasyon - Cihazlar - Laboratuvar Görevlisi");
+            YetkiLaboratuvarSorumlusu = await rolService.YetkiKontrolByYetki("Kalibrasyon - Cihazlar - Laboratuvar Sorumlusu");
+
+            if (YetkiLaboratuvarGorevlisi)
+            {
+                DSSayfa.Add(new LookupBasicDTO() { Id = 101, Ad = "Başvuru Havuzu" });
+                DSSayfa.Add(new LookupBasicDTO() { Id = 201, Ad = "Kalibrasyon Listesindeki Cihazlar" });
+                DSSayfa.Add(new LookupBasicDTO() { Id = 303, Ad = "Laboratuvar Sorumlusundan İade Gelenler" });
+            }
+
+            if (YetkiLaboratuvarSorumlusu | YetkiLaboratuvarGorevlisi)
+            {
+                DSSayfa.Add(new LookupBasicDTO() { Id = 203, Ad = "Kalibrasyon Kaydı Yapılan Cihazlar" });
+                DSSayfa.Add(new LookupBasicDTO() { Id = 301, Ad = "Olumlu Sonuçlanan Cihazlar" });
+                DSSayfa.Add(new LookupBasicDTO() { Id = 302, Ad = "Olumsuz Sonuçlanan Cihazlar" });
+            }
+
+            DSMarka = await lookupService.GetLookupFromMasterDetail("Cihaz", 0);
+
+            await GetData();
+
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    async Task GetData()
+    {
+        try
+        {
+            var result = await kalibrasyonService.GetKalibrasyonCihazList(filterDTO);
+
+            if (result.Success)
+            {
+                DSKalibrasyonCihaz = result.Value;
+                RowCount = result.RowCount;
+            }
+            else
+            {
+                await js.InvokeVoidAsync("SweetMessage", "Hata", result.Message, "error");
+            }
+        }
+        catch
+        {
+
+        }
+    }
+
+    async Task SayfaSecSorgu(object value)
+    {
+        PageNo = 1;
+        filterDTO.PageNo = 1;
+
+        filterDTO.Sayfa = value.ToString();
+
+        await GetData();
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task Sorgula()
+    {
+        PageNo = 1;
+        filterDTO.PageNo = 1;
+
+        await GetData();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task PageNoChanged(int pageNo)
+    {
+        PageNo = pageNo;
+        filterDTO.PageNo = pageNo;
+        await GetData();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task PageSizeChanged(int pageSize)
+    {
+        PageSize = pageSize;
+        filterDTO.PageSize = pageSize;
+        await GetData();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task CihazDurumuChange(int HareketTuruId)
+    {
+        filterDTO.Sayfa = HareketTuruId.ToString();
+        await GetData();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task MarkaSec(object value)
+    {
+        int MarkaId = Convert.ToInt32(value.ToString());
+
+        DSModel = await lookupService.GetLookupFromMasterDetail("Cihaz", (MarkaId == 0 ? -1 : MarkaId));
+
+        PageNo = 1;
+        filterDTO.PageNo = 1;
+
+        filterDTO.MarkaId = MarkaId;
+        filterDTO.ModelId = 0;
+
+        await GetData();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task ModelSec(object value)
+    {
+        PageNo = 1;
+        filterDTO.PageNo = 1;
+
+        filterDTO.ModelId = Convert.ToInt32(value.ToString());
+
+        await GetData();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    public async Task ExportToExcel()
+    {
+        using (var workbook = new XLWorkbook())
+        {
+            IXLWorksheet worksheet = workbook.Worksheets.Add("Sayfa1");
+
+            worksheet.Cell(1, 1).Value = "Cihaz ID";
+            worksheet.Cell(1, 2).Value = "Başvuru ID";
+            worksheet.Cell(1, 3).Value = "Başvuru Takip No";
+            worksheet.Cell(1, 4).Value = "Marka";
+            worksheet.Cell(1, 5).Value = "Model";
+            worksheet.Cell(1, 6).Value = "Seri No";
+            worksheet.Cell(1, 7).Value = "Cihaz Durumu";
+
+            for (int i = 1; i <= 7; i++)
+            {
+                worksheet.Cell(1, i).Style.Font.Bold = true;
+            }
+
+            int index = 1;
+
+            foreach (var data in DSKalibrasyonCihaz)
+            {
+                worksheet.Cell(index + 1, 1).Value = data.Id;
+                worksheet.Cell(index + 1, 2).Value = data.KalibrasyonId;
+                worksheet.Cell(index + 1, 3).Value = data.BasvuruTakipNo;
+                worksheet.Cell(index + 1, 4).Value = data.Marka;
+                worksheet.Cell(index + 1, 5).Value = data.Model;
+                worksheet.Cell(index + 1, 6).Value = data.SeriNo;
+                worksheet.Cell(index + 1, 7).Value = data.CihazDurumu;
+
+                index++;
+            }
+
+            using (var stream = new MemoryStream())
+            {
+                workbook.SaveAs(stream);
+                var content = stream.ToArray();
+                var fileName = "KalibrasyonCihazListesi" + DateTime.Now.ToString("yyyyMMddss") + ".xlsx";
+                await js.InvokeAsync<object>("saveAsFile", fileName, Convert.ToBase64String(content));
+            }
+        }
+    }
+
+    async Task KabulEt(KalibrasyonCihazDTO dto)
+    {
+        var confirm = await js.InvokeAsync<bool>("SweetConfirm", "Uyarı", $"{dto.Id.ToString()} IDli cihaz kalibrasyon olacaklar listesine alınacak, devam edilsin mi?", "question", "Evet", "Hayır");
+
+        if (confirm)
+        {
+            var dtoInsert = new KalibrasyonCihazHareketDTO()
+                {
+                    KalibrasyonCihazId = dto.Id,
+                    KalibrasyonCihaz = dto,
+                    HareketTuruId = 201,
+                    HareketTuruString = "Laboratuvar Görevlisi Kalibrasyon Listesine Aldı",
+                    HareketTuru = new HareketTuruDTO() { Id = 201, HareketTuru = "Laboratuvar Görevlisi Kalibrasyon Listesine Aldı" },
+                    Zaman = DateTime.Now,
+                    Aciklama = "",
+                    KalibrasyonCihazHareketDosyaList = new List<KalibrasyonCihazHareketDosyaDTO>()
+                };
+
+            dtoInsert.KalibrasyonCihaz.DataSourceModel = new List<LookupBasicDTO>();
+
+            var result = await kalibrasyonService.InsertKalibrasyonCihazHareket(dtoInsert);
+
+            if (result.Success == false)
+            {
+                await js.InvokeVoidAsync("SweetMessage", "Hata", result.Message, "error");
+                return;
+            }
+
+            await GetData();
+
+            await InvokeAsync(StateHasChanged);
+
+            await js.InvokeVoidAsync("SweetToast", "Cihaz kalibrasyon olacaklar listesine alındı", "success");
+        }
+    }
+
+    async Task IadeEt(KalibrasyonCihazDTO dto, string kime)
+    {
+        currentDTO = dto;
+
+        currentKalibrasyonCihazHareketDTO = new KalibrasyonCihazHareketDTO() { 
+            KalibrasyonCihaz = dto,
+            KalibrasyonCihazId = dto.Id, 
+            KalibrasyonCihazHareketDosyaList = new List<KalibrasyonCihazHareketDosyaDTO>()
+        };
+
+        if (kime == "Sekretere")
+        {
+            currentKalibrasyonCihazHareketDTO.HareketTuruId = 202;
+            currentKalibrasyonCihazHareketDTO.HareketTuruString = "Laboratuvar Görevlisi Sekretere İade Etti";
+            currentKalibrasyonCihazHareketDTO.HareketTuru = new HareketTuruDTO() { Id = 202, HareketTuru = "Laboratuvar Görevlisi Sekretere İade Etti" };
+        }
+        else if (kime == "LanoratuvarGorevlisine")
+        {
+            currentKalibrasyonCihazHareketDTO.HareketTuruId = 303;
+            currentKalibrasyonCihazHareketDTO.HareketTuruString = "Laboratuvar Sorumlusu Laboratuvar Görevlisine İade Etti";
+            currentKalibrasyonCihazHareketDTO.HareketTuru = new HareketTuruDTO() { Id = 303, HareketTuru = "Laboratuvar Sorumlusu Laboratuvar Görevlisine İade Etti" };
+        }
+
+        currentKalibrasyonCihazHareketDTO.KalibrasyonCihaz.DataSourceModel = new List<LookupBasicDTO>();
+
+        await js.InvokeVoidAsync("bsPopupAc", "popupAciklamaKaydi");
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task TurkakakGonder(KalibrasyonCihazDTO dto)
+    {
+        var confirm = await js.InvokeAsync<bool>("SweetConfirm", "Uyarı", $"{dto.Id.ToString()} IDli cihaza ait bilgiler Türkak'a gönderilecek, devam edilsin mi?", "question", "Evet", "Hayır");
+
+        if (confirm)
+        {
+            var tempDTO = dto;
+
+            tempDTO.DataSourceModel = new List<LookupBasicDTO>();
+
+            var result = await kalibrasyonService.TurkakaGonder(tempDTO);
+
+            if (result.Success == false)
+            {
+                await js.InvokeVoidAsync("SweetMessage", "Hata", result.Message, "error");
+                return;
+            }
+
+            await GetData();
+
+            await InvokeAsync(StateHasChanged);
+
+            await js.InvokeVoidAsync("SweetToast", "Cihaz bilgileri Türkak'a gönderildi", "success");
+        }
+    }
+
+    async Task QRKodAl(KalibrasyonCihazDTO dto)
+    {
+        var confirm = await js.InvokeAsync<bool>("SweetConfirm", "Uyarı", $"{dto.Id.ToString()} IDli cihazın QR Kod bilgileri Türkak'tan alınacak, devam edilsin mi?", "question", "Evet", "Hayır");
+
+        if (confirm)
+        {
+            var tempDTO = dto;
+
+            tempDTO.DataSourceModel = new List<LookupBasicDTO>();
+
+            var result = await kalibrasyonService.TurkakQRKoduAl(tempDTO);
+
+            if (result.Success == false)
+            {
+                await js.InvokeVoidAsync("SweetMessage", "Hata", result.Message, "error");
+                return;
+            }
+
+            await GetData();
+
+            await InvokeAsync(StateHasChanged);
+
+            await js.InvokeVoidAsync("SweetToast", "QRKod bilgileri Türkak'tan alındı", "success");
+        }
+    }
+
+    async Task Yazdir(KalibrasyonCihazDTO dto)
+    {
+        try
+        {
+            loading = true;
+
+            var bytes = File.ReadAllBytes("FR/KalibrasyonOlcum.frx");
+
+            string base64Rapor = Convert.ToBase64String(bytes);
+
+            var frDTO = new FRDTO()
+                {
+                    ReportNameOrBase64 = base64Rapor,
+                    Uzanti = "pdf",
+                    Id = dto.Id
+                };
+
+            var result = await frService.GetReport(frDTO);
+
+            if (result.Success == false)
+            {
+                loading = false;
+
+                await InvokeAsync(StateHasChanged);
+
+                await js.InvokeVoidAsync("SweetMessage", "Hata", result.Message, "error");
+                return;
+            }
+
+            string base64String = Convert.ToBase64String(result.Value);
+
+            pdf = "data:application/pdf;base64," + base64String; /*+ "#view=FitH";*/
+
+            loading = false;
+
+            await InvokeAsync(StateHasChanged);
+
+            await js.InvokeVoidAsync("bsPopupAc", "popupOnizle");
+        }
+        catch
+        {
+            loading = false;
+
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    async Task HandleFileUpload(InputFileChangeEventArgs e)
+    {
+        FileArgs = e;
+
+        if (currentKalibrasyonCihazHareketDTO.KalibrasyonCihazHareketDosyaList == null)
+        {
+            currentKalibrasyonCihazHareketDTO.KalibrasyonCihazHareketDosyaList = new List<KalibrasyonCihazHareketDosyaDTO>();
+        }
+
+        int i = 0;
+
+        foreach (var file in FileArgs.GetMultipleFiles(10))
+        {
+            i--;
+
+            var stream = file.OpenReadStream(1024 * 1024 * 10);
+
+            MemoryStream ms = new MemoryStream();
+
+            await stream.CopyToAsync(ms);
+
+            stream.Close();
+
+            var streamArray = ms.ToArray();
+
+            ms.Close();
+
+            var dosya = new KalibrasyonCihazHareketDosyaDTO()
+                {
+                    Id = i,
+                    Dosya = Convert.ToBase64String(streamArray),
+                    DosyaAdi = file.Name,
+                    Boyut = file.Size,
+                    Uzanti = Path.GetExtension(file.Name).Replace(".", "").ToLower()
+                };
+
+            currentKalibrasyonCihazHareketDTO.KalibrasyonCihazHareketDosyaList.Add(dosya);
+
+            stream.Close();
+        }
+    }
+
+    async Task DeleteKalibrasyonCihazHareketDosya(KalibrasyonCihazHareketDosyaDTO dto)
+    {
+        currentKalibrasyonCihazHareketDTO.KalibrasyonCihazHareketDosyaList.Remove(dto);
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task ShowImageOpen(int Id)
+    {
+        currentKalibrasyonCihazHareketDosyaDTO = currentKalibrasyonCihazHareketDTO.KalibrasyonCihazHareketDosyaList.SingleOrDefault(x => x.Id == Id);
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task ShowImageClose()
+    {
+        currentKalibrasyonCihazHareketDosyaDTO = new KalibrasyonCihazHareketDosyaDTO();
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task KaydetIadeEt()
+    {
+        if (string.IsNullOrEmpty(currentKalibrasyonCihazHareketDTO.Aciklama))
+        {
+            await js.InvokeVoidAsync("SweetToast", "Açıklama girilmelidir", "error");
+            return;
+        }
+
+        loading = true;
+
+        currentKalibrasyonCihazHareketDTO.Zaman = DateTime.Now;
+
+        var result = await kalibrasyonService.InsertKalibrasyonCihazHareket(currentKalibrasyonCihazHareketDTO);
+
+        if (result.Success == false)
+        {
+            loading = false;
+
+            await InvokeAsync(StateHasChanged);
+
+            await js.InvokeVoidAsync("SweetMessage", "Hata", result.Message, "error");
+
+            return;
+        }
+
+        loading = false;
+
+        await GetData();
+
+        await InvokeAsync(StateHasChanged);
+
+        await js.InvokeVoidAsync("bsPopupKapat", "popupAciklamaKaydi");
+
+        await js.InvokeVoidAsync("SweetToast", "Cihazın iade kaydı yapıldı", "success");
+    }
+}

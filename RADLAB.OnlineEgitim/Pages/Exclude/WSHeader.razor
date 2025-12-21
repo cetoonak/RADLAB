@@ -1,0 +1,54 @@
+﻿@inject NavigationManager navManager
+
+@*<header class="header_section" style=@(sayfa == "" ? "font-size:0.9rem" : "font-size:0.9rem; background-color:#00204a;")>
+    <div class="container-fluid">
+        <nav class="navbar navbar-expand-lg custom_nav-container ">
+            <a class="navbar-brand" href="/">
+                <img src="img/logo.jpg" alt="" style="max-width:120px;">
+            </a>
+
+            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+                <span class=""> </span>
+            </button>
+
+            <div class="collapse navbar-collapse" id="navbarSupportedContent">
+                <ul class="navbar-nav">
+                    <li class=@(sayfa == "" ? "nav-item active" : "nav-item")>
+                        <a class="nav-link" href="/">ANA SAYFA <span class="sr-only">(current)</span></a>
+                    </li>
+                    <li class=@(sayfa == "KalibrasyonBasvurusu" ? "nav-item active" : "nav-item")>
+                        <a class="nav-link" href="/KalibrasyonBasvurusu">KALİBRASYON BAŞVURUSU</a>
+                    </li>
+                    <li class=@(sayfa == "RadyoaktifKaynakYukleme" ? "nav-item active" : "nav-item")>
+                        <a class="nav-link" href="/RadyoaktifKaynakYukleme">RADYOAKTİF KAYNAK YÜKLEME</a>
+                    </li>
+                    <li class=@(sayfa == "EgitimBasvurusu" ? "nav-item active" : "nav-item")>
+                        <a class="nav-link" href="/EgitimBasvurusu">EĞİTİM BAŞVURUSU</a>
+                    </li>
+                    <li class=@(sayfa == "MusteriTakip" ? "nav-item active" : "nav-item")>
+                        <a class="nav-link" href="/MusteriTakip">MÜŞTERİ TAKİP</a>
+                    </li>
+                    <li class=@(sayfa == "Iletisim" ? "nav-item active" : "nav-item")>
+                        <a class="nav-link" href="/Iletisim">İLETİŞİM</a>
+                    </li>
+                    <li class=@(sayfa == "Hakkinda" ? "nav-item active" : "nav-item")>
+                        <a class="nav-link" href="/Hakkinda">HAKKIMIZDA</a>
+                    </li>
+                    <li class=@(sayfa == "Login" ? "nav-item active" : "nav-item")>
+                        <a class="nav-link" href="/Login"><i class="fa fa-user" aria-hidden="true"></i>&nbsp;&nbsp;GİRİŞ</a>
+                    </li>
+                </ul>
+            </div>
+        </nav>
+    </div>
+</header>*@
+
+@code
+{
+    string sayfa = "";
+
+    protected override async Task OnParametersSetAsync()
+    {
+        sayfa = navManager.Uri.Replace(navManager.BaseUri, "");
+    }
+}

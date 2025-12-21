@@ -1,0 +1,768 @@
+﻿@page "/Main/Ogrenci"
+
+@inject IJSRuntime js
+
+@using System.Threading
+@using System.Threading.Tasks
+@using System.Net.Http
+@using System.Text.Json
+
+<style>
+    .badge {
+    font-size:0.9em;
+    }
+
+    .form-floating > .form-select {
+    padding-left: 0.8rem;
+    }
+</style>
+
+<div class="card info-card">
+    <div class="table-responsive">
+        <table class="table table-bordered table-hover">
+            <thead>
+                <tr>
+                    <td width="10%"></td>
+                    <td width="10%" align="center">Ad Soyad</td>
+                    <td width="10%" align="center">Telefon</td>
+                    <td width="10%" align="center">E-Posta</td>
+                    <td width="10%" align="center">İlk Eğitim Açılış Tarihi</td>
+                    <td width="10%" align="center">Durum</td>
+                    <td width="30%" align="center">Eğitimler</td>
+                    <td width="10%" align="center">
+                        @if (YetkiEkle)
+                        {
+                            <button class="btn text-success grid-command" @onclick="Add"><i class="bi bi-plus-circle mr-2"></i></button>
+                            <div class="btn-group">
+                                <div class="dropdown">
+                                    <button class="btn text-success grid-command" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                        <i class="bi bi-chevron-down"></i>
+                                    </button>
+                                    <ul class="dropdown-menu">
+                                        @foreach (var onlineEgitim in DSOnlineEgitim)
+                                        {
+                                            <li>
+                                                <button class="dropdown-item" @onclick="@(async () => { await InsertOnlineEgitimOgrenciToplu(onlineEgitim.Id); })">
+                                                    <i class="bi bi-arrow-90deg-right text-success"></i>@("Seçilen öğrencileri şu sınava dahil et: " + onlineEgitim.Ad)
+                                                </button>
+                                            </li>
+                                        }
+                                        <li>
+                                            <hr class="dropdown-divider">
+                                        </li>
+                                        @foreach (var onlineEgitim in DSOnlineEgitim)
+                                        {
+                                            <li>
+                                                <button class="dropdown-item" @onclick="@(async () => { await DeleteOnlineEgitimOgrenciToplu(onlineEgitim.Id); })">
+                                                    <i class="bi bi-arrow-90deg-left text-danger"></i>@("Seçilen öğrencileri şu sınavdan çıkar: " + onlineEgitim.Ad)
+                                                </button>
+                                            </li>
+                                        }
+                                        <li>
+                                            <hr class="dropdown-divider">
+                                        </li>
+                                        <li>
+                                            <button class="dropdown-item" @onclick="@(async () => { await UpdateOgrenciAktifToplu(1); })">
+                                                <i class="bi bi-check-circle text-success"></i>Seçilen öğrencilerin durumunu aktif yap
+                                            </button>
+                                        </li>
+                                        <li>
+                                            <button class="dropdown-item" @onclick="@(async () => { await UpdateOgrenciAktifToplu(0); })">
+                                                <i class="bi bi-x-circle text-danger"></i>Seçilen öğrencilerin durumunu pasif yap
+                                            </button>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                        }
+                    </td>
+                </tr>
+                <tr>
+                    <td width="10%" align="center">
+                        <input type="checkbox" @onchange="eventArgs => { OnCheckAllChange(eventArgs.Value); }" />
+                    </td>
+                    <td width="10%">
+                        <input class="form-control form-control-sm" type="text" @bind-value="filterDTO.AdSoyad">
+                    </td>
+                    <td width="10%">
+                        <input class="form-control form-control-sm" type="text" @bind-value="filterDTO.TelefonCep">
+                    </td>
+                    <td width="10%">
+                        <input class="form-control form-control-sm" type="text" @bind-value="filterDTO.EMail">
+                    </td>
+                    <td width="10%">
+                        <input class="form-control form-control-sm" type="text" @bind-value="filterDTO.IlkEgitimAcilisTarihi">
+                    </td>
+                    <td width="10%">
+                        <select class="form-select form-select-sm" @bind="filterDTO.Durum">
+                            <option value="0"></option>
+                            <option value="1">Tamamlayanlar</option>
+                            <option value="2">Devam Edenler</option>
+                            <option value="3">Katılmayanlar</option>
+                        </select>
+                    </td>
+                    <td width="30%">
+                        <select class="form-select form-select-sm" @bind="filterDTO.OnlineEgitimId">
+                            <option value="0"></option>
+                            @foreach (var item in DSOnlineEgitim)
+                            {
+                                <option value="@item.Id">@item.Ad</option>
+                            }
+                        </select>
+                    </td>
+                    <td width="10%" align="center">
+                        <div class="btn-group">
+                            <button class="btn text-success grid-command" @onclick="Sorgula"><i class="bi bi-search"></i></button>
+                            <button class="btn text-success grid-command" @onclick="ExportToExcel"><i class="bi bi-file-earmark-excel"></i></button>
+                        </div>
+                    </td>
+                </tr>
+            </thead>
+            @if (DataSource.ToList().Count == 0)
+            {
+                <tbody>
+                    <tr>
+                        <td colspan="8" align="center" valign="bottom" height="64px">
+                            <h6>Görüntülenecek Veri Yok</h6>
+                        </td>
+                    </tr>
+                </tbody>
+            }
+            else
+            {
+                <tbody>
+                    @foreach (var data in DataSource)
+                    {
+                        var RowFontColor = data.Aktif ? "black" : "gray";
+
+                        <tr style="color:@RowFontColor">
+                            <td width="10%" align="center">
+                                <input type="checkbox" @bind="data.Checked">
+                            </td>
+                            <td width="10%" align="center">@(data.Ad + " " + data.Soyad)</td>
+                            <td width="10%" align="center">@data.TelefonCep</td>
+                            <td width="10%" align="center">@data.EMail</td>
+                            <td width="10%" align="center">@data.IlkEgitimAcilisTarihi.ToString("dd.MM.yyyy")</td>
+                            <td width="10%" align="center"><span class=@(data.Durum == "Tamamladı" ? "badge bg-success" : (data.Durum == "Devam Ediyor" ? "badge bg-warning" : (data.Durum == "Katılmadı" ? "badge bg-danger" : "" )))>@data.Durum</span></td>
+                            <td width="30%" align="center">
+                                <button class="btn btn-sm btn-link" type="button" data-bs-toggle="collapse" data-bs-target=@("#collapseDiv" + data.Id.ToString()) aria-expanded="false" aria-controls=@("collapseDiv" + data.Id.ToString())>
+                                    Eğitimler
+                                </button>
+                                <div class="collapse" id=@("collapseDiv" + data.Id.ToString())>
+                                    @{
+                                        MarkupString ms = (MarkupString)data.OgrenciOnlineEgitimler;
+                                    }
+                                    @ms
+                                </div>
+                            </td>
+                            <td width="10%" align="center">
+                                @if (YetkiDegistir)
+                                {
+                                    <button class="btn text-info grid-command" @onclick="@(async () => { await Edit(data.Id); })"><i class="bi bi-pencil"></i></button>
+                                }
+                                @if (YetkiSil)
+                                {
+                                    <button class="btn text-danger grid-command" @onclick="@(async () => { await Delete(data.Id); })"><i class="bi bi-trash3"></i></button>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            }
+            <tfoot>
+                <tr>
+                    <td colspan="8" align="center">
+                        <Pager RowCount="@RowCount"
+                        PageNoChanged="@((int pageNo) => PageNoChanged(pageNo))"
+                        PageSizeChanged="@((int pageSize) => PageSizeChanged(pageSize))"></Pager>
+                    </td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+</div>
+
+<button id="popupKayitAc" type="button" data-bs-toggle="modal" data-bs-target="#popupKayit" style="visibility:hidden;">
+</button>
+
+<div class="modal fade" id="popupKayit" tabindex="-1" aria-labelledby="popupKayitLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <EditForm Model="@currentDTO">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="popupKayitLabel">Öğrenci Kaydı</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <div class="form-floating">
+                                <input name="tbAd" class="form-control form-control-sm" type="text" @bind-value="currentDTO.Ad"/>
+                                <label for="tbAd" class="text-danger">Ad</label>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="form-floating">
+                                <input name="tbSoyad" class="form-control form-control-sm" type="text" @bind-value="currentDTO.Soyad" />
+                                <label for="tbSoyad" class="text-danger">Soyad</label>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="form-floating">
+                                <input name="tbTelefon" class="form-control form-control-sm" type="text" @bind-value="currentDTO.TelefonCep" />
+                                <label for="tbTelefon" class="text-danger">Telefon</label>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="form-floating">
+                                <input name="tbMail" class="form-control form-control-sm" type="text" @bind-value="currentDTO.EMail" />
+                                <label for="tbMail">E-Posta</label>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <input id="cbAktif" type="checkbox" class="form-check-input" @bind="currentDTO.Aktif" />
+                            <label for="cbAktif" class="form-check-label">Öğrenci aktif</label>
+                        </div>
+                        <div class="col-md-12">
+                            <table class="table table-bordered table-hover">
+                                <thead>
+                                    <tr>
+                                        <td width="40%" align="center">Eğitim</td>
+                                        <td width="15%" align="center">Katılım Başlangıç Tarihi</td>
+                                        <td width="15%" align="center">Katılım Bitiş Tarihi</td>
+                                        <td width="15%" align="center">Grup No</td>
+                                        <td width="15%" align="center">
+                                            <button class="btn text-success grid-command" @onclick="@(async () => { await EkleOnlineEgitimOgrenci(); })"><i class="bi bi-plus-circle"></i></button>
+                                        </td>
+                                    </tr>
+                                </thead>
+                                @if (currentDTO.OnlineEgitimOgrenciler.Count == 0)
+                                {
+                                    <tbody>
+                                        <tr>
+                                            <td colspan="5" align="center" valign="bottom" height="64px">
+                                                <h6>Görüntülenecek Veri Yok</h6>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                }
+                                else
+                                {
+                                    <tbody>
+                                        @foreach (var onlineEgitimOgrenci in currentDTO.OnlineEgitimOgrenciler)
+                                        {
+                                            <tr>
+                                                <td width="40%">
+                                                    <select class="form-select form-select-sm" @bind="onlineEgitimOgrenci.OnlineEgitimId">
+                                                        <option value="0"></option>
+                                                        @foreach (var item in DSOnlineEgitim)
+                                                        {
+                                                            <option value="@item.Id">@item.Ad</option>
+                                                        }
+                                                    </select>
+                                                </td>
+                                                <td width="15%">
+                                                    <input class="form-control form-control-sm" type="date" @bind-value="onlineEgitimOgrenci.Tarih1">
+                                                </td>
+                                                <td width="15%">
+                                                    <input class="form-control form-control-sm" type="date" @bind-value="onlineEgitimOgrenci.Tarih2">
+                                                </td>
+                                                <td width="15%">
+                                                    <select class="form-select form-select-sm" @bind="onlineEgitimOgrenci.Grup">
+                                                        <option value="0"></option>
+                                                        <option value="1">1. Grup</option>
+                                                        <option value="2">2. Grup</option>
+                                                        <option value="3">3. Grup</option>
+                                                        <option value="4">4. Grup</option>
+                                                        <option value="5">5. Grup</option>
+                                                        <option value="6">6. Grup</option>
+                                                        <option value="7">7. Grup</option>
+                                                        <option value="8">8. Grup</option>
+                                                        <option value="9">9. Grup</option>
+                                                        <option value="10">10. Grup</option>
+                                                    </select>
+                                                </td>
+                                                <td width="15%" align="center">
+                                                    <button class="btn text-danger grid-command" @onclick="@(async () => { await DeleteOnlineEgitimOgrenci(onlineEgitimOgrenci); })"><i class="bi bi-trash3"></i></button>
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                }
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <table width="100%" cellpadding="0" cellspacing="0">
+                        <tr>
+                            <td align="left">
+                                <input id="cbSMSMailGonder" type="checkbox" class="form-check-input" @bind="SMSMailGonder" />
+                                <label for="cbSMSMailGonder" class="form-check-label">Kaydedince öğrenciye bildirim gönder</label>
+                            </td>
+                            <td align="right">
+                                <button type="submit" class="btn btn-success btn-sm" @onclick="Save"><i class="bi bi-check-circle"></i>&nbsp;Kaydet</button>
+                                <button id="popupKayitKapat" type="button" class="btn btn-danger btn-sm" data-bs-dismiss="modal"><i class="bi bi-x-circle"></i>&nbsp;Vazgeç</button>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            </EditForm>
+        </div>
+    </div>
+</div>
+
+@if (loading)
+{
+    <div class="progressBackground">
+        <div class="progressPopup">
+            <img alt="Bekleyiniz..." src="img/loading.gif" width="100" height="100" />
+        </div>
+    </div>
+}
+
+@code
+{
+    [Inject] protected IRolService rolService { get; set; }
+    [Inject] protected IOgrenciService ogrenciService { get; set; }
+    [Inject] protected IOnlineEgitimService onlineEgitimService { get; set; }
+    [Inject] protected ISMSMailService smsMailService { get; set; }
+    [Inject] protected ILookupService lookupService { get; set; }
+
+    List<OgrenciDTO> DataSource = new List<OgrenciDTO>();
+    List<LookupBasicDTO> DSOnlineEgitim = new List<LookupBasicDTO>();
+
+    OgrenciFilterDTO filterDTO = new OgrenciFilterDTO() { PageNo = 1, PageSize = 10 };
+
+    OgrenciDTO currentDTO = new OgrenciDTO();
+
+    bool loading = false;
+    bool YetkiEkle = false;
+    bool YetkiDegistir = false;
+    bool YetkiSil = false;
+    bool SMSMailGonder = false;
+    int RowCount = 0;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            YetkiEkle = await rolService.YetkiKontrolByYetki("Online Eğitim - Öğrenciler - Ekle");
+            YetkiDegistir = await rolService.YetkiKontrolByYetki("Online Eğitim - Öğrenciler - Değiştir");
+            YetkiSil = await rolService.YetkiKontrolByYetki("Online Eğitim - Öğrenciler - Sil");
+
+            DSOnlineEgitim = await lookupService.GetLookupBasic("OnlineEgitim");
+
+            await GetData();
+
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    public string TurkceKaraktersiz(string text)
+    {
+        text = text.Replace("İ", "I");
+        text = text.Replace("ı", "i");
+        text = text.Replace("Ğ", "G");
+        text = text.Replace("ğ", "g");
+        text = text.Replace("Ö", "O");
+        text = text.Replace("ö", "o");
+        text = text.Replace("Ü", "U");
+        text = text.Replace("ü", "u");
+        text = text.Replace("Ş", "S");
+        text = text.Replace("ş", "s");
+        text = text.Replace("Ç", "C");
+        text = text.Replace("ç", "c");
+
+        return text;
+    }
+
+    async Task GetData()
+    {
+        var result = await ogrenciService.GetOgrenciList(filterDTO);
+
+        if (result.Success)
+        {
+            DataSource = result.Value;
+            RowCount = result.RowCount;
+        }
+        else
+        {
+            await js.InvokeVoidAsync("SweetMessage", "Hata", result.Message, "error");
+        }
+    }
+
+    async Task Sorgula()
+    {
+        await GetData();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task PageNoChanged(int pageNo)
+    {
+        filterDTO.PageNo = pageNo;
+        await GetData();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task PageSizeChanged(int pageSize)
+    {
+        filterDTO.PageSize = pageSize;
+        await GetData();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task Add()
+    {
+        currentDTO = new OgrenciDTO();
+
+        currentDTO.OnlineEgitimOgrenciler = new List<OnlineEgitimOgrenciDTO>();
+
+        var newItem = new OnlineEgitimOgrenciDTO()
+            {
+                Tarih1 = DateTime.Now.Date,
+                Tarih2 = DateTime.Now.Date.AddDays(7),
+                Grup = 1
+            };
+
+        if (DSOnlineEgitim.Count == 0)
+        {
+            newItem.OnlineEgitimId = DSOnlineEgitim[0].Id;
+        }
+
+        currentDTO.OnlineEgitimOgrenciler.Add(newItem);
+
+        SMSMailGonder = true;
+
+        await InvokeAsync(StateHasChanged);
+
+        await js.InvokeVoidAsync("bsPopupAc", "popupKayit");
+    }
+
+    async Task Edit(int id)
+    {
+        currentDTO = await ogrenciService.GetOgrenci(id);
+
+        SMSMailGonder = false;
+
+        await InvokeAsync(StateHasChanged);
+
+        await js.InvokeVoidAsync("bsPopupAc", "popupKayit");
+    }
+
+    async Task Save()
+    {
+        if (string.IsNullOrEmpty(currentDTO.Ad) 
+        || string.IsNullOrEmpty(currentDTO.Soyad)
+        || string.IsNullOrEmpty(currentDTO.TelefonCep))
+        {
+            await js.InvokeVoidAsync("SweetToast", "Lütfen zorunlu alanları doldurunuz", "error");
+            return;
+        }
+
+        loading = true;
+
+        if (currentDTO.OnlineEgitimOgrenciler == null)
+        {
+            currentDTO.OnlineEgitimOgrenciler = new List<OnlineEgitimOgrenciDTO>();
+        }
+
+        var result = await ogrenciService.InsertOrUpdateOgrenci(currentDTO);
+
+        if (result.Success == false)
+        {
+            loading = false;
+            await InvokeAsync(StateHasChanged);
+
+            await js.InvokeVoidAsync("SweetMessage", "Uyarı", result.Message, "error");
+            return;
+        }
+
+        await GetData();
+
+        if (SMSMailGonder & currentDTO.OnlineEgitimOgrenciler.Count > 0)
+        {
+            var mailDTO = new MailDTO()
+                {
+                    Subject = "RADLAB Uzaktan Egitim",
+                    Body = $@"Sayın {currentDTO.Ad} {currentDTO.Soyad} eğitim kaydınız açılmıştır. <a href='https://uzaktanegitim.trkd.org.tr'>https://uzaktanegitim.trkd.org.tr</a> adresinden cep telefonu numaranız ile giriş yapabilirsiniz.",
+                    Mesaj = $@"Sayin {TurkceKaraktersiz(currentDTO.Ad)} {TurkceKaraktersiz(currentDTO.Soyad)} egitim kaydiniz acilmistir. https:[BCKSPC][BCKSPC]uzaktanegitim.trkd.org.tr adresinden cep telefonu numaraniz ile giris yapabilirsiniz.",
+                    ToList = new List<string>() { currentDTO.EMail },
+                    KendisineDeGonder = true,
+                    GSM = currentDTO.TelefonCep
+                };
+
+            var resultSMS = await smsMailService.SendSMSAndMail(mailDTO);
+
+            if (resultSMS.Success == false)
+            {
+                loading = false;
+                await InvokeAsync(StateHasChanged);
+
+                await js.InvokeVoidAsync("SweetMessage", "Uyarı", resultSMS.Message, "error");
+                return;
+            }
+        }
+
+        loading = false;
+
+        await InvokeAsync(StateHasChanged);
+
+        await js.InvokeVoidAsync("bsPopupKapat", "popupKayit");
+
+        await js.InvokeVoidAsync("SweetToast", "Veriler kaydedildi" + (SMSMailGonder ? ", öğrenciye bilgilendirme yapıldı." : ""), "success");
+    }
+
+    async Task Delete(int id)
+    {
+        var ogrenciDTO = await ogrenciService.GetOgrenci(id);
+
+        var confirm = await js.InvokeAsync<bool>("SweetConfirm", "Uyarı", "Kayıt silinecek, emin misiniz?", "question", "Evet", "Hayır");
+
+        if (confirm == false)
+        {
+            return;
+        }
+
+        var resultDelete = await ogrenciService.DeleteOgrenci(new List<OgrenciDTO>() { ogrenciDTO });
+
+        if (resultDelete.Success == false)
+        {
+            await js.InvokeVoidAsync("SweetMessage", "Hata", resultDelete.Message, "error");
+            return;
+        }
+
+        await GetData();
+
+        await InvokeAsync(StateHasChanged);
+
+        await js.InvokeVoidAsync("SweetToast", "Kayıt silindi", "success");
+    }
+
+    async Task EkleOnlineEgitimOgrenci()
+    {
+        var newItem = new OnlineEgitimOgrenciDTO()
+            {
+                Tarih1 = DateTime.Now.Date,
+                Tarih2 = DateTime.Now.Date.AddDays(7),
+                Grup = 1
+            };
+
+        if (DSOnlineEgitim.Count == 0)
+        {
+            newItem.OnlineEgitimId = DSOnlineEgitim[0].Id;
+        }
+
+        currentDTO.OnlineEgitimOgrenciler.Add(newItem);
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task DeleteOnlineEgitimOgrenci(OnlineEgitimOgrenciDTO dto)
+    {
+        currentDTO.OnlineEgitimOgrenciler.Remove(dto);
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task OnCheckAllChange(object checkedValue)
+    {
+        foreach (var data in DataSource)
+        {
+            data.Checked = (bool)checkedValue;
+        }
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task InsertOnlineEgitimOgrenciToplu(int Id)
+    {
+        var dtos = new List<OnlineEgitimKisiDTO>();
+
+        foreach (var data in DataSource)
+        {
+            if (data.Checked)
+            {
+                var onlineEgitimKisiDTO = new OnlineEgitimKisiDTO()
+                    {
+                        Id = data.Id,
+                        OnlineEgitimId = Id
+                    };
+
+                dtos.Add(onlineEgitimKisiDTO);
+            }
+        }
+
+        if (dtos.Count == 0)
+        {
+            await js.InvokeVoidAsync("SweetMessage", "Hata", "En az bir öğrenci kaydı seçiniz", "error");
+            return;
+        }
+
+        var onlineEgitimDTO = DSOnlineEgitim.SingleOrDefault(x => x.Id == Id);
+
+        var confirm = await js.InvokeAsync<bool>("SweetConfirm", "Uyarı", "Seçilen öğrenciler '" + onlineEgitimDTO.Ad + "' isimli sınava dahil edilecek devam edilsin mi?", "question", "Evet", "Hayır");
+
+        if (confirm == false)
+        {
+            return;
+        }
+
+        var result = await onlineEgitimService.InsertOnlineEgitimOgrenci(dtos);
+
+        if (result.Success == false)
+        {
+            await js.InvokeVoidAsync("SweetMessage", "Hata", result.Message, "error");
+            return;
+        }
+
+        await GetData();
+
+        await InvokeAsync(StateHasChanged);
+
+        await js.InvokeVoidAsync("SweetToast", "Seçilen öğrenciler <b>" + onlineEgitimDTO.Ad + "</b> isimli sınava dahil edildi", "success");
+    }
+
+    async Task DeleteOnlineEgitimOgrenciToplu(int Id)
+    {
+        var dtos = new List<OnlineEgitimKisiDTO>();
+
+        foreach (var data in DataSource)
+        {
+            if (data.Checked)
+            {
+                var onlineEgitimKisiDTO = new OnlineEgitimKisiDTO()
+                    {
+                        Id = data.Id,
+                        OnlineEgitimId = Id
+                    };
+
+                dtos.Add(onlineEgitimKisiDTO);
+            }
+        }
+
+        if (dtos.Count == 0)
+        {
+            await js.InvokeVoidAsync("SweetMessage", "Hata", "En az bir öğrenci kaydı seçiniz", "error");
+            return;
+        }
+
+        var onlineEgitimDTO = DSOnlineEgitim.SingleOrDefault(x => x.Id == Id);
+
+        var confirm = await js.InvokeAsync<bool>("SweetConfirm", "Uyarı", "Seçilen öğrenciler '" + onlineEgitimDTO.Ad + "' isimli sınavdan çıkarılacak, devam edilsin mi?", "question", "Evet", "Hayır");
+
+        if (confirm == false)
+        {
+            return;
+        }
+
+        var result = await onlineEgitimService.DeleteOnlineEgitimOgrenci(dtos);
+
+        if (result.Success == false)
+        {
+            await js.InvokeVoidAsync("SweetMessage", "Hata", result.Message, "error");
+            return;
+        }
+
+        await GetData();
+
+        await InvokeAsync(StateHasChanged);
+
+        await js.InvokeVoidAsync("SweetToast", "Seçilen öğrenciler <b>" + onlineEgitimDTO.Ad + "</b> isimli sınavdan çıkarıldı", "success");
+    }
+
+    async Task UpdateOgrenciAktifToplu(int AktifPasif)
+    {
+        var dtos = new List<OgrenciDTO>();
+
+        foreach (var data in DataSource)
+        {
+            if (data.Checked)
+            {
+                var ogrenciDTO = new OgrenciDTO()
+                    {
+                        Id = data.Id,
+                        Ad = data.Ad,
+                        Soyad = data.Soyad,
+                        EMail = data.EMail,
+                        TelefonCep = data.TelefonCep,
+                        Aktif = (AktifPasif == 1),
+                        OnlineEgitimOgrenciler = new List<OnlineEgitimOgrenciDTO>()
+                    };
+
+                dtos.Add(ogrenciDTO);
+            }
+        }
+
+        if (dtos.Count == 0)
+        {
+            await js.InvokeVoidAsync("SweetMessage", "Hata", "En az bir öğrenci kaydı seçiniz", "error");
+            return;
+        }
+
+        var confirm = await js.InvokeAsync<bool>("SweetConfirm", "Uyarı", "Seçilen öğrencilerin durumu '" + (AktifPasif == 1 ? "aktif" : "pasif") + "' yapılacak, devam edilsin mi?", "question", "Evet", "Hayır");
+
+        if (confirm == false)
+        {
+            return;
+        }
+
+        var result = await ogrenciService.UpdateOgrenciAktif(dtos);
+
+        if (result.Success == false)
+        {
+            await js.InvokeVoidAsync("SweetMessage", "Hata", result.Message, "error");
+            return;
+        }
+
+        await GetData();
+
+        await InvokeAsync(StateHasChanged);
+
+        await js.InvokeVoidAsync("SweetToast", "Seçilen öğrencilerin durumu <b>" + (AktifPasif == 1 ? "aktif" : "pasif") + "</b> yapıldı", "success");
+    }
+
+    public async Task ExportToExcel()
+    {
+        using (var workbook = new XLWorkbook())
+        {
+            IXLWorksheet worksheet = workbook.Worksheets.Add("Sayfa1");
+
+            worksheet.Cell(1, 1).Value = "Ad Soyad";
+            worksheet.Cell(1, 2).Value = "Telefon";
+            worksheet.Cell(1, 3).Value = "E-Posta";
+            worksheet.Cell(1, 4).Value = "İlk Eğitim Açılış Tarihi";
+            worksheet.Cell(1, 5).Value = "Durum";
+            worksheet.Cell(1, 6).Value = "Eğitimler";
+            worksheet.Cell(1, 7).Value = "Aktif/Pasif";
+
+            for (int i = 1; i <= 7; i++)
+            {
+                worksheet.Cell(1, i).Style.Font.Bold = true;
+            }
+
+            int index = 1;
+
+            foreach (var data in DataSource)
+            {
+                worksheet.Cell(index + 1, 1).Value = data.Ad + " " + data.Soyad;
+                worksheet.Cell(index + 1, 2).Value = data.TelefonCep;
+                worksheet.Cell(index + 1, 3).Value = data.EMail;
+                worksheet.Cell(index + 1, 4).Value = data.IlkEgitimAcilisTarihi.ToString("dd.MM.yyyy");
+                worksheet.Cell(index + 1, 5).Value = data.Durum;
+                worksheet.Cell(index + 1, 6).Value = data.OgrenciOnlineEgitimler;
+                worksheet.Cell(index + 1, 7).Value = data.Aktif ? "Aktif" : "Pasif";
+
+                index++;
+            }
+
+            using (var stream = new MemoryStream())
+            {
+                workbook.SaveAs(stream);
+                var content = stream.ToArray();
+                var fileName = "OgrenciListesi" + DateTime.Now.ToString("yyyyMMddss") + ".xlsx";
+                await js.InvokeAsync<object>("saveAsFile", fileName, Convert.ToBase64String(content));
+            }
+        }
+    }
+}

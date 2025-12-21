@@ -1,0 +1,539 @@
+﻿@page "/Main/Soru"
+
+@inject IJSRuntime js
+
+@using System.Threading
+@using System.Threading.Tasks
+@using System.Net.Http
+@using System.Text.Json
+
+<style>
+    .badge {
+        font-size:0.9em;
+    }
+
+    .form-floating > .form-select {
+        padding-left: 0.8rem;
+    }
+</style>
+
+<div class="card info-card">
+    <div class="table-responsive">
+        <table class="table table-bordered table-hover">
+            <thead>
+                <tr>
+                    <td width="10%" align="center">Sıra</td>
+                    <td width="45%">Soru</td>
+                    <td width="10%" align="center">Etiket</td>
+                    <td width="10%" align="center">Zorluk</td>
+                    <td width="25%" align="center">
+                        @if (YetkiEkle)
+                        {
+                            <button class="btn text-success grid-command" @onclick="Add"><i class="bi bi-plus-circle "></i></button>
+                        }
+                    </td>
+                </tr>
+                <tr>
+                    <td width="10%">
+                    </td>
+                    <td width="45%">
+                        <input class="form-control form-control-sm" type="text" @bind-value="filterDTO.Soru">
+                    </td>
+                    <td width="25%">
+                        <input class="form-control form-control-sm" type="text" @bind-value="filterDTO.Etiket">
+                    </td>
+                    <td width="10%">
+                        <select class="form-select form-select-sm" @onchange="async eventArgs => { await ZorlukSecSorgu(eventArgs.Value); }">
+                            <option value="0"></option>
+                            @foreach (var item in DSZorluk)
+                            {
+                                if (filterDTO.Zorluk == item.Id)
+                                {
+                                    <option selected value="@item.Id">@item.Ad</option>
+                                }
+                                else
+                                {
+                                    <option value="@item.Id">@item.Ad</option>
+                                }
+                            }
+                        </select>
+                    </td>
+                    <td width="25%" align="center">
+                        <div class="btn-group">
+                            <button class="btn text-success grid-command" @onclick="Sorgula"><i class="bi bi-search"></i></button>
+                            <button class="btn text-success grid-command" @onclick="ExportToExcel"><i class="bi bi-file-earmark-excel"></i></button>
+                        </div>
+                    </td>
+                </tr>
+            </thead>
+            @if (DataSource.ToList().Count == 0)
+            {
+                <tbody>
+                    <tr>
+                        <td colspan="5" align="center" valign="bottom" height="64px">
+                            <h6>Görüntülenecek Veri Yok</h6>
+                        </td>
+                    </tr>
+                </tbody>
+            }
+            else
+            {
+                <tbody>
+                    @foreach (var data in DataSource)
+                    {
+                        <tr>
+                            <td width="10%" align="center">@data.Sira</td>
+                            <td width="45%">@data.Soru</td>
+                            <td width="10%" align="center">@data.Etiket</td>
+                            <td width="10%" align="center">@data.Zorluk</td>
+                            <td width="25%" align="center">
+                                @if (YetkiDegistir)
+                                {
+                                    <button class="btn text-info grid-command" @onclick="@(async () => { await Edit(data.Id); })"><i class="bi bi-pencil"></i></button>
+                                }
+                                @if (YetkiSil)
+                                {
+                                    <button class="btn text-danger grid-command" @onclick="@(async () => { await Delete(data.Id); })"><i class="bi bi-trash3"></i></button>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            }
+            <tfoot>
+                <tr>
+                    <td colspan="5" align="center">
+                        <Pager RowCount="@RowCount"
+                               PageNoChanged="@((int pageNo) => PageNoChanged(pageNo))"
+                               PageSizeChanged="@((int pageSize) => PageSizeChanged(pageSize))"></Pager>
+                    </td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+</div>
+
+<button id="popupKayitAc" type="button" data-bs-toggle="modal" data-bs-target="#popupKayit" style="visibility:hidden;">
+</button>
+
+<div class="modal fade" id="popupKayit" tabindex="-1" aria-labelledby="popupKayitLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-xl">
+        <div class="modal-content">
+            <EditForm Model="@currentDTO">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="popupKayitLabel">Soru Kaydı</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-12 mb-3">
+                            <div class="form-floating">
+                                <InputTextArea id="tbSoru" class="form-control form-control-sm" type="text" style="height:72px" @bind-Value="currentDTO.Soru">
+                                </InputTextArea>
+                                <label for="tbSoru" class="text-danger">Soru</label>
+                            </div>
+                        </div>
+                        <div class="col-md-12 mb-3">
+                            <div class="form-floating">
+                                <input name="tbCevapA" class="form-control form-control-sm" type="text" @bind-value="currentDTO.CevapA"/>
+                                <label for="tbCevapA" class="text-danger">A</label>
+                            </div>
+                        </div>
+                        <div class="col-md-12 mb-3">
+                            <div class="form-floating">
+                                <input name="tbCevapB" class="form-control form-control-sm" type="text" @bind-value="currentDTO.CevapB" />
+                                <label for="tbCevapB" class="text-danger">B</label>
+                            </div>
+                        </div>
+                        <div class="col-md-12 mb-3">
+                            <div class="form-floating">
+                                <input name="tbCevapC" class="form-control form-control-sm" type="text" @bind-value="currentDTO.CevapC" />
+                                <label for="tbCevapC" class="text-danger">C</label>
+                            </div>
+                        </div>
+                        <div class="col-md-12 mb-3">
+                            <div class="form-floating">
+                                <input name="tbCevapD" class="form-control form-control-sm" type="text" @bind-value="currentDTO.CevapD" />
+                                <label for="tbCevapD" class="text-danger">D</label>
+                            </div>
+                        </div>
+                        <div class="col-md-12 mb-3">
+                            <div class="form-floating">
+                                <input name="tbCevapE" class="form-control form-control-sm" type="text" @bind-value="currentDTO.CevapE" />
+                                <label for="tbCevapE">E</label>
+                            </div>
+                        </div>
+                        <div class="col-md-12">
+                            <div class="row">
+                                <div class="col-md-3">
+                                    <div class="col-md-12 mb-3">
+                                        <div class="form-floating">
+                                            <select id="ddlCevap" class="form-select form-select-sm" @bind="currentDTO.Cevap">
+                                                <option value="0"></option>
+                                                <option value="1">A</option>
+                                                <option value="2">B</option>
+                                                <option value="3">C</option>
+                                                <option value="4">D</option>
+                                                <option value="5">E</option>
+                                            </select>
+                                            <label for="ddlCevap" class="text-danger">Doğru Cevap</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-12 mb-3">
+                                        <div class="form-floating">
+                                            <select id="ddlZorluk" class="form-select form-select-sm" @bind="currentDTO.Zorluk">
+                                                <option value="0"></option>
+                                                @foreach (var item in DSZorluk)
+                                                {
+                                                    <option value="@item.Id">@item.Ad</option>
+                                                }
+                                            </select>
+                                            <label for="ddlZorluk" class="text-danger">Zorluk Seviyesi</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-12 mb-3">
+                                        <div class="form-floating">
+                                            <input name="tbSira" type="number" class="form-control form-control-sm SpinButtonWithoutButtons" @bind-value="currentDTO.Sira" />
+                                            <label for="tbSira">Sıra</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-12">
+                                        <div class="form-floating">
+                                            <input name="tbEtiket" class="form-control form-control-sm" type="text" @bind-value="currentDTO.Etiket" />
+                                            <label for="tbEtiket" class="text-danger">Etiket</label>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-9">
+                                    <div class="col-md-12">
+                                        <div class="form-floating">
+                                            <InputFile id="fuDosya" class="form-control form-control-sm" style="padding-left: 1.2rem;" OnChange="HandleFileUploadDosya"></InputFile>
+                                            <label for="fuDosya">Resim</label>
+                                            @if (string.IsNullOrEmpty(currentDTO.Uzanti) == false)
+                                            {
+                                                <div style="border:1px dashed silver; text-align:center; margin-top:1rem;">
+                                                    @if (currentDTO.Uzanti == "png" || currentDTO.Uzanti == "jpg" || currentDTO.Uzanti == "jpeg" || currentDTO.Uzanti == "bmp" || currentDTO.Uzanti == "gif" || currentDTO.Uzanti == "ico")
+                                                    {
+                                                        <a href="javascript:void()" @onclick=@(async () => { await ShowImageOpen("Dosya"); })>
+                                                            <img src=@("data:image/" + currentDTO.Uzanti + ";base64," + currentDTO.Dosya) type=@("image/" + currentDTO.Uzanti) style="max-width:270px;">
+                                                        </a>
+                                                    }
+                                                    <button class="btn btn-sm" @onclick=@(async () => { await DeleteImage("Dosya"); })><i class="bi bi-trash"></i></button>
+                                                </div>
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-success btn-sm" @onclick="Save"><i class="bi bi-check-circle"></i>&nbsp;Kaydet</button>
+                    <button id="popupKayitKapat" type="button" class="btn btn-danger btn-sm" data-bs-dismiss="modal"><i class="bi bi-x-circle"></i>&nbsp;Vazgeç</button>
+                </div>
+            </EditForm>
+        </div>
+    </div>
+</div>
+
+@if (loading)
+{
+    <div class="progressBackground">
+        <div class="progressPopup">
+            <img alt="Bekleyiniz..." src="img/loading.gif" width="100" height="100" />
+        </div>
+    </div>
+}
+
+@if (currentUzanti != "")
+{
+    <div class="showImageBackground">
+        <div class="showImagePopup">
+            <div class="showImageClose">
+                <i class="bi bi-x-circle-fill" @onclick="ShowImageClose"></i>
+            </div>
+            <img src=@("data:image/" + currentUzanti + ";base64," + currentDosya) type=@("image/" + currentUzanti) style="max-width:100%; max-height: calc(100vh - 3.5rem);">
+        </div>
+    </div>
+}
+
+@code
+{
+    [Inject] protected IRolService rolService { get; set; }
+    [Inject] protected ISoruService soruService { get; set; }
+
+    List<SoruDTO> DataSource = new List<SoruDTO>();
+
+    List<LookupBasicDTO> DSZorluk = new List<LookupBasicDTO>()
+    {
+        new LookupBasicDTO() { Id = 1, Ad = "1" },
+        new LookupBasicDTO() { Id = 2, Ad = "2" },
+        new LookupBasicDTO() { Id = 3, Ad = "3" },
+        new LookupBasicDTO() { Id = 4, Ad = "4" },
+        new LookupBasicDTO() { Id = 5, Ad = "5" }
+    };
+
+    SoruFilterDTO filterDTO = new SoruFilterDTO() { PageNo = 1, PageSize = 10 };
+
+    SoruDTO currentDTO = new SoruDTO();
+
+    bool loading = false;
+    bool YetkiEkle = false;
+    bool YetkiDegistir = false;
+    bool YetkiSil = false;
+
+    string currentUzanti = "";
+    string currentDosya = "";
+
+    int RowCount = 0;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            YetkiEkle = await rolService.YetkiKontrolByYetki("Online Eğitim - Sorular - Ekle");
+            YetkiDegistir = await rolService.YetkiKontrolByYetki("Online Eğitim - Sorular - Değiştir");
+            YetkiSil = await rolService.YetkiKontrolByYetki("Online Eğitim - Sorular - Sil");
+
+            await GetData();
+
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    async Task GetData()
+    {
+        var result = await soruService.GetSoruList(filterDTO);
+
+        if (result.Success)
+        {
+            DataSource = result.Value;
+            RowCount = result.RowCount;
+        }
+        else
+        {
+            await js.InvokeVoidAsync("SweetMessage", "Hata", result.Message, "error");
+        }
+    }
+
+    async Task Sorgula()
+    {
+        await GetData();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task PageNoChanged(int pageNo)
+    {
+        filterDTO.PageNo = pageNo;
+        await GetData();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task PageSizeChanged(int pageSize)
+    {
+        filterDTO.PageSize = pageSize;
+        await GetData();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task ZorlukSecSorgu(object value)
+    {
+        filterDTO.Zorluk = Convert.ToInt32(value.ToString());
+
+        await GetData();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task Add()
+    {
+        currentDTO = new SoruDTO();
+
+        await InvokeAsync(StateHasChanged);
+
+        await js.InvokeVoidAsync("bsPopupAc", "popupKayit");
+    }
+
+    async Task Edit(int id)
+    {
+        var fDTO = new SoruFilterDTO() { PageNo = 1, PageSize = 10, Id = id };
+
+        var result = await soruService.GetSoruList(fDTO);
+
+        if (result.Success)
+        {
+            currentDTO = result.Value[0];
+
+            await InvokeAsync(StateHasChanged);
+
+            await js.InvokeVoidAsync("bsPopupAc", "popupKayit");
+        }
+        else
+        {
+            await js.InvokeVoidAsync("SweetMessage", "Hata", result.Message, "error");
+        }
+    }
+
+    async Task Save()
+    {
+        if (string.IsNullOrEmpty(currentDTO.Soru) 
+        || string.IsNullOrEmpty(currentDTO.CevapA)
+        || string.IsNullOrEmpty(currentDTO.CevapB)
+        || string.IsNullOrEmpty(currentDTO.CevapC)
+        || string.IsNullOrEmpty(currentDTO.CevapD)
+        || string.IsNullOrEmpty(currentDTO.Etiket)
+        || currentDTO.Cevap == 0
+        || currentDTO.Zorluk == 0)
+        {
+            await js.InvokeVoidAsync("SweetToast", "Lütfen zorunlu alanları doldurunuz", "error");
+            return;
+        }
+
+        loading = true;
+
+        var result = await soruService.InsertOrUpdateSoru(currentDTO);
+
+        if (result.Success == false)
+        {
+            loading = false;
+            await InvokeAsync(StateHasChanged);
+
+            await js.InvokeVoidAsync("SweetMessage", "Uyarı", result.Message, "error");
+            return;
+        }
+
+        await GetData();
+
+        loading = false;
+
+        await InvokeAsync(StateHasChanged);
+
+        await js.InvokeVoidAsync("bsPopupKapat", "popupKayit");
+
+        await js.InvokeVoidAsync("SweetToast", "Kaydedildi", "success");
+    }
+
+    async Task Delete(int id)
+    {
+        var fDTO = new SoruFilterDTO() { PageNo = 1, PageSize = 10, Id = id };
+
+        var resultSelect = await soruService.GetSoruList(fDTO);
+
+        if (resultSelect.Success == false)
+        {
+            await js.InvokeVoidAsync("SweetMessage", "Hata", resultSelect.Message, "error");
+            return;
+        }
+
+        var confirm = await js.InvokeAsync<bool>("SweetConfirm", "Uyarı", "Kayıt silinecek, emin misiniz?", "question", "Evet", "Hayır");
+
+        if (confirm == false)
+        {
+            return;
+        }
+
+        var resultDelete = await soruService.DeleteSoru(resultSelect.Value);
+
+        if (resultDelete.Success == false)
+        {
+            await js.InvokeVoidAsync("SweetMessage", "Hata", resultDelete.Message, "error");
+            return;
+        }
+
+        await GetData();
+
+        await InvokeAsync(StateHasChanged);
+
+        await js.InvokeVoidAsync("SweetToast", "Kayıt silindi", "success");
+    }
+
+    public async Task ExportToExcel()
+    {
+        using (var workbook = new XLWorkbook())
+        {
+            IXLWorksheet worksheet = workbook.Worksheets.Add("Sayfa1");
+
+            worksheet.Cell(1, 1).Value = "Sıra";
+            worksheet.Cell(1, 2).Value = "Soru";
+            worksheet.Cell(1, 3).Value = "Etiket";
+            worksheet.Cell(1, 4).Value = "Zorluk";
+
+            for (int i = 1; i <= 4; i++)
+            {
+                worksheet.Cell(1, i).Style.Font.Bold = true;
+            }
+
+            int index = 1;
+
+            foreach (var data in DataSource)
+            {
+                worksheet.Cell(index + 1, 1).Value = data.Sira;
+                worksheet.Cell(index + 1, 2).Value = data.Soru;
+                worksheet.Cell(index + 1, 3).Value = data.Etiket;
+                worksheet.Cell(index + 1, 4).Value = data.Zorluk;
+
+                index++;
+            }
+
+            using (var stream = new MemoryStream())
+            {
+                workbook.SaveAs(stream);
+                var content = stream.ToArray();
+                var fileName = "SoruListesi" + DateTime.Now.ToString("yyyyMMddss") + ".xlsx";
+                await js.InvokeAsync<object>("saveAsFile", fileName, Convert.ToBase64String(content));
+            }
+        }
+    }
+
+    async Task HandleFileUploadDosya(InputFileChangeEventArgs e)
+    {
+        var stream = e.File.OpenReadStream(1024 * 1024 * 10);
+
+        MemoryStream ms = new MemoryStream();
+
+        await stream.CopyToAsync(ms);
+
+        stream.Close();
+
+        var streamArray = ms.ToArray();
+
+        ms.Close();
+
+        currentDTO.Dosya = Convert.ToBase64String(streamArray);
+        currentDTO.DosyaAdi = e.File.Name;
+        currentDTO.Uzanti = Path.GetExtension(e.File.Name).Replace(".", "").ToLower();
+
+        stream.Close();
+    }
+
+    async Task ShowImageOpen(string dosyaTipi)
+    {
+        if (dosyaTipi == "Dosya")
+        {
+            currentUzanti = currentDTO.Uzanti;
+            currentDosya = currentDTO.Dosya;
+        }
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task ShowImageClose()
+    {
+        currentUzanti = "";
+        currentDosya = "";
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task DeleteImage(string dosyaTipi)
+    {
+        if (dosyaTipi == "Dosya")
+        {
+            currentDTO.Dosya = "";
+            currentDTO.DosyaAdi = "";
+            currentDTO.Uzanti = "";
+        }
+
+        await InvokeAsync(StateHasChanged);
+    }
+}

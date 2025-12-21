@@ -1,0 +1,106 @@
+﻿@layout WebSiteLayout
+
+@page "/Iletisim"
+
+@inject IJSRuntime js
+
+<section class="section" style="padding-top:80px; padding-bottom:80px; ">
+    <div class="container">
+        <div class="row justify-content-center align-items-center">
+            <div class="col-lg-10">
+                <div class="shadow rounded p-5 bg-white">
+                    <div class="row">
+                        <div class="col-12 mb-4">
+                            <h4>Mesaj Gönderin</h4>
+                        </div>
+                        <div class="col-lg-6">
+                            <div class="contact-form">
+                                <div class="form-group mb-4 pb-2">
+                                    <label for="contact_name" class="form-label">Adınız ve Soyadınız</label>
+                                    <input type="text" class="form-control shadow-none" style="height:55px" id="contact_name" @bind-value="currentDTO.AdSoyad">
+                                </div>
+                                <div class="form-group mb-4 pb-2">
+                                    <label for="contact_email" class="form-label">E-posta Adresiniz</label>
+                                    <input type="email" class="form-control shadow-none" style="height:55px" id="contact_email" @bind-value="currentDTO.Mail">
+                                </div>
+                                <div class="form-group mb-4 pb-2">
+                                    <label for="contact_message" class="form-label">Mesajınız</label>
+                                    <InputTextArea class="form-control shadow-none" id="contact_message" type="text" @bind-Value="currentDTO.Icerik" rows="3">
+                                    </InputTextArea>
+                                </div>
+                                <button class="btn btn-primary w-100" @onclick="Gonder">Gönder</button>
+                            </div>
+                        </div>
+                        <div class="col-lg-6 mt-5 mt-lg-0">
+                            <div class="contact-info">
+                                <div class="block mt-0">
+                                    <iframe src="https://www.google.com/maps/embed?pb=!1m14!1m8!1m3!1d24457.73446021599!2d32.554174!3d39.98126!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x14d3300989c19055%3A0xb403ba60681a14ad!2sErkunt%20Cd.%20No%3A3%20D%3A2%2C%2006930%20Ahi%20Evran%20Osb%2FSincan%2FAnkara!5e0!3m2!1str!2str!4v1690729630364!5m2!1str!2str" frameborder="0" style="border:0; width: 100%; height: 320px;" allowfullscreen></iframe>
+                                </div>
+                                <div class="block mt-4">
+                                    <div class="content text-center">
+                                        Ahi Evran OSB Mah. Erkunt Cad. No:3/11 Sincan Ankara
+                                        <br>
+                                        +90 312 87 019 87 &nbsp;&nbsp;&nbsp;&nbsp; +90 507 033 88 24
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+@if (loading)
+{
+    <div class="progressBackground">
+        <div class="progressPopup">
+            <img alt="Bekleyiniz..." src="img/loading.gif" width="100" height="100" />
+        </div>
+    </div>
+}
+
+@code
+{
+    [Inject] protected ISMSMailService mailService { get; set; }
+
+    bool loading = false;
+
+    IletisimDTO currentDTO = new IletisimDTO();
+
+    async Task Gonder()
+    {
+        if (string.IsNullOrEmpty(currentDTO.AdSoyad) || string.IsNullOrEmpty(currentDTO.Mail) || string.IsNullOrEmpty(currentDTO.Icerik))
+        {
+            await js.InvokeVoidAsync("SweetMessage", "Uyarı", "Lütfen tüm alanları doldurunuz", "warning");
+            return;
+        }
+
+        loading = true;
+
+        var mailDTO = new MailDTO()
+            {
+                Body = currentDTO.Icerik,
+                Subject = "Iletisim Formu " + currentDTO.AdSoyad + " (" + currentDTO.Mail + ")",
+                ToList = new List<string>() { "bilgi@radlab.com.tr" }
+            };
+
+        var resultMail = await mailService.SendMail(mailDTO);
+
+        loading = false;
+
+        currentDTO = new IletisimDTO();
+
+        await InvokeAsync(StateHasChanged);
+
+        if (resultMail.Success)
+        {
+            await js.InvokeVoidAsync("SweetMessage", "Bilgi", "Mesajınız kaydedilmiştir. En kısa sürede yanıt verilecektir. Teşekkür ederiz.", "success");
+        }
+        else
+        {
+            await js.InvokeVoidAsync("SweetToast", resultMail.Message, "error");
+        }
+    }
+}

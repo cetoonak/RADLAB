@@ -1,0 +1,548 @@
+﻿@page "/Main/Test"
+
+@inject IJSRuntime js
+
+@using System.Threading
+@using System.Threading.Tasks
+@using System.Net.Http
+@using System.Text.Json
+
+<style>
+    .badge {
+    font-size:0.9em;
+    }
+
+    .form-floating > .form-select {
+    padding-left: 0.8rem;
+    }
+</style>
+
+<div class="card info-card">
+    <div class="table-responsive">
+        <table class="table table-bordered table-hover">
+            <thead>
+                <tr>
+                    <td width="30%">Test</td>
+                    <td width="10%" align="center">Süre</td>
+                    <td width="10%" align="center">Geçme Oranı</td>
+                    <td width="40%">Açıklama</td>
+                    <td width="10%" align="center">
+                        @if (YetkiEkle)
+                        {
+                            <button class="btn text-success grid-command" @onclick="Add"><i class="bi bi-plus-circle "></i></button>
+                        }
+                    </td>
+                </tr>
+                <tr>
+                    <td width="30%">
+                        <input class="form-control form-control-sm" type="text" @bind-value="filterDTO.Test">
+                    </td>
+                    <td width="10%">
+                        <input type="number" class="form-control form-control-sm SpinButtonWithoutButtons text-center" @bind-value="filterDTO.Sure" />
+                    </td>
+                    <td width="10%">
+                        <input type="number" class="form-control form-control-sm SpinButtonWithoutButtons text-center" @bind-value="filterDTO.GecmeOrani" />
+                    </td>
+                    <td width="40%">
+                    </td>
+                    <td width="10%" align="center">
+                        <div class="btn-group">
+                            <button class="btn text-success grid-command" @onclick="Sorgula"><i class="bi bi-search"></i></button>
+                            <button class="btn text-success grid-command" @onclick="ExportToExcel"><i class="bi bi-file-earmark-excel"></i></button>
+                        </div>
+                    </td>
+                </tr>
+            </thead>
+            @if (DataSource.ToList().Count == 0)
+            {
+                <tbody>
+                    <tr>
+                        <td colspan="5" align="center" valign="bottom" height="64px">
+                            <h6>Görüntülenecek Veri Yok</h6>
+                        </td>
+                    </tr>
+                </tbody>
+            }
+            else
+            {
+                <tbody>
+                    @foreach (var data in DataSource)
+                    {
+                        <tr>
+                            <td width="30%">@data.Test</td>
+                            <td width="10%" align="center">@data.Sure</td>
+                            <td width="10%" align="center">@data.GecmeOrani</td>
+                            <td width="40%">@data.Aciklama</td>
+                            <td width="10%" align="center">
+                                @if (YetkiDegistir)
+                                {
+                                    <button class="btn text-info grid-command" @onclick="@(async () => { await Edit(data.Id); })"><i class="bi bi-pencil"></i></button>
+                                }
+                                @if (YetkiSil)
+                                {
+                                    <button class="btn text-danger grid-command" @onclick="@(async () => { await Delete(data.Id); })"><i class="bi bi-trash3"></i></button>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            }
+            <tfoot>
+                <tr>
+                    <td colspan="5" align="center">
+                        <Pager RowCount="@RowCount"
+                        PageNoChanged="@((int pageNo) => PageNoChanged(pageNo))"
+                        PageSizeChanged="@((int pageSize) => PageSizeChanged(pageSize))"></Pager>
+                    </td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+</div>
+
+<button id="popupKayitAc" type="button" data-bs-toggle="modal" data-bs-target="#popupKayit" style="visibility:hidden;">
+</button>
+
+<div class="modal fade" id="popupKayit" tabindex="-1" aria-labelledby="popupKayitLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-xl">
+        <div class="modal-content">
+            <EditForm Model="@currentDTO">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="popupKayitLabel">Test Kaydı</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-12 mb-3">
+                            <div class="form-floating">
+                                <input name="tbTest" class="form-control form-control-sm" type="text" @bind-value="currentDTO.Test" />
+                                <label for="tbTest" class="text-danger">Test Başlığı</label>
+                            </div>
+                        </div>
+                        <div class="col-md-12 mb-3">
+                            <div class="form-floating">
+                                <InputTextArea id="tbAciklama" class="form-control form-control-sm" type="text" style="height:72px" @bind-Value="currentDTO.Aciklama">
+                                </InputTextArea>
+                                <label for="tbAciklama">Açıklama</label>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="form-floating">
+                                <input name="tbSure" type="number" class="form-control form-control-sm SpinButtonWithoutButtons" @bind-value="currentDTO.Sure" />
+                                <label for="tbSure" class="text-danger">Süre (dk)</label>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="form-floating">
+                                <input name="tbGecmeOrani" type="number" class="form-control form-control-sm SpinButtonWithoutButtons" @bind-value="currentDTO.GecmeOrani" />
+                                <label for="tbGecmeOrani" class="text-danger">Geçme Oranı</label>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <table width="100%">
+                                <tr>
+                                    <td>
+                                        <h6>Seçilmeyen Sorular (@DataSourceSoruSol.Count().ToString())</h6>
+                                    </td>
+                                    <td style="text-align:end">
+                                        <button type="button" class="btn btn-lg p-0" @onclick="@SagaTasi"><i class="bi bi-arrow-right-square-fill"></i></button>
+                                    </td>
+                                </tr>
+                            </table>
+                            <div style="overflow-y:auto; height:400px">
+                                <table class="table table-bordered table-hover">
+                                    <thead>
+                                        <tr>
+                                            <td width="10%" align="center">
+                                                <input type="checkbox" checked="@CheckAllSol" @onchange="async eventArgs => { await OnCheckAllChangeSol(eventArgs.Value); }" />
+                                            </td>
+                                            <td width="10%" align="center">Sıra</td>
+                                            <td width="70%">Soru</td>
+                                            <td width="10%" align="center">Zorluk</td>
+                                        </tr>
+                                    </thead>
+                                    @if (DataSourceSoruSol.ToList().Count == 0)
+                                    {
+                                        <tbody>
+                                            <tr>
+                                                <td colspan="3" align="center" valign="bottom" height="64px">
+                                                    <h6>Görüntülenecek Veri Yok</h6>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    }
+                                    else
+                                    {
+                                        <tbody>
+                                            @foreach (var data in DataSourceSoruSol)
+                                            {
+                                                <tr>
+                                                    <td width="10%" align="center">
+                                                        <input type="checkbox" @bind="data.Checked" />
+                                                    </td>
+                                                    <td width="10%" align="center">@data.Sira</td>
+                                                    <td width="70%">@data.Soru</td>
+                                                    <td width="10%" align="center">@data.Zorluk</td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                    }
+                                </table>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <table width="100%">
+                                <tr>
+                                    <td>
+                                        <button type="button" class="btn btn-lg p-0" @onclick="@SolaTasi"><i class="bi bi-arrow-left-square-fill"></i></button>
+                                    </td>
+                                    <td style="text-align:end">
+                                        <h6>Seçilen Sorular (@DataSourceSoruSag.Count().ToString())</h6>
+                                    </td>
+                                </tr>
+                            </table>
+                            <div style="overflow-y:auto; height:400px">
+                                <table class="table table-bordered table-hover">
+                                    <thead>
+                                        <tr>
+                                            <td width="10%" align="center">
+                                                <input type="checkbox" checked="@CheckAllSag" @onchange="async eventArgs => { await OnCheckAllChangeSag(eventArgs.Value); }" />
+                                            </td>
+                                            <td width="10%" align="center">Sıra</td>
+                                            <td width="70%">Soru</td>
+                                            <td width="10%" align="center">Zorluk</td>
+                                        </tr>
+                                    </thead>
+                                    @if (DataSourceSoruSag.ToList().Count == 0)
+                                    {
+                                        <tbody>
+                                            <tr>
+                                                <td colspan="3" align="center" valign="bottom" height="64px">
+                                                    <h6>Görüntülenecek Veri Yok</h6>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    }
+                                    else
+                                    {
+                                        <tbody>
+                                            @foreach (var data in DataSourceSoruSag)
+                                            {
+                                                <tr>
+                                                    <td width="10%" align="center">
+                                                        <input type="checkbox" @bind="data.Checked" />
+                                                    </td>
+                                                    <td width="10%" align="center">@data.Sira</td>
+                                                    <td width="70%">@data.Soru</td>
+                                                    <td width="10%" align="center">@data.Zorluk</td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                    }
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-success btn-sm" @onclick="Save"><i class="bi bi-check-circle"></i>&nbsp;Kaydet</button>
+                    <button id="popupKayitKapat" type="button" class="btn btn-danger btn-sm" data-bs-dismiss="modal"><i class="bi bi-x-circle"></i>&nbsp;Vazgeç</button>
+                </div>
+            </EditForm>
+        </div>
+    </div>
+</div>
+
+@if (loading)
+{
+    <div class="progressBackground">
+        <div class="progressPopup">
+            <img alt="Bekleyiniz..." src="img/loading.gif" width="100" height="100" />
+        </div>
+    </div>
+}
+
+@code
+{
+    [Inject] protected IRolService rolService { get; set; }
+    [Inject] protected ISoruService soruService { get; set; }
+    [Inject] protected ITestService testService { get; set; }
+
+    List<TestDTO> DataSource = new List<TestDTO>();
+    List<SoruDTO> DataSourceSoruSol = new List<SoruDTO>();
+    List<SoruDTO> DataSourceSoruSag = new List<SoruDTO>();
+
+    TestFilterDTO filterDTO = new TestFilterDTO() { PageNo = 1, PageSize = 10 };
+
+    TestDTO currentDTO = new TestDTO();
+
+    bool loading = false;
+    bool YetkiEkle = false;
+    bool YetkiDegistir = false;
+    bool YetkiSil = false;
+
+    bool CheckAllSol = false;
+    bool CheckAllSag = false;
+
+    int RowCount = 0;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            YetkiEkle = await rolService.YetkiKontrolByYetki("Online Eğitim - Testler - Ekle");
+            YetkiDegistir = await rolService.YetkiKontrolByYetki("Online Eğitim - Testler - Değiştir");
+            YetkiSil = await rolService.YetkiKontrolByYetki("Online Eğitim - Testler - Sil");
+
+            await GetData();
+
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    async Task GetData()
+    {
+        var result = await testService.GetTestList(filterDTO);
+
+        if (result.Success)
+        {
+            DataSource = result.Value;
+            RowCount = result.RowCount;
+        }
+        else
+        {
+            await js.InvokeVoidAsync("SweetMessage", "Hata", result.Message, "error");
+        }
+    }
+
+    async Task Sorgula()
+    {
+        await GetData();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task PageNoChanged(int pageNo)
+    {
+        filterDTO.PageNo = pageNo;
+        await GetData();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task PageSizeChanged(int pageSize)
+    {
+        filterDTO.PageSize = pageSize;
+        await GetData();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task Add()
+    {
+        currentDTO = new TestDTO();
+
+        var resultSoruList = await soruService.GetSoruList(new SoruFilterDTO() { PageNo = 1, PageSize = 1000 });
+
+        if (resultSoruList.Success)
+        {
+            DataSourceSoruSol = resultSoruList.Value;
+        }
+
+        DataSourceSoruSag = new List<SoruDTO>();
+
+        await InvokeAsync(StateHasChanged);
+
+        await js.InvokeVoidAsync("bsPopupAc", "popupKayit");
+    }
+
+    async Task Edit(int id)
+    {
+        var result = await testService.GetTest(id);
+
+        if (result.Success == false)
+        {
+            await js.InvokeVoidAsync("SweetMessage", "Hata", result.Message, "error");
+            return;
+        }
+
+        var resultSoruList = await soruService.GetSoruList(new SoruFilterDTO() { PageNo = 1, PageSize = 1000 });
+
+        if (resultSoruList.Success == false)
+        {
+            await js.InvokeVoidAsync("SweetMessage", "Hata", resultSoruList.Message, "error");
+            return;
+        }
+
+        currentDTO = result.Value;
+
+        DataSourceSoruSol = resultSoruList.Value.ExceptBy(currentDTO.SoruList.Select(c => c.Id), x => x.Id).ToList();
+
+        DataSourceSoruSag = currentDTO.SoruList;
+
+        await InvokeAsync(StateHasChanged);
+
+        await js.InvokeVoidAsync("bsPopupAc", "popupKayit");
+    }
+
+    async Task OnCheckAllChangeSol(object checkedValue)
+    {
+        foreach (var data in DataSourceSoruSol)
+        {
+            data.Checked = (bool)checkedValue;
+        }
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task OnCheckAllChangeSag(object checkedValue)
+    {
+        foreach (var data in DataSourceSoruSag)
+        {
+            data.Checked = (bool)checkedValue;
+        }
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task Tasi(List<SoruDTO> nereden, List<SoruDTO> nereye)
+    {
+        foreach (var item in nereden)
+        {
+            if (item.Checked)
+            {
+                nereye.Add(item);
+            }
+        }
+
+        for (int i = nereden.Count - 1; i >= 0; i--)
+        {
+            var item = nereden[i];
+
+            if (item.Checked)
+            {
+                nereden.Remove(item);
+            }
+        }
+
+        var temp = nereye.OrderBy(x => x.Sira).ToList();
+
+        nereye.Clear();
+        nereye.AddRange(temp);
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task SagaTasi()
+    {
+        await Tasi(DataSourceSoruSol, DataSourceSoruSag);
+    }
+
+    async Task SolaTasi()
+    {
+        await Tasi(DataSourceSoruSag, DataSourceSoruSol);
+    }
+
+    async Task Save()
+    {
+        if (string.IsNullOrEmpty(currentDTO.Test) || currentDTO.Sure == 0 || currentDTO.GecmeOrani == 0)
+        {
+            await js.InvokeVoidAsync("SweetToast", "Lütfen zorunlu alanları doldurunuz", "error");
+            return;
+        }
+
+        loading = true;
+
+        currentDTO.SoruList = DataSourceSoruSag;
+
+        var result = await testService.InsertOrUpdateTest(currentDTO);
+
+        if (result.Success == false)
+        {
+            loading = false;
+            await InvokeAsync(StateHasChanged);
+
+            await js.InvokeVoidAsync("SweetMessage", "Uyarı", result.Message, "error");
+            return;
+        }
+
+        await GetData();
+
+        loading = false;
+
+        await InvokeAsync(StateHasChanged);
+
+        await js.InvokeVoidAsync("bsPopupKapat", "popupKayit");
+
+        await js.InvokeVoidAsync("SweetToast", "Kaydedildi", "success");
+    }
+
+    async Task Delete(int id)
+    {
+        var fDTO = new TestFilterDTO() { PageNo = 1, PageSize = 10, Id = id };
+
+        var resultSelect = await testService.GetTestList(fDTO);
+
+        if (resultSelect.Success == false)
+        {
+            await js.InvokeVoidAsync("SweetMessage", "Hata", resultSelect.Message, "error");
+            return;
+        }
+
+        var confirm = await js.InvokeAsync<bool>("SweetConfirm", "Uyarı", "Kayıt silinecek, emin misiniz?", "question", "Evet", "Hayır");
+
+        if (confirm == false)
+        {
+            return;
+        }
+
+        var resultDelete = await testService.DeleteTest(resultSelect.Value);
+
+        if (resultDelete.Success == false)
+        {
+            await js.InvokeVoidAsync("SweetMessage", "Hata", resultDelete.Message, "error");
+            return;
+        }
+
+        await GetData();
+
+        await InvokeAsync(StateHasChanged);
+
+        await js.InvokeVoidAsync("SweetToast", "Kayıt silindi", "success");
+    }
+
+    public async Task ExportToExcel()
+    {
+        using (var workbook = new XLWorkbook())
+        {
+            IXLWorksheet worksheet = workbook.Worksheets.Add("Sayfa1");
+
+            worksheet.Cell(1, 1).Value = "Test Başlığı";
+            worksheet.Cell(1, 2).Value = "Açıklama";
+            worksheet.Cell(1, 3).Value = "Süre";
+            worksheet.Cell(1, 4).Value = "Geçme Oranı";
+
+            for (int i = 1; i <= 4; i++)
+            {
+                worksheet.Cell(1, i).Style.Font.Bold = true;
+            }
+
+            int index = 1;
+
+            foreach (var data in DataSource)
+            {
+                worksheet.Cell(index + 1, 1).Value = data.Test;
+                worksheet.Cell(index + 1, 2).Value = data.Aciklama;
+                worksheet.Cell(index + 1, 3).Value = data.Sure;
+                worksheet.Cell(index + 1, 4).Value = data.GecmeOrani;
+
+                index++;
+            }
+
+            using (var stream = new MemoryStream())
+            {
+                workbook.SaveAs(stream);
+                var content = stream.ToArray();
+                var fileName = "TestListesi" + DateTime.Now.ToString("yyyyMMddss") + ".xlsx";
+                await js.InvokeAsync<object>("saveAsFile", fileName, Convert.ToBase64String(content));
+            }
+        }
+    }
+}

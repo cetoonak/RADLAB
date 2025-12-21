@@ -1,0 +1,902 @@
+﻿@layout WebSiteLayout
+
+@inject IJSRuntime js
+@inject NavigationManager navManager
+
+@using System.Linq
+
+@page "/MusteriTakip"
+
+<style>
+    .badge {
+        font-size: 1em;
+    }
+</style>
+
+<div class="section">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-12">
+                @if (tikladi)
+                {
+                    <nav>
+                        <div class="nav nav-tabs" id="nav-tab" role="tablist">
+                            <button class="nav-link active" id="nav-kalibrasyon-tab" data-bs-toggle="tab" data-bs-target="#nav-kalibrasyon" type="button" role="tab" aria-controls="nav-kalibrasyon" aria-selected="true">Kalibrasyon Başvurularınız</button>
+                            <button class="nav-link" id="nav-egitim-tab" data-bs-toggle="tab" data-bs-target="#nav-egitim" type="button" role="tab" aria-controls="nav-egitim" aria-selected="false">Eğitim Başvurularınız</button>
+                            <button class="nav-link" id="nav-satis-tab" data-bs-toggle="tab" data-bs-target="#nav-satis" type="button" role="tab" aria-controls="nav-satis" aria-selected="false">Siparişleriniz</button>
+                            <button class="nav-link" id="nav-odeme-tab" data-bs-toggle="tab" data-bs-target="#nav-odeme" type="button" role="tab" aria-controls="nav-odeme" aria-selected="false">Online Ödeme</button>
+                        </div>
+                    </nav>
+                    <div class="tab-content" id="nav-tabContent">
+                        <div class="tab-pane fade show active" id="nav-kalibrasyon" role="tabpanel" aria-labelledby="nav-kalibrasyon-tab">
+                            <div class="accordion accordion-border-bottom mt-4" id="accordionKalibrasyon">
+                                @{
+                                    int kalibrasyonCounter = 0;
+                                }
+                                @foreach (var basvuruTakipNo in DSKalibrasyonCihaz.Select(x => x.BasvuruTakipNo).Distinct().ToList())
+                                {
+                                    kalibrasyonCounter++;
+
+                                    <div class="accordion-item">
+                                        <h2 class=@("accordion-header accordion-button h5 " + (kalibrasyonCounter == 1 ? "active" : "")) type="button" data-bs-toggle="collapse"
+                                            id=@("headingKalibrasyon-" + basvuruTakipNo.ToString()) data-bs-target=@("#collapseKalibrasyon-" + basvuruTakipNo.ToString())
+                                            aria-expanded=@(kalibrasyonCounter == 1 ? "true" : "false") aria-controls=@("collapseKalibrasyon-" + basvuruTakipNo.ToString())>
+                                            @(basvuruTakipNo + " takip numaralı başvurunuz")
+                                        </h2>
+                                        <div id=@("collapseKalibrasyon-" + basvuruTakipNo.ToString())
+                                            class=@("accordion-collapse collapse " + (kalibrasyonCounter == 1 ? "show" : ""))
+                                            aria-labelledby=@("headingKalibrasyon-" + basvuruTakipNo.ToString()) data-bs-parent="#accordionKalibrasyon">
+                                            <div class="accordion-body">
+                                                <div class="table-responsive">
+                                                    <table class="table table-bordered">
+                                                        <thead>
+                                                            <tr>
+                                                                <td width="10%" align="center">Cihaz ID</td>
+                                                                <td width="10%" align="center">Marka</td>
+                                                                <td width="10%" align="center">Model</td>
+                                                                <td width="10%" align="center">Seri No</td>
+                                                                <td width="35%" align="center">Durum</td>
+                                                                <td width="15%" align="center">Son İşlem Zamanı</td>
+                                                                <td width="15%" align="center">Ödenecek Tutar</td>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            @foreach (var data in DSKalibrasyonCihaz.Where(x => x.BasvuruTakipNo == basvuruTakipNo))
+                                                            {
+                                                                <tr>
+                                                                    <td width="10%" align="center">@data.Id</td>
+                                                                    <td width="10%" align="center">@data.Marka</td>
+                                                                    <td width="10%" align="center">@data.Model</td>
+                                                                    <td width="10%" align="center">@data.SeriNo</td>
+                                                                    <td width="35%" align="center">@data.CihazDurumu</td>
+                                                                    <td width="15%" align="center">@data.SonIslemZamani</td>
+                                                                    <td width="10%" align="center">@data.OdenecekTutar.ToString("###,##0.#0₺")</td>
+                                                                </tr>
+                                                            }
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                        <div class="tab-pane fade" id="nav-egitim" role="tabpanel" aria-labelledby="nav-egitim-tab">
+                            <div class="table-responsive mt-4">
+                                <table class="table table-bordered">
+                                    <thead>
+                                        <tr>
+                                            <td width="5%" align="center">ID</td>
+                                            <td width="35%" align="center">Kurs Adı</td>
+                                            <td width="10%" align="center">Başvuru Dönemi</td>
+                                            <td width="10%" align="center">Eğitim Dönemi</td>
+                                            <td width="15%" align="center">Kurs Durumu</td>
+                                            <td width="15%" align="center">Kursiyer Durumu</td>
+                                            <td width="10%" align="center">Ödenecek Tutar</td>
+                                        </tr>
+                                    </thead>
+                                    @if (DSKursiyer.ToList().Count == 0)
+                                    {
+                                        <tbody>
+                                            <tr>
+                                                <td colspan="8" align="center" valign="bottom" height="64px">
+                                                    <h6>Görüntülenecek Veri Yok</h6>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    }
+                                    else
+                                    {
+                                        <tbody>
+                                            @foreach (var data in DSKursiyer)
+                                            {
+                                                <tr>
+                                                    <td width="5%" align="center">@data.Id</td>
+                                                    <td width="35%" align="center">@data.Egitim</td>
+                                                    <td width="10%" align="center">@data.BasvuruDonemi</td>
+                                                    <td width="10%" align="center">@data.EgitimDonemi</td>
+                                                    <td width="15%" align="center">@data.KursDurumu</td>
+                                                    <td width="15%" align="center"><span class=@(data.KursiyerDurumu == "Asil" ? "badge bg-success" : (data.KursiyerDurumu == "Yedek" ? "badge bg-info" : (data.KursiyerDurumu == "İptal" ? "badge bg-danger" : "")))>@data.KursiyerDurumu</span>  </td>
+                                                    <td width="10%" align="center">@data.OdenecekTutar.ToString("###,##0.#0₺")</td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                    }
+                                </table>
+                            </div>
+                        </div>
+                        <div class="tab-pane fade show" id="nav-satis" role="tabpanel" aria-labelledby="nav-satis-tab">
+                            <div class="accordion accordion-border-bottom mt-4" id="accordionSatis">
+                                @{
+                                    int satisCounter = 0;
+
+                                    var DSSiparis = DSSiparisCihaz.GroupBy(x => x.SiparisId)
+                                    .Select(group => new
+                                    {
+                                        SiparisId = group.Key,
+                                        SiparisZamani = group.Max(sz => (sz.SiparisZamani.HasValue ? sz.SiparisZamani.Value.ToString("dd.MM.yyyy HH:ss") : "")),
+                                        SiparisDurumu = group.Max(sd => sd.SiparisDurumu),
+                                        SiparisAdresi = group.Max(sa => sa.SiparisAdresi)
+                                    });
+
+                                    @foreach (var siparis in DSSiparis)
+                                    { 
+                                        satisCounter++;
+
+                                        <div class="accordion-item">
+                                            <h2 class=@("accordion-header accordion-button h5 " + (satisCounter == 1 ? "active" : "")) type="button" data-bs-toggle="collapse"
+                                                id=@("headingSatis-" + siparis.SiparisId.ToString()) data-bs-target=@("#collapseSatis-" + siparis.SiparisId.ToString())
+                                                aria-expanded=@(satisCounter == 1 ? "true" : "false") aria-controls=@("collapseSatis-" + siparis.SiparisId.ToString())>
+                                                @(siparis.SiparisZamani + " tarihli siparişiniz")
+                                            </h2>
+                                            <div id=@("collapseSatis-" + siparis.SiparisId.ToString())
+                                                class=@("accordion-collapse collapse " + (satisCounter == 1 ? "show" : ""))
+                                                aria-labelledby=@("headingSatis-" + siparis.SiparisId.ToString()) data-bs-parent="#accordionSatis">
+                                                <div class="accordion-body">
+                                                    <div class="table-responsive">
+                                                        <table class="table table-bordered">
+                                                            <thead>
+                                                                <tr>
+                                                                    <td colspan="5" align="center">
+                                                                        Sipariş Adresi: <span style="font-weight:normal">@siparis.SiparisAdresi</span>
+                                                                        &nbsp;&nbsp;
+                                                                        Sipariş Durumu: <span style="font-weight:normal">@siparis.SiparisDurumu</span>
+                                                                    </td>
+                                                                </tr>
+                                                                <tr>
+                                                                    <td width="10%" align="center">ID</td>
+                                                                    <td width="20%" align="center">Ürün</td>
+                                                                    <td width="10%" align="center">Tutar</td>
+                                                                    <td width="35%" align="center">Durumu</td>
+                                                                    <td width="15%" align="center">Son İşlem Zamanı</td>
+                                                                    <td width="10%" align="center"></td>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody>
+                                                                @foreach (var data in DSSiparisCihaz.Where(x => x.SiparisId == siparis.SiparisId))
+                                                                {
+                                                                    <tr>
+                                                                        <td width="10%" align="center">@data.Id</td>
+                                                                        <td width="20%" align="center">@data.Urun</td>
+                                                                        <td width="10%" align="center">@data.Fiyat.ToString("###,##0.#0₺")</td>
+                                                                        <td width="35%" align="center"><span class=@data.SiparisCihazDurumuBadge>@data.SiparisCihazDurumu</span></td>
+                                                                        <td width="15%" align="center">@data.SonIslemZamani.Value.ToString("dd.MM.yyyy HH:mm")</td>
+                                                                        <td width="20%" align="center">
+                                                                            @if (data.IptalEdilebilir)
+                                                                            {
+                                                                                <button class="btn btn-sm btn-warning" @onclick=@(async () => { await IptalEt(data); })>İptal Et</button>
+                                                                            }
+                                                                            @if (data.IadeEdilebilir)
+                                                                            {
+                                                                                <button class="btn btn-sm btn-danger" @onclick=@(async () => { await IadeEt(data); })>İade Et</button>
+                                                                            }
+                                                                        </td>
+                                                                    </tr>
+                                                                }
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    }
+                                }
+                            </div>
+                        </div>
+                        <div class="tab-pane fade" id="nav-odeme" role="tabpanel" aria-labelledby="nav-odeme-tab">
+                            <br />
+                            @if (DSOdeme.ToList().Count == 0)
+                            {
+                                <div class="alert alert-primary" role="alert">
+                                    Bekleyen ödemeniz bulunmamaktadır
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="alert alert-primary" role="alert">
+                                    Ödeme yapacağınız satırları işaretleyiniz
+                                </div>
+                                <div class="table-responsive mt-4">
+                                    <table class="table table-bordered">
+                                        <thead>
+                                            <tr>
+                                                <td width="5%" align="center">
+                                                    <input type="checkbox" class="form-check-input" @onchange="async eventArgs => { await SelectAllOdemeClicked(eventArgs.Value); }" />
+                                                </td>
+                                                <td width="15%" align="center">Ödeme Türü</td>
+                                                <td width="60%" align="left">Açıklama</td>
+                                                <td width="10%" align="center">Tahakkuk Tarihi</td>
+                                                <td width="10%" align="right">Ödenecek Tutar</td>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach (var data in DSOdeme)
+                                            {
+                                                <tr>
+                                                    <td width="5%" align="center">
+                                                        <input type="checkbox" class="form-check-input" @bind="@data.Checked" />
+                                                    </td>
+                                                    <td width="15%" align="center">@data.OdemeTuru</td>
+                                                    <td width="60%" align="left">@data.Aciklama</td>
+                                                    <td width="10%" align="center">@data.TahakkukTarihi.Value.ToString("dd.MM.yyyy")</td>
+                                                    <td width="10%" align="right">@data.OdenecekTutar.ToString("###,##0.#0₺")</td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                        @{
+                                            OdenecekTutar = DSOdeme.Where(x => x.Checked).Sum(x => x.OdenecekTutar);
+                                        }
+                                        <tfoot>
+                                            <tr>
+                                                <td width="90%" align="right" colspan="4">
+                                                    TOPLAM BORÇ MİKTARI
+                                                </td>
+                                                <td width="10%" align="right" style="font-weight:bold; font-size:1.2rem;">
+                                                    @DSOdeme.Sum(x => x.OdenecekTutar).ToString("###,##0.#0₺")
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td width="90%" align="right" colspan="4">
+                                                    SEÇİLEN ÖDEME TUTARI
+                                                </td>
+                                                <td width="10%" align="right" style="font-weight:bold; font-size:1.2rem; color:green">
+                                                    @OdenecekTutar.ToString("###,##0.#0₺")
+                                                </td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+                                <br />
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="row">
+                                            <div class="col-md-12 mb-3">
+                                                <div class="input-group input-group-sm">
+                                                    <span class="input-group-text" id="spnKrediKartiAdSoyad" style="width: 160px;">Kart Üzerindeki İsim</span>
+                                                    <input id="tbKrediKartiAdSoyad" class="form-control form-control-sm" type="text" aria-describedby="spnKrediKartiAdSoyad"
+                                                   @onfocusin="tbKrediKartiAdSoyadFocusIn" @onfocusout="tbKrediKartiFocusOut" @bind-value="currentDTO.KrediKartiAdSoyad">
+                                                </div>
+                                            </div>
+                                            <div class="col-md-12 mb-3">
+                                                <div class="input-group input-group-sm">
+                                                    <span class="input-group-text" id="spnKrediKartiNo" style="width: 160px;">Kart Numarası</span>
+                                                    <input id="tbKrediKartiNo" class="form-control form-control-sm" type="text" aria-describedby="spnKrediKartiNo"
+                                                   @onfocusin="tbKrediKartiKartNoFocusIn" @onfocusout="tbKrediKartiFocusOut" @bind-value="currentDTO.KrediKartiNo">
+                                                </div>
+                                            </div>
+                                            <div class="col-md-12 mb-3">
+                                                <div class="input-group input-group-sm">
+                                                    <span class="input-group-text" id="spnKrediKartiSonKullanimYil" style="width: 160px;">Son Kullanım Tarihi</span>
+                                                    <select class="form-select form-select-sm" id="ddlKrediKartiSonKullanimAy" aria-describedby="spnKrediKartiSonKullanimYil"
+                                                    @onfocusin="ddlKrediKartiSonKullanimAyFocusIn" @onfocusout="tbKrediKartiFocusOut" @bind="currentDTO.KrediKartiSonKullanimAy">
+                                                        <option value="0"></option>
+                                                        <option value="1">1</option>
+                                                        <option value="2">2</option>
+                                                        <option value="3">3</option>
+                                                        <option value="4">4</option>
+                                                        <option value="5">5</option>
+                                                        <option value="6">6</option>
+                                                        <option value="7">7</option>
+                                                        <option value="8">8</option>
+                                                        <option value="9">9</option>
+                                                        <option value="10">10</option>
+                                                        <option value="11">11</option>
+                                                        <option value="12">12</option>
+                                                    </select>
+                                                    <select class="form-select form-select-sm" id="ddlKrediKartiSonKullanimYil" aria-describedby="spnKrediKartiSonKullanimYil"
+                                                    @onfocusin="ddlKrediKartiSonKullanimYilFocusIn" @onfocusout="tbKrediKartiFocusOut" @bind="currentDTO.KrediKartiSonKullanimYil">
+                                                        <option value="0"></option>
+                                                        @foreach (var item in DSSonKullanimYil)
+                                                        {
+                                                            <option value="@item.Id">@item.Ad</option>
+                                                        }
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-12 mb-3">
+                                                <div class="input-group input-group-sm">
+                                                    <span class="input-group-text" id="spnKrediKartiCVV" style="width: 160px;">CVV</span>
+                                                    <input id="tbKrediKartiCVV" class="form-control form-control-sm" type="text" maxlength="3" aria-describedby="spnKrediKartiCVV" placeholder="Kartın arka yüzündeki son 3 basamak"
+                                                   @onfocusin="tbKrediKartiCVVFocusIn" @onfocusout="tbKrediKartiFocusOut" @bind-value="currentDTO.KrediKartiCVV">
+                                                </div>
+                                            </div>
+                                            <div class="col-md-12 mb-3">
+                                                <div class="form-control form-control-sm">
+                                                    <input type="checkbox" class="form-check-input" id="cbSozlesmeleriKabulEtti" @bind="currentDTO.SozlesmeleriKabulEtti">
+                                                    <label for="cbSozlesmeleriKabulEtti" class="form-check-label">Ödeme işlemini onaylıyorum</label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6 text-end">
+                                        @if (string.IsNullOrEmpty(KrediKartiResmi) == false)
+                                        {
+                                            <img src=@("img/" + KrediKartiResmi + ".png") width="400" />
+                                        }
+                                    </div>
+                                    <div class="col-md-12 mt-4" style="text-align:center;">
+                                        <hr />
+                                        <button type="submit" class="btn btn-primary" @onclick="OdemeYap">Ödeme Yap&nbsp;&nbsp;<i class="bi bi-chevron-right"></i></button>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <div class="row justify-content-center">
+                        <div class="col-md-6 col-lg-4">
+                            <div class="row">
+                                <div class="col-md-12 text-center mb-4">
+                                    <h2>
+                                        Müşteri Takip
+                                    </h2>
+                                </div>
+                                <div class="col-md-12 mb-4">
+                                    <div class="input-group has-validation">
+                                        <span class="input-group-text" id="inputGroupPrepend"><i class="fas fa-phone"></i></span>
+                                        <input @bind-value="filterDTO.GSM" class="form-control" type="text" placeholder="Başında 0 olmadan GSM numaranız" autocomplete="off" required />
+                                        <div class="invalid-feedback">GSM numaranızı giriniz.</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-12 mb-4">
+                                    <div class="input-group has-validation">
+                                        <span class="input-group-text" id="inputGroupPrepend"><i class="fas fa-at"></i></span>
+                                        <input @bind-value="filterDTO.Mail" class="form-control" type="text" placeholder="E-posta adresiniz" autocomplete="off" required />
+                                        <div class="invalid-feedback">E-posta adresinizi giriniz.</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-12 mb-4">
+                                    <button type="submit" class="btn btn-primary btn-block w-100" disabled="@loading" @onclick="Ara"><i class="bi bi-search"></i>&nbsp;&nbsp;Ara</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (loading)
+{
+    <div class="progressBackground">
+        <div class="progressPopup">
+            <img alt="Bekleyiniz..." src="img/loading.gif" width="100" height="100" />
+        </div>
+    </div>
+}
+
+<button id="popupIptalIadeAc" type="button" data-bs-toggle="modal" data-bs-target="#popupIptalIade" style="visibility:hidden;">
+</button>
+
+<div class="modal fade" id="popupIptalIade" tabindex="-1" aria-labelledby="popupIptalIadeLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="popupIptalIadeLabel">@(currentSiparisCihazHareketDTO.SiparisCihazId.ToString() + " Numaralı Cihazın " + (currentSiparisCihazHareketDTO.SiparisCihazHareketTuruId == 3 ? "İptal" : "İade") + " İşlemi")</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                @if (currentSiparisCihazHareketDTO.SiparisCihazHareketTuruId == 4)
+                {
+                    <div class="alert alert-danger" role="alert">
+                        İade sürecinin tamamlanması için cihazınızı en geç 3 gün içinde <b>Ahi Evran OSB Mah. Erkunt Cad. No:3/11 Sincan Ankara</b> adresine kargo ile gönderiniz.
+                        <br/>
+                        İade takip numarası: <b>@(currentSiparisCihazHareketDTO.SiparisCihazId.ToString())</b>. Bu numarayı kargo görevlisine bildiriniz.
+                        <br/>
+                        Herhangi bir eksiklik bulunmaması durumunda bankalar arasında farklılık göstermekle birlikte ortalama 10 gün içinde ödemeniz iade edilecektir.
+                    </div>
+                }
+                <InputTextArea class="form-control form-control-sm" type="text" @bind-Value="currentSiparisCihazHareketDTO.Aciklama" rows="3" placeholder=@("Lütfen " + (currentSiparisCihazHareketDTO.SiparisCihazHareketTuruId == 3 ? "iptal" : "iade" ) + " gerekçenizi giriniz")>
+                </InputTextArea>
+                @if (currentSiparisCihazHareketDTO.SiparisCihazHareketTuruId == 4)
+                {
+                    <div class="form-control form-control-sm mt-4">
+                        <input type="checkbox" class="form-check-input" id="cbSozlesmeleriKabulEtti" @bind="currentSiparisCihazHareketDTO.SozlesmeleriKabulEtti">
+                        <label for="cbSozlesmeleriKabulEtti" class="form-check-label">
+                            <a href="javascript:void()" @onclick="IadeSozlesmesi">İade Sözleşmesini </a>okudum, onaylıyorum.
+                        </label>
+                    </div>
+                }
+            </div>
+            <div class="modal-footer">
+                <button type="submit" class="btn btn-success btn-sm" @onclick="IptalIadeKaydet"><i class="bi bi-check-circle"></i>&nbsp;Onayla</button>
+                <button id="popupIptalIadeKapat" type="button" class="btn btn-danger btn-sm" data-bs-dismiss="modal"><i class="bi bi-x-circle"></i>&nbsp;Vazgeç</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<button id="popupSozlesmeAc" type="button" data-bs-toggle="modal" data-bs-target="#popupSozlesme" style="visibility:hidden;">
+</button>
+
+<div class="modal fade" id="popupSozlesme" tabindex="-1" aria-labelledby="popupSozlesmeLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="popupSozlesmeLabel">İADE SÖZLEŞMESİ</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                @((MarkupString)Metin)
+            </div>
+            <div class="modal-footer">
+                <button id="popupSozlesmeKapat" type="button" class="btn btn-primary btn-sm" data-bs-dismiss="modal">Kapat</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code
+{
+    [Inject] protected ISMSMailService smsMailService { get; set; }
+    [Inject] protected IKalibrasyonService kalibrasyonService { get; set; }
+    [Inject] protected IKursService kursService { get; set; }
+    [Inject] protected IAyarService ayarService { get; set; }
+    [Inject] protected ISiparisService siparisService { get; set; }
+    [Inject] protected IOdemeService odemeService { get; set; }
+    [Inject] protected IVakifBankService vakifBankService { get; set; }
+
+    SiparisCihazTakipDTO currentSiparisCihazTakipDTO = new SiparisCihazTakipDTO();
+    SiparisCihazHareketDTO currentSiparisCihazHareketDTO = new SiparisCihazHareketDTO();
+
+    bool loading = false;
+    bool tikladi = false;
+    bool debug = false;
+    decimal OdenecekTutar = 0;
+    string KrediKartiResmi = "KrediKarti";
+    int SMSKalanSaniye = 120;
+    string Metin = "";
+
+    private System.Timers.Timer _timer;
+
+    SiparisDTO currentDTO = new SiparisDTO();
+
+    MusteriTakipFilterDTO filterDTO = new MusteriTakipFilterDTO();
+
+    List<KalibrasyonCihazTakipDTO> DSKalibrasyonCihaz = new List<KalibrasyonCihazTakipDTO>();
+    List<KursiyerTakipDTO> DSKursiyer = new List<KursiyerTakipDTO>();
+    List<SiparisCihazTakipDTO> DSSiparisCihaz = new List<SiparisCihazTakipDTO>();
+    List<OdemeDTO> DSOdeme = new List<OdemeDTO>();
+    List<LookupBasicDTO> DSSonKullanimYil = new List<LookupBasicDTO>();
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+#if DEBUG
+    debug = true;
+#endif
+
+            if (debug)
+            {
+                filterDTO.GSM = "5544055086";
+                filterDTO.Mail = "cetoonak@hotmail.com";
+
+                await InvokeAsync(StateHasChanged);
+            }
+
+            int Yil = DateTime.Now.Year - 2000;
+
+            for (int i = 0; i <= 20; i++)
+            {
+                DSSonKullanimYil.Add(new LookupBasicDTO() { Id = Yil + i, Ad = (Yil + i).ToString().PadLeft(2, '0') });
+            }
+
+            _timer = new();
+            _timer.Interval = 1000;
+
+            _timer.Elapsed += async (object? sender, System.Timers.ElapsedEventArgs e) =>
+            {
+                SMSKalanSaniye--;
+
+                if (SMSKalanSaniye == 0)
+                {
+                    SMSKalanSaniye = 120;
+
+                    try
+                    {
+                        await js.InvokeVoidAsync("bsPopupKapat", "popupSMS");
+                    }
+                    catch
+                    {
+
+                    }
+                }
+
+                await InvokeAsync(StateHasChanged);
+            };
+
+            _timer.Enabled = true;
+
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    public string TurkceKaraktersiz(string text)
+    {
+        text = text.Replace("İ", "I");
+        text = text.Replace("ı", "i");
+        text = text.Replace("Ğ", "G");
+        text = text.Replace("ğ", "g");
+        text = text.Replace("Ö", "O");
+        text = text.Replace("ö", "o");
+        text = text.Replace("Ü", "U");
+        text = text.Replace("ü", "u");
+        text = text.Replace("Ş", "S");
+        text = text.Replace("ş", "s");
+        text = text.Replace("Ç", "C");
+        text = text.Replace("ç", "c");
+
+        return text;
+    }
+
+    async Task GetData()
+    {
+        loading = true;
+
+        string errormsg = "";
+
+        var resultKalibrasyon = await kalibrasyonService.GetMusteriTakip(filterDTO);
+        var resultKursiyer = await kursService.GetMusteriTakip(filterDTO);
+        var resultSiparis = await siparisService.GetMusteriTakip(filterDTO);
+        var resultOdeme = await odemeService.GetOdeme(filterDTO);
+
+        if (resultKalibrasyon.Success)
+        {
+            DSKalibrasyonCihaz = resultKalibrasyon.Value;
+        }
+        else
+        {
+            errormsg += resultKalibrasyon.Message + " ";
+        }
+
+        if (resultKursiyer.Success)
+        {
+            DSKursiyer = resultKursiyer.Value;
+        }
+        else
+        {
+            errormsg += resultKursiyer.Message + " ";
+        }
+
+        if (resultSiparis.Success)
+        {
+            DSSiparisCihaz = resultSiparis.Value;
+        }
+        else
+        {
+            errormsg += resultSiparis.Message + " ";
+        }
+
+        if (resultOdeme.Success)
+        {
+            DSOdeme = resultOdeme.Value;
+        }
+        else
+        {
+            errormsg += resultOdeme.Message + " ";
+        }
+
+        loading = false;
+
+        await InvokeAsync(StateHasChanged);
+
+        if (errormsg != "")
+        {
+            await js.InvokeVoidAsync("SweetToast", errormsg, "error");
+        }
+    }
+
+    async Task Ara()
+    {
+        if (filterDTO.GSM.Length != 10 || string.IsNullOrEmpty(filterDTO.Mail))
+        {
+            await js.InvokeVoidAsync("SweetMessage", "Hata", "Lütfen 10 haneli GSM numaranızı ve e-posta adresinizi giriniz", "error");
+            return;
+        }
+
+        tikladi = true;
+
+        await GetData();
+    }
+
+    async Task IptalEt(SiparisCihazTakipDTO dto)
+    {
+        currentSiparisCihazTakipDTO = dto;
+
+        currentSiparisCihazHareketDTO = new SiparisCihazHareketDTO()
+            {
+                SiparisCihazId = dto.Id,
+                SiparisId = dto.SiparisId,
+                SiparisCihazHareketTuruId = 3,
+                SiparisCihazHareketTuru = "İptal",
+            };
+
+        await InvokeAsync(StateHasChanged);
+
+        await js.InvokeVoidAsync("bsPopupAc", "popupIptalIade");
+    }
+
+    async Task IadeEt(SiparisCihazTakipDTO dto)
+    {
+        currentSiparisCihazTakipDTO = dto;
+
+        currentSiparisCihazHareketDTO = new SiparisCihazHareketDTO()
+            {
+                SiparisCihazId = dto.Id,
+                SiparisId = dto.SiparisId,
+                SiparisCihazHareketTuruId = 4,
+                SiparisCihazHareketTuru = "İade Başlangıcı",
+            };
+
+        await InvokeAsync(StateHasChanged);
+
+        await js.InvokeVoidAsync("bsPopupAc", "popupIptalIade");
+    }
+
+    async Task IadeSozlesmesi()
+    {
+        Metin = await ayarService.GetMetin("IadeSozlesmesiMetni");
+
+        Metin = Metin
+        .Replace("[AdSoyadSiparis]", currentSiparisCihazTakipDTO.AdSoyadSiparis)
+        .Replace("[AdresSiparis]", currentSiparisCihazTakipDTO.SiparisAdresi)
+        .Replace("[AdresFatura]", currentSiparisCihazTakipDTO.FaturaAdresi)
+        .Replace("[GSM]", filterDTO.GSM)
+        .Replace("[Tarih]", DateTime.Now.ToString("dd.MM.yyyy"));
+
+        await js.InvokeVoidAsync("bsPopupAc", "popupSozlesme");
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task IptalIadeKaydet()
+    {
+        string confirmText = "";
+        string islemTuru = "";
+
+        if (currentSiparisCihazHareketDTO.SiparisCihazHareketTuruId == 3)
+        {
+            confirmText = $"{currentSiparisCihazHareketDTO.SiparisCihazId} numaralı siparişiniz iptal edilecek, emin misiniz?";
+            islemTuru = "iptal";
+        }
+        else if (currentSiparisCihazHareketDTO.SiparisCihazHareketTuruId == 4)
+        {
+            confirmText = $"{currentSiparisCihazHareketDTO.SiparisCihazId} numaralı siparişinizin iade süreci başlatılacak, emin misiniz?";
+            islemTuru = "iade";
+        }
+
+        if (currentSiparisCihazHareketDTO.Aciklama.Length <= 10)
+        {
+            await js.InvokeVoidAsync("SweetMessage", "Hata", $"Lütfen kısa bir metin ile {islemTuru} gerekçenizi giriniz", "error");
+            return;
+        }
+
+        if (currentSiparisCihazHareketDTO.SiparisCihazHareketTuruId == 4 & currentSiparisCihazHareketDTO.SozlesmeleriKabulEtti == false)
+        {
+            await js.InvokeVoidAsync("SweetMessage", "Hata", "Lütfen iptal sözleşmesini okuyup onaylayınız", "error");
+            return;
+        }
+
+        var confirm = await js.InvokeAsync<bool>("SweetConfirm", "Uyarı", confirmText, "question", "Evet", "Hayır");
+
+        if (confirm)
+        {
+            currentSiparisCihazHareketDTO.IslemZamani = DateTime.Now;
+
+            var result = await siparisService.InsertSiparisCihazHareket(currentSiparisCihazHareketDTO);
+
+            if (result.Success == false)
+            {
+                await js.InvokeVoidAsync("SweetMessage", "Hata", result.Message, "error");
+                return;
+            }
+
+            await GetData();
+
+            await InvokeAsync(StateHasChanged);
+
+            await js.InvokeVoidAsync("bsPopupKapat", "popupIptalIade");
+
+            string unvan = TurkceKaraktersiz(currentSiparisCihazTakipDTO.AdSoyadSiparis);
+
+            if (unvan.Length > 40) unvan = unvan.Substring(40) + "..";
+
+            var mailDTO = new MailDTO()
+                {
+                    Subject = "RADLAB E-Ticaret",
+                    ToList = new List<string>() { filterDTO.Mail },
+                    KendisineDeGonder = true,
+                    GSM = filterDTO.GSM
+                };
+
+            if (currentSiparisCihazHareketDTO.SiparisCihazHareketTuruId == 3)
+            {
+                mailDTO.Body = $@"Sayın {currentSiparisCihazTakipDTO.AdSoyadSiparis}, {currentSiparisCihazHareketDTO.SiparisCihazId.ToString()} numaralı siparişiniz iptal edildi. <a href='https://www.radlab.com.tr/musteritakip'>https://www.radlab.com.tr/musteritakip</a> adresinden takip edebilirsiniz.";
+                mailDTO.Mesaj = $@"Sayin {unvan}, {currentSiparisCihazHareketDTO.SiparisCihazId.ToString()} numarali siparisiniz iptal edildi. https:[BCKSPC][BCKSPC]www.radlab.com.tr[BCKSPC]musteritakip adresinden takip edebilirsiniz.";
+
+                var resultSMSGuest = await smsMailService.SendSMSAndMail(mailDTO);
+
+                await js.InvokeVoidAsync("SweetToast", $"Siparişiniz iptal edildi", "success");
+            }
+            else if (currentSiparisCihazHareketDTO.SiparisCihazHareketTuruId == 4)
+            {
+                mailDTO.Body = $@"Sayın {currentSiparisCihazTakipDTO.AdSoyadSiparis}, {currentSiparisCihazHareketDTO.SiparisCihazId.ToString()} numaralı siparişinizin iade süreci başladı. <a href='https://www.radlab.com.tr/musteritakip'>https://www.radlab.com.tr/musteritakip</a> adresinden takip edebilirsiniz.<br/><br/>{Metin}";
+                mailDTO.Mesaj = $@"Sayin {unvan}, {currentSiparisCihazHareketDTO.SiparisCihazId.ToString()} numarali siparisinizin iade sureci basladi. https:[BCKSPC][BCKSPC]www.radlab.com.tr[BCKSPC]musteritakip adresinden takip edebilirsiniz.";
+
+                var resultSMSGuest = await smsMailService.SendSMSAndMail(mailDTO);
+
+                await js.InvokeVoidAsync("SweetToast", $"Siparişinizin iade süreci başlatıldı", "success");
+            }
+        }
+    }
+
+    async Task SelectAllOdemeClicked(object aChecked)
+    {
+        foreach (var item in DSOdeme)
+        {
+            item.Checked = (bool)aChecked;
+        }
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task tbKrediKartiAdSoyadFocusIn()
+    {
+        KrediKartiResmi = "KrediKartiIsim";
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task tbKrediKartiKartNoFocusIn()
+    {
+        KrediKartiResmi = "KrediKartiKartNo";
+
+        await js.InvokeVoidAsync("tbKrediKartiNoOnInput");
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task ddlKrediKartiSonKullanimYilFocusIn()
+    {
+        KrediKartiResmi = "KrediKartiYil";
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task ddlKrediKartiSonKullanimAyFocusIn()
+    {
+        KrediKartiResmi = "KrediKartiAy";
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task tbKrediKartiCVVFocusIn()
+    {
+        KrediKartiResmi = "KrediKartiCVV";
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task tbKrediKartiFocusOut()
+    {
+        KrediKartiResmi = "KrediKarti";
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task OdemeYap()
+    {
+        if (navManager.Uri.StartsWith("http://radlab.com.tr") || navManager.Uri.StartsWith("https://radlab.com.tr"))
+        {
+            await js.InvokeVoidAsync("SweetMessage", "Bilgi", "Online ödeme bölümü yapım aşamasındadır. Çok yakında hizmete açılacaktır.", "warning");
+            return;
+        }
+
+        if (OdenecekTutar == 0)
+        {
+            await js.InvokeVoidAsync("SweetMessage", "Hata", "Ödenecek tutar bulunamadı. Ödenecek satırları işaretleyiniz.", "error");
+            return;
+        }
+
+        if (currentDTO.KrediKartiNo.Length != 19
+        || string.IsNullOrEmpty(currentDTO.KrediKartiAdSoyad)
+        || string.IsNullOrEmpty(currentDTO.KrediKartiSonKullanimAy)
+        || string.IsNullOrEmpty(currentDTO.KrediKartiSonKullanimYil)
+        || currentDTO.KrediKartiCVV.Length != 3
+        || currentDTO.SozlesmeleriKabulEtti == false)
+        {
+            await js.InvokeVoidAsync("SweetMessage", "Hata", "Lütfen tüm alanları eksiksiz doldurunuz", "error");
+            return;
+        }
+
+        //////////////// Ödemeyi kaydet ///////////////
+
+        loading = true;
+
+        currentDTO.SiparisCihazList = new List<SiparisCihazDTO>();
+
+        currentDTO.VerifyEnrollmentRequestId = Guid.NewGuid().ToString();
+
+        currentDTO.Tutar = Convert.ToDecimal(0.01); //OdenecekTutar;
+
+        foreach (var item in DSOdeme.Where(x => x.Checked).ToList())
+        {
+            item.VerifyEnrollmentRequestId = currentDTO.VerifyEnrollmentRequestId;
+            item.CVV = currentDTO.KrediKartiCVV;
+        }
+
+        var resultVerifyEnrollmentRequestId = await odemeService.UpdateOdemeVerifyEnrollmentRequestId(DSOdeme.Where(x => x.Checked).ToList());
+
+        if (resultVerifyEnrollmentRequestId.Success == false)
+        {
+            loading = false;
+
+            await InvokeAsync(StateHasChanged);
+
+            await js.InvokeVoidAsync("SweetToast", resultVerifyEnrollmentRequestId.Message, "error");
+
+            return;
+        }
+
+        //////////////// VakifBank Enrollment ///////////////
+
+        var resultEnrollment = await vakifBankService.Enrollment(currentDTO);
+
+        if (resultEnrollment.Success == false)
+        {
+            loading = false;
+
+            await InvokeAsync(StateHasChanged);
+
+            await js.InvokeVoidAsync("SweetToast", resultEnrollment.Message, "error");
+
+            return;
+        }
+
+        string apiBasePath = navManager.Uri.Replace("/MusteriTakip", "");
+
+        var resultHtmlFile = await vakifBankService.CreateHtmlFile(apiBasePath, resultEnrollment.Value.PostBackForm);
+
+        if (resultHtmlFile.Success == false)
+        {
+            loading = false;
+
+            await InvokeAsync(StateHasChanged);
+
+            await js.InvokeVoidAsync("SweetToast", resultEnrollment.Message, "error");
+
+            return;
+        }
+
+        loading = false;
+
+        navManager.NavigateTo("upload/VakifBankPostBack/" + resultHtmlFile.Value, true);
+
+        await InvokeAsync(StateHasChanged);
+    }
+}

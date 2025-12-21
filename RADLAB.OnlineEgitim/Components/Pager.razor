@@ -1,0 +1,134 @@
+﻿<div class="row" style="width:100%">
+    <div class="col-md-4">
+    </div>
+    <div class="col-md-4 text-center">
+        <div style="display:inline-flex">
+            <div style="padding: 1px;">
+                <button class="btn btn-light" style="padding: 2px 6px" @onclick="Ilk"><i class="bi bi-chevron-double-left"></i></button>
+            </div>
+            <div style="padding: 1px;">
+                <button class="btn btn-light" style="padding: 2px 6px" @onclick="Geri"><i class="bi bi-chevron-left"></i></button>
+            </div>
+            <div style="padding: 1px;">
+                <div class="form-control form-control-sm" style="display:flex">
+                    <input id="tbPageNo" style="width:80px; border:none; outline:none; text-align:center; margin: 0;" class="SpinButtonWithoutButtons" type="number" max="@MaxPage" value="@PageNo" @onchange="PageNoChange" />
+                    <div style="align-self: center;">
+                        /&nbsp;&nbsp;@MaxPage
+                    </div>
+                </div>
+            </div>
+            <div style="padding: 1px;">
+                <button class="btn btn-light" style="padding: 2px 6px" @onclick="Ileri"><i class="bi bi-chevron-right"></i></button>
+            </div>
+            <div style="padding: 1px;">
+                <button class="btn btn-light" style="padding: 2px 6px" @onclick="Son"><i class="bi bi-chevron-double-right"></i></button>
+            </div>
+            <div style="padding: 1px;">
+                &nbsp;&nbsp;&nbsp;&nbsp;
+            </div>
+            <div style="padding: 1px;">
+                <select class="form-select form-select-sm" style="width:96px;" @onchange="PageSizeChange">
+                    @foreach (int item in Items)
+                    {
+                        @if (PageSize == item)
+                        {
+                            <option selected value="@item">@item kayıt</option>
+                        }
+                        else
+                        {
+                            <option value="@item">@item kayıt</option>
+                        }
+                    }
+                </select>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4" style="align-content:center; text-align:right;">
+        @("Kayıt Sayısı " + RowCount.ToString())
+    </div>
+</div>
+
+@code
+{
+    [Parameter] public int PageNo { get; set; } = 1;
+    [Parameter] public int PageSize { get; set; } = 10;
+    [Parameter] public int RowCount { get; set; } = 0;
+    [Parameter] public EventCallback<int> PageNoChanged { get; set; }
+    [Parameter] public EventCallback<int> PageSizeChanged { get; set; }
+
+    int[] Items = { 5, 10, 25, 50, 100, 250, 500, 1000 };
+
+    int MaxPage => RowCount <= PageSize ? 1 : (RowCount % PageSize > 0 ? (RowCount / PageSize) + 1 : RowCount / PageSize);
+
+    void Ilk()
+    {
+        PageNo = 1;
+
+        PageNoChanged.InvokeAsync(PageNo);
+
+        StateHasChanged();
+    }
+
+    void Geri()
+    {
+        if (PageNo > 1) PageNo--;
+
+        PageNoChanged.InvokeAsync(PageNo);
+
+        StateHasChanged();
+    }
+
+    void Ileri()
+    {
+        if (PageNo < MaxPage) PageNo++;
+
+        PageNoChanged.InvokeAsync(PageNo);
+
+        StateHasChanged();
+    }
+
+    void Son()
+    {
+        PageNo = MaxPage;
+
+        PageNoChanged.InvokeAsync(PageNo);
+
+        StateHasChanged();
+    }
+
+    void PageNoChange(ChangeEventArgs e)
+    {
+        try
+        {
+            PageNo = Convert.ToInt32(e.Value.ToString());
+        }
+        catch
+        {
+            PageNo = 1;
+        }
+
+        if (PageNo < 1)
+            PageNo = 1;
+        else if (PageNo > MaxPage)
+            PageNo = MaxPage;
+
+        PageNoChanged.InvokeAsync(PageNo);
+
+        StateHasChanged();
+    }
+
+    void PageSizeChange(ChangeEventArgs e)
+    {
+        //PageNo = 1;
+
+        //PageNoChanged.InvokeAsync(PageNo);
+
+        //StateHasChanged();
+
+        PageSize = Convert.ToInt32(e.Value.ToString());
+
+        PageSizeChanged.InvokeAsync(PageSize);
+
+        StateHasChanged();
+    }
+}

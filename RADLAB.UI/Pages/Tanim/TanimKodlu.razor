@@ -1,0 +1,268 @@
+﻿@page "/TanimKodlu/{tanim}"
+
+@inject IJSRuntime js
+
+@using System.Threading
+@using System.Threading.Tasks
+@using System.Net.Http
+@using System.Text.Json
+
+<div class="card info-card">
+    <div class="table-responsive">
+        <table class="table table-bordered table-hover">
+            <thead>
+                <tr>
+                    <td width="50%">@BaslikTekli</td>
+                    <td width="25%">Kod</td>
+                    <td width="25%" align="center">
+                        <button class="btn text-success grid-command" @onclick="ExportToExcel"><i class="bi bi-file-earmark-excel"></i></button>
+                    </td>
+                </tr>
+                <tr>
+                    <td width="50%">
+                        <input class="form-control form-control-sm" type="text" @bind-value="addingDTO.Tanim">
+                    </td>
+                    <td width="25%">
+                        <input class="form-control form-control-sm" type="text" @bind-value="addingDTO.Kod">
+                    </td>
+                    <td width="25%" align="center">
+                        <div class="btn-group">
+                            @if (YetkiEkle)
+                            {
+                                <button class="btn text-success grid-command" @onclick="@(async () => { await Kaydet(addingDTO); })"><i class="bi bi-plus-circle"></i></button>
+                            }
+                        </div>
+                    </td>
+                </tr>
+            </thead>
+            @if (DataSource.ToList().Count == 0)
+            {
+                <tbody>
+                    <tr>
+                        <td colspan="3" align="center" valign="bottom" height="64px">
+                            <h6>Görüntülenecek Veri Yok</h6>
+                        </td>
+                    </tr>
+                </tbody>
+            }
+            else
+            {
+                <tbody>
+                    @foreach (var data in DataSource)
+                    {
+                        <tr>
+                            @if (editingDTO.Id == data.Id)
+                            {
+                                <td width="50%">
+                                    <input class="form-control form-control-sm" type="text" @bind-value="editingDTO.Tanim">
+                                </td>
+                                <td width="25%">
+                                    <input class="form-control form-control-sm" type="text" @bind-value="editingDTO.Kod">
+                                </td>
+                                <td width="25%" align="center">
+                                    <div class="btn-group">
+                                        <button class="btn text-success grid-command" @onclick="@(async () => { await Kaydet(editingDTO); })"><i class="bi bi-check-circle"></i></button>
+                                        <button class="btn text-primary grid-command" @onclick="Vazgec"><i class="bi bi-x-circle"></i></button>
+                                    </div>
+                                </td>
+                            }
+                            else
+                            {
+                                <td width="50%">@data.Tanim</td>
+                                <td width="25%">@data.Kod</td>
+                                <td width="25%" align="center">
+                                    <div class="btn-group">
+                                        @if (YetkiDegistir)
+                                        {
+                                            <button class="btn text-info grid-command" @onclick="@(async () => { await Edit(data); })"><i class="bi bi-pencil"></i></button>
+                                        }
+                                        @if (YetkiSil)
+                                        {
+                                            <button class="btn text-danger grid-command" @onclick="@(async () => { await Delete(data); })"><i class="bi bi-trash3"></i></button>
+                                        }
+                                    </div>
+                                </td>
+                            }
+                        </tr>
+                    }
+                </tbody>
+            }
+        </table>
+    </div>
+</div>
+
+@if (loading)
+{
+    <div class="progressBackground">
+        <div class="progressPopup">
+            <img alt="Bekleyiniz..." src="img/loading.gif" width="100" height="100" />
+        </div>
+    </div>
+}
+
+@code
+{
+    [Parameter]
+    public string tanim { get; set; } = "";
+
+    [Inject] protected IRolService rolService { get; set; }
+    [Inject] protected ITanimKodluService tanimKodluService { get; set; }
+
+    public class TanimKodluList
+    {
+        public string Tanim { get; set; } = string.Empty;
+        public string BaslikCoklu { get; set; } = string.Empty;
+        public string BaslikTekli { get; set; } = string.Empty;
+    }
+
+    List<TanimKodluDTO> DataSource = new List<TanimKodluDTO>();
+
+    List<TanimKodluList> TanimList = new List<TanimKodluList>()
+    {
+        new TanimKodluList() { Tanim = "ParaBirimi", BaslikCoklu = "Para Birimleri", BaslikTekli = "Para Birimi" }
+    };
+
+    TanimKodluDTO addingDTO = new TanimKodluDTO();
+    TanimKodluDTO editingDTO = new TanimKodluDTO();
+
+    bool loading = false;
+    bool YetkiEkle = false;
+    bool YetkiDegistir = false;
+    bool YetkiSil = false;
+
+    string BaslikCoklu = "";
+    string BaslikTekli = "";
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        //if (firstRender)
+        {
+            var currentTanim = TanimList.SingleOrDefault(x => x.Tanim == tanim);
+
+            BaslikCoklu = currentTanim.BaslikCoklu;
+            BaslikTekli = currentTanim.BaslikTekli;
+
+            YetkiEkle = await rolService.YetkiKontrolByYetki($"Tanımlamalar - {BaslikCoklu} - Ekle");
+            YetkiDegistir = await rolService.YetkiKontrolByYetki($"Tanımlamalar - {BaslikCoklu} - Değiştir");
+            YetkiSil = await rolService.YetkiKontrolByYetki($"Tanımlamalar - {BaslikCoklu} - Sil");
+
+            await GetData();
+
+            StateHasChanged();
+        }
+    }
+
+    async Task GetData()
+    {
+        DataSource = await tanimKodluService.GetTanimKodluList(tanim);
+    }
+
+    async Task Edit(TanimKodluDTO dto)
+    {
+        editingDTO = dto;
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task Kaydet(TanimKodluDTO dto)
+    {
+        if (string.IsNullOrEmpty(dto.Tanim) || string.IsNullOrEmpty(dto.Kod))
+        {
+            await js.InvokeVoidAsync("SweetMessage", "Uyarı", $"Şu bilgiler girilmelidir: {BaslikTekli}, Kod", "error");
+            return;
+        }
+
+        loading = true;
+
+        var result = await tanimKodluService.InsertOrUpdateTanimKodlu(tanim, dto);
+
+        if (result.Success == false)
+        {
+            loading = false;
+            StateHasChanged();
+
+            await js.InvokeVoidAsync("SweetMessage", "Uyarı", result.Message, "error");
+            return;
+        }
+
+        await GetData();
+
+        if (dto == addingDTO)
+            addingDTO = new TanimKodluDTO();
+        else if (dto == editingDTO)
+            editingDTO = new TanimKodluDTO();
+
+        loading = false;
+
+        StateHasChanged();
+
+        await js.InvokeVoidAsync("SweetToast", "Kaydedildi", "success");
+    }
+
+    async Task Vazgec()
+    {
+        editingDTO = new TanimKodluDTO();
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task Delete(TanimKodluDTO dto)
+    {
+        var dtos = new List<TanimKodluDTO>();
+
+        dtos.Add(dto);
+
+        var confirm = await js.InvokeAsync<bool>("SweetConfirm", "Uyarı", "Kayıt silinecek, emin misiniz?", "question", "Evet", "Hayır");
+
+        if (confirm)
+        {
+            var result = await tanimKodluService.DeleteTanimKodlu(tanim, dtos);
+
+            if (result.Success == false)
+            {
+                await js.InvokeVoidAsync("SweetMessage", "Hata", result.Message, "error");
+                return;
+            }
+
+            await GetData();
+
+            StateHasChanged();
+
+            await js.InvokeVoidAsync("SweetToast", "Kayıtlar silindi", "success");
+        }
+    }
+
+    public async Task ExportToExcel()
+    {
+        using (var workbook = new XLWorkbook())
+        {
+            IXLWorksheet worksheet = workbook.Worksheets.Add("Sayfa1");
+
+            worksheet.Cell(1, 1).Value = BaslikTekli;
+            worksheet.Cell(1, 2).Value = "Kod";
+
+            for (int i = 1; i <= 2; i++)
+            {
+                worksheet.Cell(1, i).Style.Font.Bold = true;
+            }
+
+            int index = 1;
+
+            foreach (var data in DataSource)
+            {
+                worksheet.Cell(index + 1, 1).Value = data.Tanim;
+                worksheet.Cell(index + 1, 2).Value = data.Kod;
+
+                index++;
+            }
+
+            using (var stream = new MemoryStream())
+            {
+                workbook.SaveAs(stream);
+                var content = stream.ToArray();
+                var fileName = tanim + "Listesi" + DateTime.Now.ToString("yyyyMMddss") + ".xlsx";
+                await js.InvokeAsync<object>("saveAsFile", fileName, Convert.ToBase64String(content));
+            }
+        }
+    }
+}

@@ -1,0 +1,254 @@
+﻿@page "/VBReturn/{VerifyEnrollmentRequestId}"
+
+@using Newtonsoft.Json
+
+@layout WebSiteLayout
+
+@inject IJSRuntime js
+@inject NavigationManager navManager
+@inject ILocalStorageService localStorageService
+
+<section class="section">
+	<div class="container">
+		<div class="row justify-content-center align-items-center">
+            @if (LoadingSuccessFailure == 0)
+            {
+                <h2>
+                    İşlem sonucu bekleniyor..
+                </h2>
+            }
+            else if (LoadingSuccessFailure == 1)
+            {
+			    <div class="alert alert-success text-center" role="alert">
+				    <br/>
+				    <i class="fas fa-check text-success" style="font-size:3rem;"></i>
+                    <h2 class="text-success">@(odemeDTO.Tablo == "Siparis" ? "Siparişiniz alındı" : "Ödemeniz alındı")</h2>
+				    <br/>
+				    <br />
+				    <a href="https://www.radlab.com.tr/musteritakip" style="font-size:1rem;">https://www.radlab.com.tr/musteritakip</a> adresinden takip edebilirsiniz.
+				    <br/>
+				    <br/>
+				    <br/>
+				    <a href="/" style="font-size:1rem;">Ana sayfaya gitmek için tıklayınız</a>
+				    <br/>
+				    <br/>
+			    </div>
+            }
+            else if (LoadingSuccessFailure == 2)
+            {
+                <div class="alert alert-danger text-center" role="alert">
+                    <h2>
+                        @hata
+                    </h2>
+                </div>
+            }
+        </div>
+    </div>
+</section>
+
+@code
+{
+    [Inject] protected ISMSMailService smsMailService { get; set; }
+    [Inject] protected IOdemeService odemeService { get; set; }
+    [Inject] protected IAyarService ayarService { get; set; }
+
+    [Parameter]
+    public string VerifyEnrollmentRequestId { get; set; }
+
+    List<OdemeDTO> odemeDTOList = new List<OdemeDTO>();
+    OdemeDTO odemeDTO = new OdemeDTO();
+
+    int LoadingSuccessFailure = 0;
+    string hata = "";
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            var result = await odemeService.GetOdemeByVerifyEnrollmentRequestId(VerifyEnrollmentRequestId);
+
+            if (result.Success == false)
+            {
+                LoadingSuccessFailure = 2;
+
+                hata = "Şu an hizmet verilememektedir. " + result.Message;
+
+                await InvokeAsync(StateHasChanged);
+
+                return;
+            }
+
+            odemeDTOList = result.Value;
+
+            if (odemeDTOList != null)
+            {
+                if (odemeDTOList.Count >= 1)
+                {
+                    odemeDTO = odemeDTOList[0];
+
+                    if (odemeDTO.TahsilatSekliId == 1)
+                    {
+                        LoadingSuccessFailure = 1;
+                    }
+                    else 
+                    {
+                        LoadingSuccessFailure = 2;
+                        hata = odemeDTO.PosIslemSonucu + " Şu an hizmet verilememektedir.";
+                    }
+                }
+            }
+
+            if (LoadingSuccessFailure == 1)
+            {
+                //////////////// Metinleri al ///////////////
+
+                string onBilgilendirmeFormuMetni = await SozlesmeMetni("OnBilgilendirmeFormuMetni");
+                string mesafeliSatisSozlesmesiMetni = await SozlesmeMetni("MesafeliSatisSozlesmesiMetni");
+
+                //////////////// Sepeti boşalt ///////////////
+
+                var RadlabCihazSatisList = JsonConvert.SerializeObject(new List<CihazSatisDTO>());
+
+                await localStorageService.SetItemAsync("RadlabCihazSatisList", RadlabCihazSatisList);
+
+                //////////////// Ziyaretçiye SMS ve Mail ///////////////
+
+                string unvan = TurkceKaraktersiz(odemeDTO.AdSoyadSiparis);
+
+                if (unvan.Length > 40) unvan = unvan.Substring(40) + "..";
+
+                string toplam = odemeDTOList.Sum(x => x.OdenecekTutar).ToString("###,##0.#0₺");
+
+                var mailDTO = new MailDTO()
+                    {
+                        Subject = "RADLAB E-Ticaret",
+                        Body = $"<a href='https://www.radlab.com.tr/musteritakip'>https://www.radlab.com.tr/musteritakip</a> adresinden takip edebilirsiniz.<br/><br/>{onBilgilendirmeFormuMetni}<br/><br/>{mesafeliSatisSozlesmesiMetni}",
+                        Mesaj = $"https:[BCKSPC][BCKSPC]www.radlab.com.tr[BCKSPC]musteritakip adresinden takip edebilirsiniz.",
+                        ToList = new List<string>() { odemeDTO.Mail },
+                        KendisineDeGonder = true,
+                        GSM = odemeDTO.GSM
+                    };
+
+                if (odemeDTO.Tablo == "Siparis")
+                {
+                    mailDTO.Body = $"Sayın {odemeDTO.AdSoyadSiparis} siparişiniz alınmıştır. " + mailDTO.Body;
+                    mailDTO.Mesaj = $"Sayin {TurkceKaraktersiz(odemeDTO.AdSoyadSiparis)} siparisiniz alinmistir. " + mailDTO.Mesaj;
+                }
+                else
+                {
+                    mailDTO.Body = $"{toplam} TL tutarındaki ödemeniz alındı. Teşekkürler. " + mailDTO.Body;
+                    mailDTO.Mesaj = $"{toplam} TL tutarindaki odemeniz alindi. Tesekkurler. " + mailDTO.Mesaj;
+                }
+
+                var resultSMSGuest = await smsMailService.SendSMSAndMail(mailDTO);
+
+                if (resultSMSGuest.Success == false)
+                {
+                    await js.InvokeVoidAsync("SweetToast", resultSMSGuest.Message, "error");
+                }
+
+                //////////////// Sistem kullanıcılarına SMS ///////////////
+
+                var resultSMSSistemKullanicilarina = await smsMailService.SendSMS("SMSSiparis", "Yeni siparis geldi !!");
+
+                if (resultSMSSistemKullanicilarina.Success == false & resultSMSSistemKullanicilarina.Message != "GSM belirlenmemis")
+                {
+                    await js.InvokeVoidAsync("SweetToast", resultSMSSistemKullanicilarina.Message, "error");
+                }
+            }
+
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    public string TurkceKaraktersiz(string text)
+    {
+        text = text.Replace("İ", "I");
+        text = text.Replace("ı", "i");
+        text = text.Replace("Ğ", "G");
+        text = text.Replace("ğ", "g");
+        text = text.Replace("Ö", "O");
+        text = text.Replace("ö", "o");
+        text = text.Replace("Ü", "U");
+        text = text.Replace("ü", "u");
+        text = text.Replace("Ş", "S");
+        text = text.Replace("ş", "s");
+        text = text.Replace("Ç", "C");
+        text = text.Replace("ç", "c");
+
+        return text;
+    }
+
+    async Task<string> SozlesmeMetni(string tip)
+    {
+        string R = "";
+
+        var odemeDTO = odemeDTOList[0];
+
+        if (tip == "OnBilgilendirmeFormuMetni")
+        {
+            string urunler = $@"<table class='table table-bordered'>
+                                    <thead>
+                                        <tr>
+                                            <td>Ürün Bilgisi</td>
+                                            <td align='right'>Birim Fiyat</td>
+                                            <td align='center'>Miktar</td>
+                                            <td align='right'>Tutar</td>
+                                        </tr>
+                                    </thead>
+                                    <tbody>";
+
+            foreach (var item in odemeDTOList)
+            {
+                string cihaz = item.Aciklama;
+                string fiyat = item.OdenecekTutar.ToString("###,##0.#0₺");
+                string miktar = "1";
+                string tutar = item.OdenecekTutar.ToString("###,##0.#0₺");
+
+                urunler += $@"  <tr>
+                                    <td>{cihaz}</td>
+                                    <td align='right'>{fiyat}</td>
+                                    <td align='center'>{miktar}</td>
+                                    <td align='right'>{tutar}</td>
+                                </tr>";
+            }
+
+            urunler += $@"</tbody>
+                    <tfoot>";
+
+            string toplam = odemeDTOList.Sum(x => x.OdenecekTutar).ToString("###,##0.#0₺");
+
+            urunler += $@"  <tr>
+                                <td colspan='3' align='right'>TOPLAM</td>
+                                <td align='right'>{toplam}</td>
+                            </tr>";
+
+            urunler += $@"</tfoot></table>";
+
+            R = await ayarService.GetMetin("OnBilgilendirmeFormuMetni");
+
+            R = R
+            .Replace("[AdSoyadSiparis]", odemeDTO.AdSoyadSiparis)
+            .Replace("[AdresSiparis]", odemeDTO.AdresSiparis)
+            .Replace("[GSM]", odemeDTO.GSM)
+            .Replace("[Mail]", odemeDTO.Mail)
+            .Replace("[Urunler]", urunler);
+        }
+        else if (tip == "MesafeliSatisSozlesmesiMetni")
+        {
+            string AdresSiparis = odemeDTO.AdresSiparis;
+
+            R = await ayarService.GetMetin("MesafeliSatisSozlesmesiMetni");
+
+            R = R
+            .Replace("[AdSoyadSiparis]", odemeDTO.AdSoyadSiparis)
+            .Replace("[AdresSiparis]", AdresSiparis)
+            .Replace("[AdresFatura]", odemeDTO.AdresFatura)
+            .Replace("[GSM]", odemeDTO.GSM)
+            .Replace("[KargoUcreti]", odemeDTO.KargoUcreti.ToString("###,##0.#0₺"))
+            .Replace("[Tarih]", DateTime.Now.ToString("dd.MM.yyyy"));
+        }
+
+        return R;
+    }
+}

@@ -1,0 +1,854 @@
+﻿@layout WebSiteLayout
+
+@page "/Sepet"
+
+@using Newtonsoft.Json
+@using Newtonsoft.Json.Linq
+@using System.Collections.Specialized
+@using System.Text
+@using System.Security.Cryptography
+
+@inject IJSRuntime js
+@inject NavigationManager navManager
+
+<style>
+    .WizardStep {
+        border: 0.2rem solid green;
+        border-radius: 2rem;
+        width: 3.2rem;
+        height: 3.2rem;
+        text-align: center;
+        font-size: 1.8rem;
+        font-weight: bold;
+        color: green;
+    }
+
+    .WizardStepFill {
+        border: 0.2rem solid green;
+        border-radius: 2rem;
+        width: 3.2rem;
+        height: 3.2rem;
+        text-align: center;
+        font-size: 1.8rem;
+        font-weight: bold;
+        background-color: green;
+        color: white;
+    }
+
+    .card {
+        border: none;
+        border-radius: 5px;
+        box-shadow: 0px 0 30px rgba(1, 41, 112, 0.1);
+    }
+
+    .card-title {
+        padding: 0 0 10px 0;
+        font-size: 18px;
+        font-weight: 500;
+        color: #012970;
+        font-family: "Poppins", sans-serif;
+    }
+
+    .card-header {
+        background-color: inherit;
+        padding-top: 1rem;
+    }
+</style>
+
+<div class="section">
+    <div class="container">
+        <div class="row justify-content-center mb-0">
+            <div class="col-lg-12">
+                @if (AlimaGecti)
+                {
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="row">
+                                <div class="col text-center">
+                                    <label class=@(WizardStep >= 1 ? "WizardStepFill" : "WizardStep")>
+                                        1
+                                    </label>
+                                    <br />
+                                    <span>
+                                        Ürünler
+                                    </span>
+                                </div>
+                                <div class="col text-center">
+                                    <label class=@(WizardStep >= 2 ? "WizardStepFill" : "WizardStep")>
+                                        2
+                                    </label>
+                                    <br />
+                                    <span>
+                                        Alıcı Bilgileri
+                                    </span>
+                                </div>
+                                <div class="col text-center">
+                                    <label class=@(WizardStep >= 3 ? "WizardStepFill" : "WizardStep")>
+                                        3
+                                    </label>
+                                    <br />
+                                    <span>
+                                        Ödeme
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            @if (WizardStep == 1)
+                            {
+                                <div class="row">
+                                    <div class="col-md-12">
+                                        <SepetComp @ref="sepet" GosterimSekli="2"></SepetComp>
+                                    </div>
+                                    <div class="col-md-12 mt-4" style="text-align:right;">
+                                        <button type="submit" class="btn btn-primary" @onclick="IleriSepet">İleri&nbsp;&nbsp;<i class="bi bi-chevron-right"></i></button>
+                                    </div>
+                                </div>
+                            }
+                            else if (WizardStep == 2)
+                            {
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <div class="input-group input-group-sm">
+                                            <span class="input-group-text" id="spnAdSoyadSiparis" style="width: 160px;">Adınız ve Soyadınız</span>
+                                            <input id="tbAdSoyadSiparis" class="form-control form-control-sm" type="text" @bind-value="currentDTO.AdSoyadSiparis" aria-describedby="spnAdSoyadSiparis">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <div class="input-group input-group-sm">
+                                            <span class="input-group-text" id="spnTCKimlikNoSiparis" style="width: 160px;">TC Kimlik No</span>
+                                            <input id="tbTCKimlikNoSiparis" class="form-control form-control-sm" type="text" @bind-value="currentDTO.TCKimlikNoSiparis" aria-describedby="spnTCKimlikNoSiparis">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <div class="input-group input-group-sm">
+                                            <span class="input-group-text" id="spnMail" style="width: 160px;">E-Posta Adresiniz</span>
+                                            <input id="tbMail" class="form-control form-control-sm" type="text" @bind-value="currentDTO.Mail" aria-describedby="spnMail">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <div class="input-group input-group-sm">
+                                            <span class="input-group-text" id="spnTelefonCep" style="width: 160px;">GSM Numaranız</span>
+                                            <input id="tbTelefonCep" class="form-control form-control-sm" type="text" @bind-value="currentDTO.GSM" aria-describedby="spnTelefonCep"
+                                            placeholder="Başında 0 olmadan 10 karakter giriniz">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <div class="input-group input-group-sm">
+                                            <span class="input-group-text" id="spnIlSiparis" style="width: 160px;">İl</span>
+                                            <select class="form-select form-select-sm" id="ddlIlSiparis" @onchange="async eventArgs => { await IlSecSiparis(eventArgs.Value); }" aria-describedby="spnIlSiparis">
+                                                <option value="0"></option>
+                                                @foreach (var item in DSIlSiparis)
+                                                {
+                                                    if (currentDTO.IlIdSiparis == item.Id)
+                                                    {
+                                                        <option selected value="@item.Id">@item.Ad</option>
+                                                    }
+                                                    else
+                                                    {
+                                                        <option value="@item.Id">@item.Ad</option>
+                                                    }
+                                                }
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <div class="input-group input-group-sm">
+                                            <span class="input-group-text" id="spnIlceSiparis" style="width: 160px;">İlçe</span>
+                                            <select class="form-select form-select-sm" id="ddlIlceSiparis" @bind="currentDTO.IlceIdSiparis" aria-describedby="spnIlceSiparis">
+                                                <option value="0"></option>
+                                                @foreach (var item in DSIlceSiparis)
+                                                {
+                                                    <option value="@item.Id">@item.Ad</option>
+                                                }
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-12 mb-3">
+                                        <div class="input-group input-group-sm">
+                                            <span class="input-group-text" id="spnAdresSiparis" style="width: 160px;">Adres</span>
+                                            <input id="tbAdresSiparis" class="form-control form-control-sm" type="text" @bind-value="currentDTO.AdresSiparis" aria-describedby="spnAdresSiparis"
+                                            placeholder="Mahalle, cadde, sokak, bina no, daire no, posta kodu..">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-12 mb-3">
+                                        <div class="input-group input-group-sm">
+                                            <span class="input-group-text" id="spnFaturaTipi" style="width: 160px;">Fatura Adresi</span>
+                                            <select class="form-select form-select-sm" id="ddlFaturaTipi" @bind="currentDTO.FaturaTipi" aria-describedby="spnFaturaTipi">
+                                                <option value="0"></option>
+                                                <option value="1">Sipariş adresi ile aynı</option>
+                                                <option value="2">Sipariş adresinden farklı bireysel fatura</option>
+                                                <option value="3">Sipariş adresinden farklı kurumsal fatura</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    @if (currentDTO.FaturaTipi > 1)
+                                    {
+                                        @if (currentDTO.FaturaTipi == 2)
+                                        {
+                                            <div class="col-md-6 mb-3">
+                                                <div class="input-group input-group-sm">
+                                                    <span class="input-group-text" id="spnAdSoyadFatura" style="width: 160px;">Ad Soyad</span>
+                                                    <input id="tbAdSoyadFatura" class="form-control form-control-sm" type="text" @bind-value="currentDTO.AdSoyadFatura" aria-describedby="spnAdSoyadFatura">
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6 mb-3">
+                                                <div class="input-group input-group-sm">
+                                                    <span class="input-group-text" id="spnTCKimlikNoFatura" style="width: 160px;">TC Kimlik No</span>
+                                                    <input id="tbTCKimlikNoFatura" class="form-control form-control-sm" type="text" @bind-value="currentDTO.TCKimlikNoFatura" aria-describedby="spnTCKimlikNoFatura">
+                                                </div>
+                                            </div>
+                                        }
+                                        else @if (currentDTO.FaturaTipi == 3)
+                                        {
+                                            <div class="col-md-12 mb-3">
+                                                <div class="input-group input-group-sm">
+                                                    <span class="input-group-text" id="spnUnvanFatura" style="width: 160px;">Şirket Unvanı</span>
+                                                    <input id="tbUnvanFatura" class="form-control form-control-sm" type="text" @bind-value="currentDTO.UnvanFatura" aria-describedby="spnUnvanFatura">
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6 mb-3">
+                                                <div class="input-group input-group-sm">
+                                                    <span class="input-group-text" id="spnVergiDairesiFatura" style="width: 160px;">Vergi Dairesi</span>
+                                                    <input id="tbVergiDairesiFatura" class="form-control form-control-sm" type="text" @bind-value="currentDTO.VergiDairesiFatura" aria-describedby="spnVergiDairesiFatura">
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6 mb-3">
+                                                <div class="input-group input-group-sm">
+                                                    <span class="input-group-text" id="spnVergiNoFatura" style="width: 160px;">Vergi No</span>
+                                                    <input id="tbVergiNoFatura" class="form-control form-control-sm" type="text" @bind-value="currentDTO.VergiNoFatura" aria-describedby="spnVergiNoFatura">
+                                                </div>
+                                            </div>
+                                        }
+                                        <div class="col-md-6 mb-3">
+                                            <div class="input-group input-group-sm">
+                                                <span class="input-group-text" id="spnIlFatura" style="width: 160px;">İl</span>
+                                                <select class="form-select form-select-sm" id="ddlIlFatura" @onchange="async eventArgs => { await IlSecFatura(eventArgs.Value); }" aria-describedby="spnIlFatura">
+                                                    <option value="0"></option>
+                                                    @foreach (var item in DSIlFatura)
+                                                    {
+                                                        if (currentDTO.IlIdFatura == item.Id)
+                                                        {
+                                                            <option selected value="@item.Id">@item.Ad</option>
+                                                        }
+                                                        else
+                                                        {
+                                                            <option value="@item.Id">@item.Ad</option>
+                                                        }
+                                                    }
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <div class="input-group input-group-sm">
+                                                <span class="input-group-text" id="spnIlceFatura" style="width: 160px;">İlçe</span>
+                                                <select class="form-select form-select-sm" id="ddlIlceFatura" @bind="currentDTO.IlceIdFatura" aria-describedby="spnIlceFatura">
+                                                    <option value="0"></option>
+                                                    @foreach (var item in DSIlceFatura)
+                                                    {
+                                                        <option value="@item.Id">@item.Ad</option>
+                                                    }
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-12 mb-3">
+                                            <div class="input-group input-group-sm">
+                                                <span class="input-group-text" id="spnAdresFatura" style="width: 160px;">Adres</span>
+                                                <input id="tbAdresFatura" class="form-control form-control-sm" type="text" @bind-value="currentDTO.AdresFatura" aria-describedby="spnAdresFatura"
+                                            placeholder="Mahalle, cadde, sokak, bina no, daire no, posta kodu..">
+                                            </div>
+                                        </div>
+                                    }
+                                    <div class="col-md-12" style="text-align:right;">
+                                        <button type="button" class="btn btn-primary" @onclick="GeriAlici"><i class="bi bi-chevron-left"></i>&nbsp;&nbsp;Geri</button>
+                                        <button type="submit" class="btn btn-primary" @onclick="IleriAlici">İleri&nbsp;&nbsp;<i class="bi bi-chevron-right"></i></button>
+                                    </div>
+                                </div>
+                            }
+                            else if (WizardStep == 3)
+                            {
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="row">
+                                            <div class="col-md-12 mb-3">
+                                                <div class="input-group input-group-sm">
+                                                    <span class="input-group-text" id="spnKrediKartiAdSoyad" style="width: 160px;">Kart Üzerindeki İsim</span>
+                                                    <input id="tbKrediKartiAdSoyad" class="form-control form-control-sm" type="text" aria-describedby="spnKrediKartiAdSoyad"
+                                                        @onfocusin="tbKrediKartiAdSoyadFocusIn" @onfocusout="tbKrediKartiFocusOut" @bind-value="currentDTO.KrediKartiAdSoyad">
+                                                </div>
+                                            </div>
+                                            <div class="col-md-12 mb-3">
+                                                <div class="input-group input-group-sm">
+                                                    <span class="input-group-text" id="spnKrediKartiNo" style="width: 160px;">Kart Numarası</span>
+                                                    <input id="tbKrediKartiNo" class="form-control form-control-sm" type="text" aria-describedby="spnKrediKartiNo"
+                                                        @onfocusin="tbKrediKartiKartNoFocusIn" @onfocusout="tbKrediKartiFocusOut" @bind-value="currentDTO.KrediKartiNo">
+                                                </div>
+                                            </div>
+                                            <div class="col-md-12 mb-3">
+                                                <div class="input-group input-group-sm">
+                                                    <span class="input-group-text" id="spnKrediKartiSonKullanimAy" style="width: 160px;">Son Kullanım Tarihi</span>
+                                                    <select class="form-select form-select-sm" id="ddlKrediKartiSonKullanimAy" aria-describedby="spnKrediKartiSonKullanimAy"
+                                                        @onfocusin="ddlKrediKartiSonKullanimAyFocusIn" @onfocusout="tbKrediKartiFocusOut" @bind="currentDTO.KrediKartiSonKullanimAy">
+                                                        <option value="0"></option>
+                                                        <option value="1">1</option>
+                                                        <option value="2">2</option>
+                                                        <option value="3">3</option>
+                                                        <option value="4">4</option>
+                                                        <option value="5">5</option>
+                                                        <option value="6">6</option>
+                                                        <option value="7">7</option>
+                                                        <option value="8">8</option>
+                                                        <option value="9">9</option>
+                                                        <option value="10">10</option>
+                                                        <option value="11">11</option>
+                                                        <option value="12">12</option>
+                                                    </select>
+                                                    <select class="form-select form-select-sm" id="ddlKrediKartiSonKullanimYil" aria-describedby="spnKrediKartiSonKullanimYil" 
+                                                        @onfocusin="ddlKrediKartiSonKullanimYilFocusIn" @onfocusout="tbKrediKartiFocusOut" @bind="currentDTO.KrediKartiSonKullanimYil">
+                                                        <option value="0"></option>
+                                                        @foreach (var item in DSSonKullanimYil)
+                                                        {
+                                                            <option value="@item.Id">@item.Ad</option>
+                                                        }
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-12 mb-3">
+                                                <div class="input-group input-group-sm">
+                                                    <span class="input-group-text" id="spnKrediKartiCVV" style="width: 160px;">CVV</span>
+                                                    <input id="tbKrediKartiCVV" class="form-control form-control-sm" type="text" maxlength="3" aria-describedby="spnKrediKartiCVV" placeholder="Kartın arka yüzündeki son 3 basamak" 
+                                                        @onfocusin="tbKrediKartiCVVFocusIn" @onfocusout="tbKrediKartiFocusOut" @bind-value="currentDTO.KrediKartiCVV">
+                                                </div>
+                                            </div>
+                                            <div class="col-md-12 mb-3">
+                                                <div class="form-control form-control-sm">
+                                                    <input type="checkbox" class="form-check-input" id="cbSozlesmeleriKabulEtti" @bind="currentDTO.SozlesmeleriKabulEtti">
+                                                    <label for="cbSozlesmeleriKabulEtti" class="form-check-label">
+                                                        <a href="javascript:void()" @onclick="OnBilgilendirmeFormu">
+                                                            Ön Bilgilendirme Formunu
+                                                        </a>
+                                                        ve
+                                                        <a href="javascript:void()" @onclick="MesafeliSatisSozlesmesi">
+                                                            Mesafeli Satış Sözleşmesini
+                                                        </a>
+                                                        okudum, onaylıyorum.
+                                                    </label>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-12 mb-3">
+                                                <div class="form-control form-control-sm">
+                                                    <b>Toplam Ödenecek Tutar: <span class="badge bg-success" style="font-size:1.5em;">@ToplamOdenecekTutar.ToString("###,##0.#0₺")</span></b>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6 text-end">
+                                        @if (string.IsNullOrEmpty(KrediKartiResmi) == false)
+                                        {
+                                            <img src=@("img/" + KrediKartiResmi + ".png") width="400"/>
+                                        }
+                                    </div>
+                                    <div class="col-md-12 mt-4" style="text-align:right;">
+                                        <button type="button" class="btn btn-primary" @onclick="GeriOdeme"><i class="bi bi-chevron-left"></i>&nbsp;&nbsp;Geri</button>
+                                        <button type="submit" class="btn btn-primary" @onclick="IleriOdeme">Siparişi Tamamla&nbsp;&nbsp;<i class="bi bi-chevron-right"></i></button>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <div class="row">
+                        <div class="col-md-12">
+                            <SepetComp GosterimSekli="1"></SepetComp>
+                        </div>
+                        <div class="col-md-12 mt-4 text-center">
+                            <a href="/OnlineSatis" class="btn btn-outline-primary ms-2 ms-lg-3">Alışverişe Devam Et</a>
+                            <button class="btn btn-primary ms-2 ms-lg-3" @onclick="AlisverisiTamamla">Alışverişi Tamamla</button>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<button id="popupSozlesmeAc" type="button" data-bs-toggle="modal" data-bs-target="#popupSozlesme" style="visibility:hidden;">
+</button>
+
+<div class="modal fade" id="popupSozlesme" tabindex="-1" aria-labelledby="popupSozlesmeLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="popupSozlesmeLabel">@(OnBilgilendirmeFormuMesafeliSatisSozlesmesi == 1 ? "TÜKETİCİ MEVZUATI GEREĞİNCE ÖN BİLGİLENDİRME FORMU" : "SATIŞ SÖZLEŞMESİ")</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                @((MarkupString)Metin)
+            </div>
+            <div class="modal-footer">
+                <button id="popupSozlesmeKapat" type="button" class="btn btn-primary btn-sm" data-bs-dismiss="modal">Kapat</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (loading)
+{
+    <div class="progressBackground">
+        <div class="progressPopup">
+            <img alt="Bekleyiniz..." src="img/loading.gif" width="100" height="100" />
+        </div>
+    </div>
+}
+
+@code
+{
+    [Inject] protected ISMSMailService smsMailService { get; set; }
+    [Inject] protected ILookupService lookupService { get; set; }
+    [Inject] protected ISiparisService siparisService { get; set; }
+    [Inject] protected IAyarService ayarService { get; set; }
+    [Inject] protected IVakifBankService vakifBankService { get; set; }
+
+    List<LookupBasicDTO> DSIlSiparis = new List<LookupBasicDTO>();
+    List<LookupBasicDTO> DSIlFatura = new List<LookupBasicDTO>();
+    List<LookupBasicDTO> DSIlceSiparis = new List<LookupBasicDTO>();
+    List<LookupBasicDTO> DSIlceFatura = new List<LookupBasicDTO>();
+    List<LookupBasicDTO> DSSonKullanimYil = new List<LookupBasicDTO>();
+
+    SepetComp sepet;
+    SiparisDTO currentDTO = new SiparisDTO();
+
+    bool debug = false;
+    bool loading = false;
+    int WizardStep = 1;
+    bool AlimaGecti = false;
+    decimal ToplamOdenecekTutar = 0;
+    int OnBilgilendirmeFormuMesafeliSatisSozlesmesi = 0;
+    string Metin = "";
+    string KrediKartiResmi = "KrediKarti";
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            DSIlSiparis = await lookupService.GetLookupFromMasterDetail("IlIlce", 0);
+            DSIlFatura = await lookupService.GetLookupFromMasterDetail("IlIlce", 0);
+
+            int Yil = DateTime.Now.Year - 2000;
+
+            for (int i = 0; i <= 20; i++)
+            {
+                DSSonKullanimYil.Add(new LookupBasicDTO() { Id = Yil + i, Ad = (Yil + i).ToString().PadLeft(2, '0') });
+            }
+
+#if DEBUG
+    debug = true;
+#endif
+
+            if (debug)
+            {
+                currentDTO.AdSoyadSiparis = "Çetin Onak";
+                currentDTO.TCKimlikNoSiparis = "18691915954";
+                currentDTO.Mail = "cetoonak@hotmail.com";
+                currentDTO.GSM = "5544055086";
+                currentDTO.IlIdSiparis = 6;
+                DSIlceSiparis = await lookupService.GetLookupFromMasterDetail("IlIlce", 6);
+                currentDTO.IlceIdSiparis = 1745;
+                currentDTO.AdresSiparis = "Keçiören";
+                currentDTO.FaturaTipi = 1;
+
+                currentDTO.KrediKartiAdSoyad = "ÇETİN ONAK";
+                currentDTO.KrediKartiNo = "9792 1630 0177 4214";
+                currentDTO.KrediKartiSonKullanimYil = "28";
+                currentDTO.KrediKartiSonKullanimAy = "11";
+                currentDTO.KrediKartiCVV = "369";
+                /*currentDTO.KrediKartiNo = "5188 9630 0351 6533";
+                currentDTO.KrediKartiSonKullanimYil = "27";
+                currentDTO.KrediKartiSonKullanimAy = "6";
+                currentDTO.KrediKartiCVV = "661";*/
+                currentDTO.SozlesmeleriKabulEtti = true;
+                currentDTO.KrediKartiBrandName = (currentDTO.KrediKartiNo.StartsWith("4") ? "100" : (currentDTO.KrediKartiNo.StartsWith("5") ? "200" : (currentDTO.KrediKartiNo.StartsWith("9") ? "300" : "")));
+            }
+
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    bool IsValidEmail(string email)
+    {
+        var trimmedEmail = email.Trim();
+
+        if (trimmedEmail.EndsWith("."))
+        {
+            return false;
+        }
+
+        try
+        {
+            var addr = new System.Net.Mail.MailAddress(email);
+            return addr.Address == trimmedEmail;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    public string TurkceKaraktersiz(string text)
+    {
+        text = text.Replace("İ", "I");
+        text = text.Replace("ı", "i");
+        text = text.Replace("Ğ", "G");
+        text = text.Replace("ğ", "g");
+        text = text.Replace("Ö", "O");
+        text = text.Replace("ö", "o");
+        text = text.Replace("Ü", "U");
+        text = text.Replace("ü", "u");
+        text = text.Replace("Ş", "S");
+        text = text.Replace("ş", "s");
+        text = text.Replace("Ç", "C");
+        text = text.Replace("ç", "c");
+
+        return text;
+    }
+
+    async Task AlisverisiTamamla()
+    {
+        if (navManager.Uri.StartsWith("http://radlab.com.tr") || navManager.Uri.StartsWith("https://radlab.com.tr"))
+        {
+            await js.InvokeVoidAsync("SweetMessage", "Bilgi", "Cihaz satış bölümü yapım aşamasındadır. Çok yakında hizmete açılacaktır.", "warning");
+            return;
+        }
+
+        AlimaGecti = true;
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task IlSecSiparis(object value)
+    {
+        int IlId = Convert.ToInt32(value.ToString());
+
+        DSIlceSiparis = await lookupService.GetLookupFromMasterDetail("IlIlce", (IlId == 0 ? -1 : IlId));
+
+        currentDTO.IlIdSiparis = IlId;
+        currentDTO.IlceIdSiparis = 0;
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task IlSecFatura(object value)
+    {
+        int IlId = Convert.ToInt32(value.ToString());
+
+        DSIlceFatura = await lookupService.GetLookupFromMasterDetail("IlIlce", (IlId == 0 ? -1 : IlId));
+
+        currentDTO.IlIdFatura = IlId;
+        currentDTO.IlceIdFatura = 0;
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task GeriAlici()
+    {
+        WizardStep = 1;
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task GeriOdeme()
+    {
+        WizardStep = 2;
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task IleriSepet()
+    {
+        currentDTO.KargoFirmasiId = sepet.KargoFirmasiId;
+        currentDTO.KargoFirmasi = sepet.KargoFirmasi;
+        currentDTO.KargoUcreti = sepet.KargoUcreti;
+
+        ToplamOdenecekTutar = sepet.DSCihaz.Sum(x => (x.Miktar * x.Fiyat)) + sepet.KargoUcreti;
+
+        WizardStep = 2;
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task IleriAlici()
+    {
+        bool validateFarkliFaturaAdresi = false;
+
+        bool validateOrtak =
+            !string.IsNullOrEmpty(currentDTO.Mail)
+            & IsValidEmail(currentDTO.Mail)
+            & !string.IsNullOrEmpty(currentDTO.GSM)
+            & currentDTO.GSM.Length == 10
+            & !string.IsNullOrEmpty(currentDTO.TCKimlikNoSiparis)
+            & currentDTO.TCKimlikNoSiparis.Length == 11
+            & !string.IsNullOrEmpty(currentDTO.AdSoyadSiparis)
+            & currentDTO.IlIdSiparis > 0
+            & currentDTO.IlceIdSiparis > 0
+            & !string.IsNullOrEmpty(currentDTO.AdresSiparis)
+            & currentDTO.FaturaTipi > 0;
+
+        bool validateFarkliFaturaAdresiOrtak =
+            currentDTO.IlIdFatura > 0
+            & currentDTO.IlceIdFatura > 0
+            & !string.IsNullOrEmpty(currentDTO.AdresFatura);
+
+        if (currentDTO.FaturaTipi == 1)
+        {
+            validateFarkliFaturaAdresi = true;
+        }
+        else if (currentDTO.FaturaTipi == 2)
+        {
+            validateFarkliFaturaAdresi =
+                validateFarkliFaturaAdresiOrtak
+                & !string.IsNullOrEmpty(currentDTO.TCKimlikNoFatura)
+                & currentDTO.TCKimlikNoFatura.Length == 11
+                & !string.IsNullOrEmpty(currentDTO.AdSoyadFatura);
+        }
+        else if (currentDTO.FaturaTipi == 3)
+        {
+            validateFarkliFaturaAdresi =
+                validateFarkliFaturaAdresiOrtak
+                & !string.IsNullOrEmpty(currentDTO.UnvanFatura)
+                & !string.IsNullOrEmpty(currentDTO.VergiDairesiFatura)
+                & !string.IsNullOrEmpty(currentDTO.VergiNoFatura)
+                & currentDTO.VergiNoFatura.Length == 10;
+        }
+
+        if (validateOrtak == false || validateFarkliFaturaAdresi == false)
+        {
+            await js.InvokeVoidAsync("SweetToast", "Lütfen tüm alanları doldurunuz.<br/>TC kimlik numarasının 11, GSM numarasının 10, kurumsal faturalar için vergi numarasının 10 karakter olmasına dikkat ediniz.", "error");
+            return;
+        }
+
+        WizardStep = 3;
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task tbKrediKartiAdSoyadFocusIn()
+    {
+        KrediKartiResmi = "KrediKartiIsim";
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task tbKrediKartiKartNoFocusIn()
+    {
+        KrediKartiResmi = "KrediKartiKartNo";
+
+        await js.InvokeVoidAsync("tbKrediKartiNoOnInput");
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task ddlKrediKartiSonKullanimYilFocusIn()
+    {
+        KrediKartiResmi = "KrediKartiYil";
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task ddlKrediKartiSonKullanimAyFocusIn()
+    {
+        KrediKartiResmi = "KrediKartiAy";
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task tbKrediKartiCVVFocusIn()
+    {
+        KrediKartiResmi = "KrediKartiCVV";
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task tbKrediKartiFocusOut()
+    {
+        KrediKartiResmi = "KrediKarti";
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task<string> SozlesmeMetni(string tip)
+    {
+        string R = "";
+
+        if (tip == "OnBilgilendirmeFormuMetni")
+        {
+            string urunler = $@"<table class='table table-bordered'>
+                                    <thead>
+                                        <tr>
+                                            <td>Ürün Bilgisi</td>
+                                            <td align='right'>Birim Fiyat</td>
+                                            <td align='center'>Miktar</td>
+                                            <td align='right'>Tutar</td>
+                                        </tr>
+                                    </thead>
+                                    <tbody>";
+
+            foreach (var item in sepet.DSCihaz)
+            {
+                string cihaz = item.Marka + " " + item.Model;
+                string fiyat = item.Fiyat.ToString("###,##0.#0₺");
+                string miktar = item.Miktar.ToString();
+                string tutar = (item.Fiyat * item.Miktar).ToString("###,##0.#0₺");
+
+                urunler += $@"  <tr>
+                                    <td>{cihaz}</td>
+                                    <td align='right'>{fiyat}</td>
+                                    <td align='center'>{miktar}</td>
+                                    <td align='right'>{tutar}</td>
+                                </tr>";
+            }
+
+            urunler += $@"</tbody>
+                    <tfoot>";
+
+            string toplam = sepet.DSCihaz.Sum(x => (x.Miktar * x.Fiyat)).ToString("###,##0.#0₺");
+
+            urunler += $@"  <tr>
+                                <td colspan='3' align='right'>TOPLAM</td>
+                                <td align='right'>{toplam}</td>
+                            </tr>";
+
+            urunler += $@"</tfoot></table>";
+
+            R = await ayarService.GetMetin("OnBilgilendirmeFormuMetni");
+
+            R = R
+            .Replace("[AdSoyadSiparis]", currentDTO.AdSoyadSiparis)
+            .Replace("[AdresSiparis]", currentDTO.AdresSiparis + " " + currentDTO.IlceSiparis + " " + currentDTO.IlSiparis)
+            .Replace("[GSM]", currentDTO.GSM)
+            .Replace("[Mail]", currentDTO.Mail)
+            .Replace("[Urunler]", urunler);
+        }
+        else if (tip == "MesafeliSatisSozlesmesiMetni")
+        {
+            string AdresSiparis = currentDTO.AdresSiparis + " " + currentDTO.IlceSiparis + " " + currentDTO.IlSiparis;
+
+            R = await ayarService.GetMetin("MesafeliSatisSozlesmesiMetni");
+
+            R = R
+            .Replace("[AdSoyadSiparis]", currentDTO.AdSoyadSiparis)
+            .Replace("[AdresSiparis]", AdresSiparis)
+            .Replace("[AdresFatura]", currentDTO.FaturaTipi == 1 ? AdresSiparis : currentDTO.AdresFatura + " " + currentDTO.IlceFatura + " " + currentDTO.IlFatura)
+            .Replace("[GSM]", currentDTO.GSM)
+            .Replace("[KargoUcreti]", currentDTO.KargoUcreti.ToString("###,##0.#0₺"))
+            .Replace("[Tarih]", DateTime.Now.ToString("dd.MM.yyyy"));
+        }
+
+        return R;
+    }
+
+    async Task OnBilgilendirmeFormu()
+    {
+        Metin = await SozlesmeMetni("OnBilgilendirmeFormuMetni");
+
+        OnBilgilendirmeFormuMesafeliSatisSozlesmesi = 1;
+
+        await js.InvokeVoidAsync("bsPopupAc", "popupSozlesme");
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task MesafeliSatisSozlesmesi()
+    {
+        Metin = await SozlesmeMetni("MesafeliSatisSozlesmesiMetni");
+
+        OnBilgilendirmeFormuMesafeliSatisSozlesmesi = 2;
+
+        await js.InvokeVoidAsync("bsPopupAc", "popupSozlesme");
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task IleriOdeme()
+    {
+        if (currentDTO.KrediKartiNo.Length != 19 
+        || string.IsNullOrEmpty(currentDTO.KrediKartiAdSoyad) 
+        || string.IsNullOrEmpty(currentDTO.KrediKartiSonKullanimAy) 
+        || string.IsNullOrEmpty(currentDTO.KrediKartiSonKullanimYil) 
+        || currentDTO.KrediKartiCVV.Length != 3
+        || currentDTO.SozlesmeleriKabulEtti == false)
+        {
+            await js.InvokeVoidAsync("SweetMessage", "Hata", "Lütfen tüm alanları eksiksiz doldurunuz", "error");
+            return;
+        }
+
+        //////////////// Siparişi kaydet ///////////////
+
+        loading = true;
+
+        currentDTO.SiparisCihazList = new List<SiparisCihazDTO>();
+
+        foreach (var item in sepet.DSCihaz)
+        {
+            currentDTO.SiparisCihazList.Add(new SiparisCihazDTO()
+                {
+                    ModelId = item.Id,
+                    Marka = item.Marka,
+                    Model = item.Model,
+                    Fiyat = item.Fiyat,
+                    Miktar = item.Miktar,
+                    KdvOrani = item.KdvOrani,
+                    DataSourceModel = new List<LookupBasicDTO>()
+                });
+        }
+
+        currentDTO.VerifyEnrollmentRequestId = Guid.NewGuid().ToString();
+
+        currentDTO.Tutar = Convert.ToDecimal(0.01);
+        //currentDTO.Tutar = Convert.ToDecimal((sepet.DSCihaz.Sum(x => (x.Miktar * x.Fiyat)) + sepet.KargoUcreti) * 100);
+
+        var resultSiparisKaydet = await siparisService.InsertSiparis(currentDTO);
+
+        if (resultSiparisKaydet.Success == false)
+        {
+            loading = false;
+
+            await InvokeAsync(StateHasChanged);
+
+            await js.InvokeVoidAsync("SweetMessage", "Hata", resultSiparisKaydet.Message, "error");
+
+            return;
+        }
+
+        currentDTO.Id = Convert.ToInt32(resultSiparisKaydet.Value);
+
+        //////////////// VakifBank Enrollment ///////////////
+
+        var resultEnrollment = await vakifBankService.Enrollment(currentDTO);
+
+        if (resultEnrollment.Success == false)
+        {
+            await js.InvokeVoidAsync("SweetToast", resultEnrollment.Message, "error");
+
+            return;
+        }
+
+        string apiBasePath = navManager.Uri.Replace("/Sepet", "");
+
+        var resultHtmlFile = await vakifBankService.CreateHtmlFile(apiBasePath, resultEnrollment.Value.PostBackForm);
+
+        if (resultHtmlFile.Success == false)
+        {
+            await js.InvokeVoidAsync("SweetToast", resultEnrollment.Message, "error");
+
+            return;
+        }
+
+        loading = false;
+
+        navManager.NavigateTo("upload/VakifBankPostBack/" + resultHtmlFile.Value, true);
+
+        await InvokeAsync(StateHasChanged);
+    }
+}

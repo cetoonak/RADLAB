@@ -1,0 +1,83 @@
+﻿@inject IJSRuntime js
+
+<input id="tbTarih" type="text" class="form-control form-control-sm" ValueChanged="OnValueChanged" />
+
+@code
+{
+    private DateTime? _value;
+
+    [Parameter]
+    public DateTime? Value
+    {
+        get { return _value.HasValue ? _value : null; }
+        set
+        {
+            if (Value != value)
+            {
+                _value = value;
+            }
+        }
+    }
+
+    [Parameter]
+    public EventCallback<DateTime?> ValueChanged { get; set; }
+
+
+    private Task OnValueChanged(ChangeEventArgs e)
+    {
+        try
+        {
+            Value = Convert.ToDateTime(e.Value.ToString());
+        }
+        catch
+        {
+
+        }
+
+        return ValueChanged.InvokeAsync(Value);
+    }
+
+
+    //[Parameter] 
+    //public DateTime? Value { get; set; }
+
+    //[Parameter]
+    //public EventCallback<DateTime> DateTimeChanged { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            await js.InvokeVoidAsync("toLitePicker", "tbTarih");
+        }
+        catch
+        {
+
+        }
+    }
+
+    //private async Task UpdateYearFromChild()
+    //{
+        
+    //}
+
+    //private async Task OnChange(ChangeEventArgs args)
+    //{
+    //    if (Value.HasValue)
+    //    {
+    //        await DateTimeChanged.InvokeAsync(Value.Value);
+    //    }
+
+    //    //try
+    //    //{
+    //    //    Value = Convert.ToDateTime((string)args.Value;
+    //    //}
+    //    //catch
+    //    //{
+    //    //    Value = null;
+    //    //}
+    //}
+
+    //@onchange="OnChange"
+    //value="@(Value.HasValue ? Value.Value.ToString("dd.MM.yyyy") : "")"
+}

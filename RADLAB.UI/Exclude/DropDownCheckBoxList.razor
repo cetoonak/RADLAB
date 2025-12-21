@@ -1,0 +1,136 @@
+﻿@*<style>
+    .dropdown-check-list-items {
+        padding: 2px;
+        margin: 0;
+        border: 1px solid #ccc;
+        border-top: none;
+        position: absolute;
+        z-index: 1;
+    }
+</style>*@
+
+@typeparam TItem
+
+<span class="form-control form-control-sm" @onclick="AcKapat"></span>
+
+@if (acik)
+{
+    string CalculatedHeight = (SelectAllVisible ? DropDownHeight - 28 : DropDownHeight).ToString() + "px";
+    string CalculatedWidth = DropDownWidth == 0 ? "200px" : DropDownWidth.ToString() + "px";
+
+    <div class="form-control form-control-sm dropdown-check-list-dropdown" style="width:@CalculatedWidth; display: @(acik ? "block" : "none");" tabindex="0" @onclick="Ac" @onblur="Kapat">
+
+        @if (SelectAllVisible)
+        {
+            <div class="dropdown-check-list-all">
+                <input id="cbAll" type="checkbox" class="form-check-input"
+               @onchange="eventArgs => { SelectAllClicked(eventArgs.Value); }" @onclick="Ac" @onblur="Kapat" />
+                <label for="cbAll" class="form-check-label"><b>&nbsp;Tümü</b></label>
+            </div>
+        }
+
+        <div class="dropdown-check-list-items" style="height:@CalculatedHeight;">
+            @if (Data != null)
+            {
+                foreach (var item in Data)
+                {
+                    var Text = TextField?.Invoke(item);
+                    var Value = ValueField?.Invoke(item).ToString();
+                    bool Checked = false;
+
+                    if (SelectedValues.Contains(Value)) Checked = true;
+
+                    <div class="dropdown-check-list-item">
+                        <input id="@("cb" + Value)" type="checkbox" class="form-check-input" checked=@Checked
+                   @onchange="eventArgs => { CheckboxClicked(Value, eventArgs.Value); }" @onclick="Ac" @onblur="Kapat" />
+                        <label for="@("cb" + Value)" class="form-check-label">&nbsp;@Text</label>
+                    </div>
+                }
+            }
+        </div>
+
+        @ChildContent
+
+    </div>
+}
+
+@code
+{
+    [Parameter] public IEnumerable<TItem> Data { get; set; }
+    [Parameter] public Func<TItem, string> TextField { get; set; }
+    [Parameter] public Func<TItem, object> ValueField { get; set; }
+    [Parameter] public RenderFragment ChildContent { get; set; }
+    [Parameter] public List<string> SelectedValues { get; set; }
+    [Parameter] public bool SelectAllVisible { get; set; }
+    [Parameter] public int DropDownHeight { get; set; }
+    [Parameter] public int DropDownWidth { get; set; }
+
+    bool acik = false;
+
+    public void AcKapat()
+    {
+        acik = !acik;
+    }
+
+    public void Ac()
+    {
+        acik = true;
+    }
+
+    public void Kapat()
+    {
+        acik = false;
+    }
+
+    public void CheckboxClicked(string aSelectedId, object aChecked)
+    {
+        acik = true;
+
+        if ((bool)aChecked)
+        {
+            if (!SelectedValues.Contains(aSelectedId))
+            {
+                SelectedValues.Add(aSelectedId);
+            }
+        }
+        else
+        {
+            if (SelectedValues.Contains(aSelectedId))
+            {
+                SelectedValues.Remove(aSelectedId);
+            }
+        }
+
+        StateHasChanged();
+    }
+
+    public void SelectAllClicked(object aChecked)
+    {
+        acik = true;
+
+        if (Data != null)
+        {
+            foreach (var item in Data)
+            {
+                var Value = ValueField?.Invoke(item).ToString();
+
+                if ((bool)aChecked)
+                {
+                    if (!SelectedValues.Contains(Value))
+                    {
+                        SelectedValues.Add(Value);
+                    }
+                }
+                else
+                {
+                    if (SelectedValues.Contains(Value))
+                    {
+                        SelectedValues.Remove(Value);
+                    }
+                }
+            }
+
+            StateHasChanged();
+        }
+    }
+}

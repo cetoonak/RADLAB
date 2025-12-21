@@ -1,0 +1,61 @@
+﻿@page "/Auth/Profil"
+
+@inject IJSRuntime js
+
+<EditForm Model="@currentDTO">
+    <div class="card">
+        <div class="card-body">
+            <h5 class="card-title">Bilgileriniz</h5>
+            <div class="form-floating mb-3">
+                <input type="text" class="form-control form-control-sm" id="tbTelefonCep" @bind-value="currentDTO.TelefonCep">
+                <label for="tbTelefonCep">Cep Telefonu</label>
+            </div>
+            @if (string.IsNullOrEmpty(currentDTO.EMail))
+            {
+                <div class="form-floating mb-3">
+                    <input type="text" class="form-control form-control-sm" id="tbEMail" @bind-value="currentDTO.EMail">
+                    <label for="tbEMail">E-Posta</label>
+                </div>
+            }
+            <div>
+                <button type="submit" class="btn btn-success btn-sm w-100" @onclick="Kaydet"><i class="bi bi-check-circle"></i>&nbsp;Kaydet</button>
+            </div>
+        </div>
+    </div>
+</EditForm>
+
+@code
+{
+    [Inject] protected IRolService rolService { get; set; }
+    [Inject] protected IKullaniciService kullaniciService { get; set; }
+
+    KullaniciForLoginDTO currentDTO = new KullaniciForLoginDTO();
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            currentDTO = await rolService.GetKullaniciForLogin();
+
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    async Task Kaydet()
+    {
+        var result = await kullaniciService.UpdateKisiProfil(currentDTO);
+
+        if (result.Success)
+        {
+            await InvokeAsync(StateHasChanged);
+
+            await js.InvokeVoidAsync("SweetMessage", "Bilgi", "Bilgileriniz kaydedildi", "success");
+        }
+        else
+        {
+            await InvokeAsync(StateHasChanged);
+
+            await js.InvokeVoidAsync("SweetMessage", "Hata", result.Message, "error");
+        }
+    }
+}

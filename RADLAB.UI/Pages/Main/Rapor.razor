@@ -1,0 +1,884 @@
+﻿@page "/Rapor/{rapor}"
+
+@inject IJSRuntime js
+
+<div class="row">
+    <div class="col-md-3">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Rapor Kriterleri</h5>
+                <div class="row">
+                    @if (raporKriterList.IndexOf("Donem") != -1)
+                    {
+                        var RaporAlani = yetkiForRaporDTO.YetkiRaporAlanlari.Find(x => x.RaporAlani == "Donem");
+
+                        <div class="col-md-12 mb-4">
+                            <label for="ddlDonem">
+                                Dönem
+                                @if (RaporAlani.Zorunlu)
+                                {
+                                    <span style="color:red">*</span>
+                                }
+                            </label>
+                            <select id="ddlDonem" class="form-select form-select-sm" @bind="frDTO.Donem">
+                                <option value="0">@(RaporAlani.Zorunlu ? "Seçiniz..." : "Tümü")</option>
+                                @foreach (var item in DataSourceDonem)
+                                {
+                                    <option value="@item.Id">@item.Ad</option>
+                                }
+                            </select>
+                        </div>
+                    }
+                    @if (raporKriterList.IndexOf("Donemler") != -1)
+                    {
+                        var RaporAlani = yetkiForRaporDTO.YetkiRaporAlanlari.Find(x => x.RaporAlani == "Donemler");
+
+                        <div class="col-md-12 mb-4">
+                            <label for="ddlDonemler">
+                                Dönemler
+                                @if (RaporAlani.Zorunlu)
+                                {
+                                    <span style="color:red">*</span>
+                                }
+                            </label>
+                            <div>
+                                <RadzenDropDown AllowClear="false" AllowFiltering="true" FilterCaseSensitivity="Radzen.FilterCaseSensitivity.CaseInsensitive"
+                                                @bind-Value="@SelectedDonemler" Multiple="true" Data="@DataSourceDonem" TextProperty="Ad" ValueProperty="Id"
+                                                Placeholder="@(RaporAlani.Zorunlu ? "Seçiniz..." : "")"
+                                                Change=@(args => DonemSec(args, "Çoklu seçim yapabilirsiniz")) Class="w-100" />
+                            </div>
+                        </div>
+                    }
+                    @if (raporKriterList.IndexOf("KurulusId") != -1)
+                    {
+                        var RaporAlani = yetkiForRaporDTO.YetkiRaporAlanlari.Find(x => x.RaporAlani == "KurulusId");
+
+                        <div class="col-md-12 mb-4">
+                            <label for="ddlKurulus">
+                                Kuruluş
+                                @if (RaporAlani.Zorunlu)
+                                {
+                                    <span style="color:red">*</span>
+                                }
+                            </label>
+                            <select id="ddlKurulus" class="form-select form-select-sm" @onchange="async eventArgs => { await KurulusSec(eventArgs.Value); }">
+                                <option value="0">@(RaporAlani.Zorunlu ? "Seçiniz..." : "Tümü")</option>
+                                @foreach (var item in DataSourceKurulus)
+                                {
+                                    if (frDTO.KurulusId == item.Id)
+                                    {
+                                        <option selected value="@item.Id">@item.Ad</option>
+                                    }
+                                    else
+                                    {
+                                        <option value="@item.Id">@item.Ad</option>
+                                    }
+                                }
+                            </select>
+                        </div>
+                    }
+                    @if (raporKriterList.IndexOf("BirimId") != -1)
+                    {
+                        var RaporAlani = yetkiForRaporDTO.YetkiRaporAlanlari.Find(x => x.RaporAlani == "BirimId");
+
+                        <div class="col-md-12 mb-4">
+                            <label for="ddlBirim">
+                                Birim
+                                @if (RaporAlani.Zorunlu)
+                                {
+                                    <span style="color:red">*</span>
+                                }
+                            </label>
+                            <select id="ddlBirim" class="form-select form-select-sm" @onchange="async eventArgs => { await BirimSec(eventArgs.Value); }">
+                                <option value="0">@(RaporAlani.Zorunlu ? "Seçiniz..." : "Tümü")</option>
+                                @foreach (var item in DataSourceBirim)
+                                {
+                                    if (frDTO.BirimId == item.Id)
+                                    {
+                                        <option selected value="@item.Id">@item.Ad</option>
+                                    }
+                                    else
+                                    {
+                                        <option value="@item.Id">@item.Ad</option>
+                                    }
+                                }
+                            </select>
+                        </div>
+                    }
+                    @if (raporKriterList.IndexOf("BirimIdler") != -1)
+                    {
+                        var RaporAlani = yetkiForRaporDTO.YetkiRaporAlanlari.Find(x => x.RaporAlani == "BirimIdler");
+
+                        <div class="col-md-12 mb-4">
+                            <label>
+                                Birimler
+                                @if (RaporAlani.Zorunlu)
+                                {
+                                    <span style="color:red">*</span>
+                                }
+                            </label>
+                            <RadzenDropDown AllowClear="false" AllowFiltering="true" FilterCaseSensitivity="Radzen.FilterCaseSensitivity.CaseInsensitive"
+                                            @bind-Value="@SelectedBirimIdler" Multiple="true" Data="@DataSourceBirim" TextProperty="Ad" ValueProperty="Id"
+                                            Placeholder="@(RaporAlani.Zorunlu ? "Seçiniz..." : "")"
+                                            Change=@(args => BirimlerSec(args, "Çoklu seçim yapabilirsiniz")) Class="w-100" />
+                        </div>
+                    }
+                    @if (raporKriterList.IndexOf("VucutBolgesiId") != -1)
+                    {
+                        var RaporAlani = yetkiForRaporDTO.YetkiRaporAlanlari.Find(x => x.RaporAlani == "VucutBolgesiId");
+
+                        <div class="col-md-12 mb-4">
+                            <label for="ddlVucutBolgesi">
+                                Vücut Bölgesi
+                                @if (RaporAlani.Zorunlu)
+                                {
+                                    <span style="color:red">*</span>
+                                }
+                            </label>
+                            <select id="ddlVucutBolgesi" class="form-select form-select-sm" @bind="frDTO.VucutBolgesiId">
+                                <option value="0">@(RaporAlani.Zorunlu ? "Seçiniz..." : "Tümü")</option>
+                                @foreach (var item in DataSourceVucutBolgesi)
+                                {
+                                    <option value="@item.Id">@item.Ad</option>
+                                }
+                            </select>
+                        </div>
+                    }
+                    @if (raporKriterList.IndexOf("VucutBolgesiIdler") != -1)
+                    {
+                        var RaporAlani = yetkiForRaporDTO.YetkiRaporAlanlari.Find(x => x.RaporAlani == "VucutBolgesiIdler");
+
+                        <div class="col-md-12 mb-4">
+                            <label>
+                                Vücut Bölgeleri
+                                @if (RaporAlani.Zorunlu)
+                                {
+                                    <span style="color:red">*</span>
+                                }
+                            </label>
+                            <RadzenDropDown AllowClear="false" AllowFiltering="true" FilterCaseSensitivity="Radzen.FilterCaseSensitivity.CaseInsensitive"
+                                            @bind-Value="@SelectedVucutBolgesiIdler" Multiple="true" Data="@DataSourceVucutBolgesi" TextProperty="Ad" ValueProperty="Id"
+                                            Placeholder="@(RaporAlani.Zorunlu ? "Seçiniz..." : "")"
+                                            Change=@(args => VucutBolgesiSec(args, "Çoklu seçim yapabilirsiniz")) Class="w-100" />
+                        </div>
+                    }
+                    @if (raporKriterList.IndexOf("Yil") != -1)
+                    {
+                        var RaporAlani = yetkiForRaporDTO.YetkiRaporAlanlari.Find(x => x.RaporAlani == "Yil");
+
+                        <div class="col-md-12 mb-4">
+                            <label for="ddlYil">
+                                Yıl
+                                @if (RaporAlani.Zorunlu)
+                                {
+                                    <span style="color:red">*</span>
+                                }
+                            </label>
+                            <select id="ddlYil" class="form-select form-select-sm" @bind="frDTO.Yil">
+                                <option value="0">@(RaporAlani.Zorunlu ? "Seçiniz..." : "Tümü")</option>
+                                @foreach (var item in DataSourceYil)
+                                {
+                                    <option value="@item">@item</option>
+                                }
+                            </select>
+                        </div>
+                    }
+                    @if (raporKriterList.IndexOf("DozFirmasiIdler") != -1)
+                    {
+                        var RaporAlani = yetkiForRaporDTO.YetkiRaporAlanlari.Find(x => x.RaporAlani == "DozFirmasiIdler");
+
+                        <div class="col-md-12 mb-4">
+                            <label for="ddlDozFirmasi">
+                                Doz Firmaları
+                                @if (RaporAlani.Zorunlu)
+                                {
+                                    <span style="color:red">*</span>
+                                }
+                            </label>
+                            <RadzenDropDown AllowClear="false" AllowFiltering="false" @bind-Value="@SelectedDozFirmasiIdler" Multiple="true" 
+                                        Data="@DataSourceDozFirmasi" TextProperty="Ad" ValueProperty="Id"
+                                        Placeholder="@(RaporAlani.Zorunlu ? "Seçiniz..." : "")"
+                                        Change=@(args => DozFirmasiSec(args, "Çoklu seçim yapabilirsiniz")) Class="w-100" />
+                        </div>
+                    }
+                    @if (raporKriterList.IndexOf("KurulusTuruId") != -1)
+                    {
+                        var RaporAlani = yetkiForRaporDTO.YetkiRaporAlanlari.Find(x => x.RaporAlani == "KurulusTuruId");
+
+                        <div class="col-md-12 mb-4">
+                            <label for="ddlKurulusTuru">
+                                Kuruluş Türü
+                                @if (RaporAlani.Zorunlu)
+                                {
+                                    <span style="color:red">*</span>
+                                }
+                            </label>
+                            <select id="ddlKurulusTuru" class="form-select form-select-sm" @bind="frDTO.KurulusTuruId">
+                                <option value="0">@(RaporAlani.Zorunlu ? "Seçiniz..." : "Tümü")</option>
+                                @foreach (var item in DataSourceKurulusTuru)
+                                {
+                                    <option value="@item.Id">@item.Ad</option>
+                                }
+                            </select>
+                        </div>
+                    }
+                    @if (raporKriterList.IndexOf("AdresTekCift") != -1)
+                    {
+                        var RaporAlani = yetkiForRaporDTO.YetkiRaporAlanlari.Find(x => x.RaporAlani == "AdresTekCift");
+
+                        <div class="col-md-12 mb-4">
+                            <label for="ddlAdresTekCift">
+                                Adres Bölümü
+                                @if (RaporAlani.Zorunlu)
+                                {
+                                    <span style="color:red">*</span>
+                                }
+                            </label>
+                            <select id="ddlAdresTekCift" class="form-select form-select-sm" @bind="frDTO.AdresTekCift">
+                                <option value="0">@(RaporAlani.Zorunlu ? "Seçiniz..." : "")</option>
+                                <option value="1">Tek</option>
+                                <option value="2">Çift</option>
+                            </select>
+                        </div>
+                    }
+                    @if (raporKriterList.IndexOf("SonucTuru") != -1)
+                    {
+                        var RaporAlani = yetkiForRaporDTO.YetkiRaporAlanlari.Find(x => x.RaporAlani == "SonucTuru");
+
+                        <div class="col-md-12 mb-4">
+                            <label for="ddlKisiToplam">
+                                Sonuç Türü
+                                @if (RaporAlani.Zorunlu)
+                                {
+                                    <span style="color:red">*</span>
+                                }
+                            </label>
+                            <select id="ddlSonucTuru" class="form-select form-select-sm" @bind="frDTO.SonucTuru">
+                                <option value="0">@(RaporAlani.Zorunlu ? "Seçiniz..." : "")</option>
+                                <option value="1">Gönderilmeyen Dozimetreler</option>
+                                <option value="6">Kayıp Dozimetreler</option>
+                            </select>
+                        </div>
+                    }
+                    @if (raporKriterList.IndexOf("KisiToplam") != -1)
+                    {
+                        var RaporAlani = yetkiForRaporDTO.YetkiRaporAlanlari.Find(x => x.RaporAlani == "KisiToplam");
+
+                        <div class="col-md-12 mb-4">
+                            <label for="ddlKisiToplam">
+                                Rapor Türü
+                                @if (RaporAlani.Zorunlu)
+                                {
+                                    <span style="color:red">*</span>
+                                }
+                            </label>
+                            <select id="ddlKisiToplam" class="form-select form-select-sm" @bind="frDTO.KisiToplam">
+                                <option value="0">@(RaporAlani.Zorunlu ? "Seçiniz..." : "")</option>
+                                <option value="1">Kişi Bazında</option>
+                                <option value="2">Toplam Rakamlar</option>
+                            </select>
+                        </div>
+                    }
+                    @if (raporKriterList.IndexOf("TumuAktifPasif") != -1)
+                    {
+                        var RaporAlani = yetkiForRaporDTO.YetkiRaporAlanlari.Find(x => x.RaporAlani == "TumuAktifPasif");
+
+                        <div class="col-md-12 mb-4">
+                            <label for="ddlKisiToplam">
+                                Aktiflik Durumu
+                                @if (RaporAlani.Zorunlu)
+                                {
+                                    <span style="color:red">*</span>
+                                }
+                            </label>
+                            <select id="ddlKisiToplam" class="form-select form-select-sm" @bind="frDTO.TumuAktifPasif">
+                                <option value="0">@(RaporAlani.Zorunlu ? "Seçiniz..." : "Tümü")</option>
+                                <option value="1">Aktifler</option>
+                                <option value="2">Pasifler</option>
+                            </select>
+                        </div>
+                    }
+                    @if (raporKriterList.IndexOf("PageSize") != -1)
+                    {
+                        var RaporAlani = yetkiForRaporDTO.YetkiRaporAlanlari.Find(x => x.RaporAlani == "PageSize");
+
+                        <div class="col-md-12 mb-4">
+                            <label for="ddlPageSize">
+                                Sayfa Boyutu
+                                @if (RaporAlani.Zorunlu)
+                                {
+                                    <span style="color:red">*</span>
+                                }
+                            </label>
+                            <select id="ddlPageSize" class="form-select form-select-sm" @bind="frDTO.PageSize">
+                                <option value="0">@(RaporAlani.Zorunlu ? "Seçiniz..." : "")</option>
+                                <option value="10">Etiket</option>
+                                <option value="5">A5</option>
+                                <option value="4">A4</option>
+                            </select>
+                        </div>
+                    }
+                    @if (raporKriterList.IndexOf("TarihAraligi") != -1)
+                    {
+                        var RaporAlani = yetkiForRaporDTO.YetkiRaporAlanlari.Find(x => x.RaporAlani == "TarihAraligi");
+
+                        <div class="col-md-12 mb-4">
+                            <label>
+                                Tarih Aralığı
+                                @if (RaporAlani.Zorunlu)
+                                {
+                                    <span style="color:red">*</span>
+                                }
+                            </label>
+                            <div style="display:flex">
+                                <div><RadzenDatePicker TValue="DateTime?" DateFormat="dd.MM.yyyy" @bind-Value="frDTO.Tarih1"></RadzenDatePicker></div>
+                                <div><RadzenDatePicker TValue="DateTime?" DateFormat="dd.MM.yyyy" @bind-Value="frDTO.Tarih2"></RadzenDatePicker></div>
+                            </div>
+                        </div>
+                    }
+                    @if (raporKriterList.IndexOf("DagitimListesiOpsiyonlari") != -1)
+                    {
+                        var RaporAlani = yetkiForRaporDTO.YetkiRaporAlanlari.Find(x => x.RaporAlani == "DagitimListesiOpsiyonlari");
+
+                        <div class="col-md-12 mb-4">
+                            <label>
+                                Opsiyonlar
+                                @if (RaporAlani.Zorunlu)
+                                {
+                                    <span style="color:red">*</span>
+                                }
+                            </label>
+                            <RadzenDropDown AllowClear="false" AllowFiltering="false" @bind-Value="@SelectedDagitimListesiOpsiypnlari" Multiple="true" 
+                                        Data="@DataSourceDagitimListesiOpsiyonlari" TextProperty="Description" ValueProperty="Name"
+                                        Placeholder="@(RaporAlani.Zorunlu ? "Seçiniz..." : "")"
+                                        Change=@(args => DagitimListesiOpsiyonSec(args, "Çoklu seçim yapabilirsiniz")) Class="w-100" />
+                        </div>
+                    }
+                    @if (raporKriterList.IndexOf("DagitimMasterIdler") != -1)
+                    {
+                        var RaporAlani = yetkiForRaporDTO.YetkiRaporAlanlari.Find(x => x.RaporAlani == "DagitimMasterIdler");
+
+                        <div class="col-md-12 mb-4">
+                            <label for="cbDagitimMasterIdler">
+                                Dağıtım ID
+                                @if (RaporAlani.Zorunlu)
+                                {
+                                    <span style="color:red">*</span>
+                                }
+                            </label>
+                            <input id="cbDagitimMasterIdler" type="text" class="form-control form-control-sm" @bind="frDTO.DagitimMasterIdler" 
+                                placeholder="Virgül ile ayırarak birden fazla girebilirsiniz" />
+                        </div>
+                    }
+                    @if (raporKriterList.IndexOf("TCKimlikNo") != -1 & kullaniciForLoginDTO.Tip != 3)
+                    {
+                        var RaporAlani = yetkiForRaporDTO.YetkiRaporAlanlari.Find(x => x.RaporAlani == "TCKimlikNo");
+
+                        <div class="col-md-12 mb-4">
+                            <label for="cbTCKimlikNo">
+                                TC Kimlik No
+                                @if (RaporAlani.Zorunlu)
+                                {
+                                    <span style="color:red">*</span>
+                                }
+                            </label>
+                            <input id="cbTCKimlikNo" type="text" class="form-control form-control-sm" @bind="frDTO.TCKimlikNo" />
+                        </div>
+                    }
+                    @if (raporKriterList.IndexOf("DozimetreNo") != -1)
+                    {
+                        var RaporAlani = yetkiForRaporDTO.YetkiRaporAlanlari.Find(x => x.RaporAlani == "DozimetreNo");
+
+                        <div class="col-md-12 mb-4">
+                            <label for="cbDozimetreNo">
+                                Dozimetre No
+                                @if (RaporAlani.Zorunlu)
+                                {
+                                    <span style="color:red">*</span>
+                                }
+                            </label>
+                            <input id="cbDozimetreNo" type="text" class="form-control form-control-sm" @bind="frDTO.DozimetreNo" />
+                        </div>
+                    }
+                    @if (raporKriterList.IndexOf("BosSatirSayisi") != -1)
+                    {
+                        var RaporAlani = yetkiForRaporDTO.YetkiRaporAlanlari.Find(x => x.RaporAlani == "BosSatirSayisi");
+
+                        <div class="col-md-12 mb-4">
+                            <label for="cbBosSatirSayisi">
+                                Boş Satır Sayısı
+                                @if (RaporAlani.Zorunlu)
+                                {
+                                    <span style="color:red">*</span>
+                                }
+                            </label>
+                            <input id="cbBosSatirSayisi" type="number" class="form-control form-control-sm" @bind="frDTO.BosSatirSayisi" />
+                        </div>
+                    }
+                    @if (raporKriterList.IndexOf("KacGunOnceden") != -1)
+                    {
+                        var RaporAlani = yetkiForRaporDTO.YetkiRaporAlanlari.Find(x => x.RaporAlani == "KacGunOnceden");
+
+                        <div class="col-md-12 mb-4">
+                            <label for="cbKacGunOnceden">
+                                Kaç Gün Önceden
+                                @if (RaporAlani.Zorunlu)
+                                {
+                                    <span style="color:red">*</span>
+                                }
+                            </label>
+                            <input id="cbKacGunOnceden" type="number" class="form-control form-control-sm" @bind="frDTO.KacGunOnceden" />
+                        </div>
+                    }
+                    @if (raporKriterList.IndexOf("AyriAyri") != -1)
+                    {
+                        <div class="col-md-12 mb-4">
+                            <input id="cbAyriAyri" type="checkbox" class="form-check-input" @bind="frDTO.AyriAyri" />
+                            <label for="cbAyriAyri" class="form-check-label">Her Birim İçin Ayrı Rapor Yazdır</label>
+                        </div>
+                    }
+                    @if (raporKriterList.IndexOf("Ortak") != -1)
+                    {
+                        <div class="col-md-12 mb-4">
+                            <input id="cbOrtak" type="checkbox" class="form-check-input" @bind="frDTO.Ortak" />
+                            <label for="cbOrtak" class="form-check-label">Doz Raporu Üst Yazısı İle Birleştir</label>
+                        </div>
+                    }
+                    @if (raporKriterList.IndexOf("Barkodlu") != -1 & kullaniciForLoginDTO.Tip != 3)
+                    {
+                        <div class="col-md-12 mb-4">
+                            <input id="cbBarkodlu" type="checkbox" class="form-check-input" @bind="frDTO.Barkodlu" />
+                            <label for="cbBarkodlu" class="form-check-label">Elektronik İmza Alanlarını Göster</label>
+                        </div>
+                    }
+                    @if (kullaniciForLoginDTO.Tip != 3)
+                    {
+                        <div class="col-md-12 mb-4">
+                            <input id="cbAntetli" type="checkbox" class="form-check-input" @bind="frDTO.Antetli" />
+                            <label for="cbAntetli" class="form-check-label">Antetli Yazdır</label>
+                        </div>
+                    }
+                    <div class="col-md-12 mb-4">
+                        <label for="ddlUzanti">Dosya Formatı</label>
+                        <select id="ddlUzanti" class="form-select form-select-sm" @bind="frDTO.Uzanti">
+                            <option value="pdf" selected>PDF</option>
+                            <option value="xls">Excel</option>
+                            <option value="rtf">Word</option>
+                            <option value="txt">Text</option>
+                        </select>
+                    </div>
+                    <div class="col-md-12" style="display:flex;">
+                        <div class="btn-group w-100">
+                            @if (frDTO.Uzanti == "pdf")
+                            {
+                                <button class="btn btn-primary btn-sm" @onclick="@(async () => { await Raporla("Onizle"); })">
+                                    <i class="bi bi-printer"></i>&nbsp;Raporu Göster
+                                </button>
+                            }
+                            <button class="btn btn-info btn-sm" @onclick="@(async () => { await Raporla("Indir"); })">
+                                <i class="bi bi-cloud-download"></i>&nbsp;Raporu İndir
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-9">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">@yetkiForRaporDTO.RaporAdi</h5>
+                <embed src="@filesrc" type="application/pdf" style="width:100%; height:calc(100vh - 232px);" />
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (loading)
+{
+    <div class="progressBackground">
+        <div class="progressPopup">
+            <img alt="Bekleyiniz..." src="img/loading.gif" width="100" height="100" />
+        </div>
+    </div>
+}
+
+@code
+{
+    [Inject] protected ILookupService lookupService { get; set; }
+    [Inject] protected IRolService rolService { get; set; }
+    [Inject] protected IFRService frService { get; set; }
+    [Inject] protected IRaporService raporService { get; set; }
+
+    List<LookupBasicDTO> DataSourceDonem = new List<LookupBasicDTO>();
+    List<LookupBasicDTO> DataSourceKurulus = new List<LookupBasicDTO>();
+    List<LookupBasicDTO> DataSourceBirim = new List<LookupBasicDTO>();
+    List<LookupBasicDTO> DataSourceVucutBolgesi = new List<LookupBasicDTO>();
+
+    List<int> DataSourceYil = new List<int>();
+    List<LookupBasicDTO> DataSourceDozFirmasi = new List<LookupBasicDTO>();
+    List<LookupBasicDTO> DataSourceKurulusTuru = new List<LookupBasicDTO>();
+
+    List<int> SelectedDonemler = new List<int>();
+    List<int> SelectedBirimIdler = new List<int>();
+    List<int> SelectedVucutBolgesiIdler = new List<int>();
+    List<int> SelectedDozFirmasiIdler = new List<int>();
+    List<string> SelectedDagitimListesiOpsiypnlari = new List<string>();
+
+    List<DagitimListesiOpsiyon> DataSourceDagitimListesiOpsiyonlari = new List<DagitimListesiOpsiyon>()
+    {
+        new DagitimListesiOpsiyon() { Name = "AktifleriGoster", Description = "Aktifleri Göster" },
+        new DagitimListesiOpsiyon() { Name = "YeniTalepleriGoster", Description = "Yeni Talepleri Göster" },
+        new DagitimListesiOpsiyon() { Name = "DevirleriGoster", Description = "Devirleri Göster" },
+        new DagitimListesiOpsiyon() { Name = "SonlanmislariGoster", Description = "Sonlanmışları Göster" },
+        new DagitimListesiOpsiyon() { Name = "KullanildilariGoster", Description = "Kullanıldı Olanları Göster" },
+        new DagitimListesiOpsiyon() { Name = "PasifleriGoster", Description = "Pasifleri Göster" },
+        new DagitimListesiOpsiyon() { Name = "DagitimYapilmamislariGoster", Description = "Dağıtım Yapılmamışları Göster" },
+        new DagitimListesiOpsiyon() { Name = "AciklamaGoster", Description = "Açıklamaları Göster" },
+    };
+
+    YetkiForRaporDTO yetkiForRaporDTO = new YetkiForRaporDTO();
+    List<string> raporKriterList = new List<string>();
+
+    FRDTO frDTO = new FRDTO() { Uzanti = "pdf" };
+
+    KullaniciForLoginDTO kullaniciForLoginDTO = new KullaniciForLoginDTO();
+
+    [Parameter]
+    public string rapor { get; set; }
+
+    bool loading = false;
+    string filesrc = "";
+    string SecilenKurulus = "";
+    string SecilenBirim = "";
+    string SecilenBirimler = "";
+
+    public class DagitimListesiOpsiyon
+    {
+        public string Name { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            kullaniciForLoginDTO = await rolService.GetKullaniciForLogin();
+
+            //DataSourceDonem = await lookupService.GetDonem("Kisa");
+            DataSourceVucutBolgesi = await lookupService.GetLookupBasicWithKod("VucutBolgesi");
+            DataSourceDozFirmasi = await lookupService.GetLookupBasic("DozFirmasi");
+            DataSourceKurulusTuru = await lookupService.GetLookupBasic("KurulusTuru");
+
+            DataSourceYil = DataSourceDonem.Select(x => Convert.ToInt32(x.Id.ToString().Substring(0, 4))).Distinct().OrderByDescending(x => x).ToList();
+
+            DataSourceKurulus = await lookupService.GetLookupBasic("Kurulus");
+
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        yetkiForRaporDTO = await rolService.GetYetkiForRaporByRapor(rapor);
+
+        raporKriterList = yetkiForRaporDTO.YetkiRaporAlanlari.Select(x => x.RaporAlani).ToList();
+
+        filesrc = "";
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task KurulusSec(object value)
+    {
+        int KurulusId = Convert.ToInt32(value.ToString());
+
+        SecilenKurulus = DataSourceKurulus.SingleOrDefault(x => x.Id == KurulusId).Ad;
+        SecilenBirim = "";
+
+        frDTO.KurulusId = KurulusId;
+        frDTO.BirimIdler = "0";
+
+        //DataSourceBirim = await lookupService.GetBirimByKurulusId(KurulusId);
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task BirimSec(object value)
+    {
+        int BirimId = Convert.ToInt32(value.ToString());
+
+        if (BirimId == 0)
+        {
+            SecilenBirim = "";
+        }
+        else
+        {
+            SecilenBirim = DataSourceBirim.SingleOrDefault(x => x.Id == BirimId).Ad;
+        }
+
+        frDTO.BirimId = BirimId;
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task BirimlerSec(object value, string name)
+    {
+        frDTO.BirimIdler = SelectedBirimIdler == null ? "0" : string.Join("_", SelectedBirimIdler.Select(x => x).ToList());
+
+        if (SelectedBirimIdler == null)
+        {
+            SecilenBirimler = "";
+        }
+        else
+        {
+            if (SelectedBirimIdler.Count == 1)
+            {
+                SecilenBirimler = DataSourceBirim.SingleOrDefault(x => x.Id == SelectedBirimIdler[0]).Ad;
+            }
+            else
+            {
+                SecilenBirimler = "BirdenFazlaBirim";
+            }
+        }
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task DonemSec(object value, string name)
+    {
+        frDTO.Donemler = SelectedDonemler == null ? "0" : string.Join("_", SelectedDonemler.Select(x => x).ToList());
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task VucutBolgesiSec(object value, string name)
+    {
+        frDTO.VucutBolgesiIdler = SelectedVucutBolgesiIdler == null ? "0" : string.Join("_", SelectedVucutBolgesiIdler.Select(x => x).ToList());
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task DozFirmasiSec(object value, string name)
+    {
+        frDTO.DozFirmasiIdler = SelectedDozFirmasiIdler == null ? "0" : string.Join("_", SelectedDozFirmasiIdler.Select(x => x).ToList());
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task DagitimListesiOpsiyonSec(object value, string name)
+    {
+        frDTO.AktifleriGoster = SelectedDagitimListesiOpsiypnlari.IndexOf("AktifleriGoster") != -1;
+        frDTO.YeniTalepleriGoster = SelectedDagitimListesiOpsiypnlari.IndexOf("YeniTalepleriGoster") != -1;
+        frDTO.DevirleriGoster = SelectedDagitimListesiOpsiypnlari.IndexOf("DevirleriGoster") != -1;
+        frDTO.SonlanmislariGoster = SelectedDagitimListesiOpsiypnlari.IndexOf("SonlanmislariGoster") != -1;
+        frDTO.KullanildilariGoster = SelectedDagitimListesiOpsiypnlari.IndexOf("KullanildilariGoster") != -1;
+        frDTO.PasifleriGoster = SelectedDagitimListesiOpsiypnlari.IndexOf("PasifleriGoster") != -1;
+        frDTO.DagitimYapilmamislariGoster = SelectedDagitimListesiOpsiypnlari.IndexOf("DagitimYapilmamislariGoster") != -1;
+        frDTO.AciklamaGoster = SelectedDagitimListesiOpsiypnlari.IndexOf("AciklamaGoster") != -1;
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task Raporla(string RaporlamaSekli)
+    {
+        // Kullanıcı dozimetri kullanıcısı ise TCKimlikNo, Antetli ve Barkod değerleri setlensin
+
+        if (kullaniciForLoginDTO.Tip == 3)
+        {
+            frDTO.Antetli = true;
+            frDTO.Barkodlu = false;
+        }
+
+        // Zorunlu alan kontrolü
+
+        foreach (var item in yetkiForRaporDTO.YetkiRaporAlanlari)
+        {
+            if (item.Zorunlu)
+            {
+                var parameter = frDTO.Parameters.Find(x => x.Name == item.RaporAlani);
+
+                if (parameter == null)
+                {
+                    await js.InvokeVoidAsync("SweetMessage", "Hata", "Kırmızı renkle işaretli alanları doldurmalısınız", "error");
+                    return;
+                }
+                else
+                {
+                    if (string.IsNullOrEmpty(parameter.Value) || parameter.Value == "0")
+                    {
+                        await js.InvokeVoidAsync("SweetMessage", "Hata", "Kırmızı renkle işaretli alanları doldurmalısınız", "error");
+                        return;
+                    }
+                }
+            }
+        }
+
+        try
+        {
+            bool devam = true;
+
+            loading = true;
+
+            string base64String = "";
+
+            frDTO.ReportNameOrBase64 = rapor;
+            frDTO.KisiId = kullaniciForLoginDTO.Id;
+            frDTO.Barkod = "";
+
+            // Doz Raporu ise, sistem kullanıcısı ise ve e-imzali yazdırıyorsa RaporBarkod tablosuna bak. Kayıt varsa barkodu al, yoksa kaydet ve barkod üret
+
+            if ((rapor == "KurulusBazinda" || rapor == "KisiselListe") & ((raporKriterList.IndexOf("Barkodlu") != -1 & frDTO.Barkodlu) || (kullaniciForLoginDTO.Tip == 2)))
+            {
+                var resultBarkod = await raporService.GetRaporBarkod(frDTO);
+
+                if (resultBarkod.Success == false)
+                {
+                    devam = false;
+
+                    loading = false;
+
+                    await InvokeAsync(StateHasChanged);
+
+                    await js.InvokeVoidAsync("SweetMessage", "Hata", resultBarkod.Message, "error");
+                }
+                else
+                {
+                    frDTO.Barkod = resultBarkod.Value;
+                }
+            }
+
+            // Rapor üret
+
+            if (devam)
+            {
+                var result = await frService.GetReport(frDTO);
+
+                if (result.Success == false)
+                {
+                    devam = false;
+
+                    loading = false;
+
+                    await InvokeAsync(StateHasChanged);
+
+                    await js.InvokeVoidAsync("SweetMessage", "Hata", result.Message, "error");
+                }
+                else
+                {
+                    base64String = Convert.ToBase64String(result.Value);
+                }
+            }
+
+            // Raporu göster
+
+            if (devam)
+            {
+                await GereksizDosyalariSil();
+
+                base64String = base64String.TrimStart('"').TrimEnd('"');
+
+                byte[] sPDFDecoded = Convert.FromBase64String(base64String);
+
+                string fileName = "wwwroot/export/" + rapor + DosyaAdininKurulusVeBirimBolumu() + "_" + DateTime.Now.ToString("yyyyMMddHHmmss") + "." + frDTO.Uzanti;
+
+                File.WriteAllBytes(fileName, sPDFDecoded);
+
+                if (RaporlamaSekli == "Onizle")
+                {
+                    filesrc = fileName.Replace("wwwroot", "");
+                }
+                else
+                {
+                    string fileNameForNewTab = fileName.Replace("wwwroot", "");
+
+                    await js.InvokeVoidAsync("open", fileNameForNewTab, "_blank");
+                }
+
+                loading = false;
+
+                await InvokeAsync(StateHasChanged);
+            }
+        }
+        catch (Exception ex)
+        {
+            loading = false;
+
+            await InvokeAsync(StateHasChanged);
+
+            await js.InvokeVoidAsync("SweetMessage", "Hata", ex.Message, "error");
+        }
+    }
+
+    async Task GereksizDosyalariSil()
+    {
+        try
+        {
+            DirectoryInfo klasor = new DirectoryInfo("wwwroot/export");
+
+            foreach (FileInfo dosya in klasor.GetFiles())
+            {
+                if (dosya.CreationTime < DateTime.Now.AddMinutes(-30)) 
+                {
+                    await InvokeAsync(dosya.Delete);
+                }
+            }
+        }
+        catch
+        {
+
+        }
+    }
+
+    string DosyaAdininKurulusVeBirimBolumu()
+    {
+        string Kurulus = "";
+        string Birim = "";
+        string Birimler = "";
+
+        if (raporKriterList.IndexOf("KurulusId") != -1)
+        {
+            Kurulus = KarakterDzuelt(SecilenKurulus);
+        }
+
+        if (raporKriterList.IndexOf("BirimId") != -1)
+        {
+            Birim = "_" + KarakterDzuelt(SecilenBirim);
+        }
+
+        if (raporKriterList.IndexOf("BirimIdler") != -1)
+        {
+            Birimler = "_" + KarakterDzuelt(SecilenBirimler);
+        }
+
+        return Kurulus + Birim + Birimler;
+    }
+
+    string KarakterDzuelt(string text)
+    {
+        text = text.Replace("İ", "I");
+        text = text.Replace("ı", "i");
+        text = text.Replace("Ğ", "G");
+        text = text.Replace("ğ", "g");
+        text = text.Replace("Ö", "O");
+        text = text.Replace("ö", "o");
+        text = text.Replace("Ü", "U");
+        text = text.Replace("ü", "u");
+        text = text.Replace("Ş", "S");
+        text = text.Replace("ş", "s");
+        text = text.Replace("Ç", "C");
+        text = text.Replace("ç", "c");
+        text = text.Replace(" ", "_");
+        text = text.Replace("(", "");
+        text = text.Replace(")", "");
+        text = text.Replace("[", "");
+        text = text.Replace("]", "");
+        text = text.Replace("<", "");
+        text = text.Replace(">", "");
+        text = text.Replace("-", "");
+        text = text.Replace("/", "");
+        text = text.Replace("\\", "");
+
+        return text;
+    }
+}

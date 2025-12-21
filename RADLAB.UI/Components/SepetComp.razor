@@ -1,0 +1,272 @@
+﻿@using Newtonsoft.Json
+
+@inject IJSRuntime js
+@inject ILocalStorageService localStorageService
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="table-responsive">
+            <table class="table table-bordered">
+                <thead>
+                    <tr>
+                        @if (GosterimSekli != 3)
+                        {
+                            <td width="10%"></td>
+                        }
+                        <td width="30%">Ürün Bilgisi</td>
+                        <td width="15%" align="right">Birim Fiyat</td>
+                        <td width="20%" align="center">Miktar</td>
+                        <td width="15%" align="right">Tutar</td>
+                        @if (GosterimSekli == 1)
+                        {
+                            <td width="10%">
+                                @if (DSCihaz.ToList().Count > 0)
+                                {
+                                    <button class="btn btn-outline-primary btn-sm" @onclick="(async () => await SepetiBosalt(true))">Sepeti Boşalt</button>
+                                }
+                            </td>
+                        }
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (DSCihaz.ToList().Count == 0)
+                    {
+                        @if (GosterimSekli != 3)
+                        {
+                            <tr>
+                                <td colspan="@(GosterimSekli == 1 ? 6 : 5)" align="center" valign="bottom" height="64px">
+                                    <h6>Sepetiniz Boş</h6>
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        @foreach (var data in DSCihaz)
+                        {
+                            <tr>
+                                @if (GosterimSekli != 3)
+                                {
+                                    <td width="10%" align="center">
+                                        <a href="@("Cihaz/" + data.Id.ToString())">
+                                            <img src=@("data:image/" + data.ResimUzanti + ";base64," + data.ResimDosya) type=@("image/" + data.ResimUzanti) style="width:4rem;">
+                                        </a>
+                                    </td>
+                                }
+                                <td width="30%">@(data.Marka + " " + data.Model)</td>
+                                <td width="15%" align="right">@data.Fiyat.ToString("###,##0.#0₺")</td>
+                                <td width="20%" align="center">
+                                    @if (GosterimSekli == 1)
+                                    {
+                                        <div class="input-group">
+                                            <button class="btn text-primary grid-command" @onclick="@(async () => { await Azalt(data); })"><i class="fas fa-minus-circle"></i></button>
+                                            <input type="text" readonly class="form-control form-control-sm" style="text-align:center;" @bind-value="data.Miktar" />
+                                            <button class="btn text-primary grid-command" @onclick="@(async () => { await Artir(data); })"><i class="fas fa-plus-circle"></i></button>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        @data.Miktar
+                                    }
+                                </td>
+                                <td width="15%" align="right">@((data.Miktar * data.Fiyat).ToString("###,##0.#0₺"))</td>
+                                @if (GosterimSekli == 1)
+                                {
+                                    <td width="10%" align="center">
+                                        <button class="btn text-danger grid-command" @onclick="@(async () => { await Delete(data); })"><i class="bi bi-trash3"></i></button>
+                                    </td>
+                                }
+                            </tr>
+                        }
+                    }
+                </tbody>
+                <thead>
+                    <tr>
+                        <td width=@(GosterimSekli != 3 ? "75%" : "65%") align="right" colspan="@(GosterimSekli != 3 ? 4 : 3)">KDV DAHİL TOPLAM:</td>
+                        <td width="15%" align="right">@DSCihaz.Sum(x => (x.Fiyat * x.Miktar)).ToString("###,##0.#0₺")</td>
+                        @if (GosterimSekli == 1)
+                        {
+                            <td></td>
+                        }
+                    </tr>
+                    <tr>
+                        <td colspan="4" align="right">
+                            @("SİPARİŞLERİNİZ " + KargoFirmasi + " İLE GÖNDERİLECEKTİR. KARGO ÜCRETİ: ")
+                        </td>
+                        <td align="right">
+                            @KargoUcreti.ToString("###,##0.#0₺")
+                        </td>
+                        @if (GosterimSekli == 1)
+                        {
+                            <td></td>
+                        }
+                    </tr>
+                    <tr>
+                        <td colspan="4" align="right">
+                            GENEL TOPLAM:
+                        </td>
+                        <td align="right">
+                            @((DSCihaz.Sum(x => (x.Fiyat * x.Miktar)) + KargoUcreti).ToString("###,##0.#0₺"))
+                        </td>
+                        @if (GosterimSekli == 1)
+                        {
+                            <td></td>
+                        }
+                    </tr>
+                </thead>
+            </table>
+        </div>
+    </div>
+</div>
+
+@code
+{
+    [Parameter] public int GosterimSekli { get; set; }
+    [Parameter] public int KargoFirmasiId { get; set; }
+    [Parameter] public string KargoFirmasi { get; set; } = string.Empty;
+    [Parameter] public decimal KargoUcreti { get; set; }
+    [Parameter] public List<CihazDTO> DSCihaz { get; set; } = new List<CihazDTO>();
+
+    [Inject] protected ICihazService cihazService { get; set; }
+    [Inject] protected IAyarService ayarService { get; set; }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            string RadlabCihazSatisList = await localStorageService.GetItemAsStringAsync("RadlabCihazSatisList");
+
+            if (string.IsNullOrEmpty(RadlabCihazSatisList) == false)
+            {
+                try
+                {
+                    RadlabCihazSatisList = RadlabCihazSatisList.Replace("\\u0022", "").Replace("\"", "");
+
+                    DSCihaz = JsonConvert.DeserializeObject<List<CihazDTO>>(RadlabCihazSatisList);
+
+                    foreach (var item in DSCihaz)
+                    {
+                        var cihazNew = await cihazService.GetCihaz(item.Id);
+
+                        item.Marka = cihazNew.Marka;
+                        item.Model = cihazNew.Model;
+                        item.Fiyat = cihazNew.Fiyat;
+                        item.KdvOrani = cihazNew.KdvOrani;
+                        item.Desi = cihazNew.Desi;
+                        item.ResimDosyaAdi = cihazNew.ResimDosyaAdi;
+                        item.ResimDosya = cihazNew.ResimDosya;
+                        item.ResimUzanti = cihazNew.ResimUzanti;
+                    }
+
+                    var siparisToplami = DSCihaz.Sum(x => (x.Miktar * x.Fiyat));
+                    var desi = DSCihaz.Sum(x => (x.Miktar * x.Desi));
+
+                    var ayarKargoDTO = await ayarService.GetAyarForKargo(new KargoAyarFilterDTO() { SiparisToplami = siparisToplami, Desi = Convert.ToDecimal(desi) });
+
+                    KargoFirmasiId = ayarKargoDTO.KargoFirmasiId;
+                    KargoFirmasi = ayarKargoDTO.KargoFirmasi;
+                    KargoUcreti = ayarKargoDTO.KargoUcreti;
+                }
+                catch
+                {
+
+                }
+
+                await InvokeAsync(StateHasChanged);
+            }
+        }
+    }
+
+    async Task SepetiGuncelle()
+    {
+        var DSCihazSatis = new List<CihazSatisDTO>();
+
+        foreach (var item in DSCihaz)
+        {
+            DSCihazSatis.Add(new CihazSatisDTO() { Id = item.Id, Miktar = item.Miktar });
+        }
+
+        var RadlabCihazSatisList = JsonConvert.SerializeObject(DSCihazSatis);
+
+        await localStorageService.SetItemAsync("RadlabCihazSatisList", RadlabCihazSatisList);
+
+        var siparisToplami = DSCihaz.Sum(x => (x.Miktar * x.Fiyat));
+        var desi = DSCihaz.Sum(x => (x.Miktar * x.Desi));
+
+        var ayarKargoDTO = await ayarService.GetAyarForKargo(new KargoAyarFilterDTO() { SiparisToplami = siparisToplami, Desi = Convert.ToDecimal(desi) });
+
+        KargoFirmasiId = ayarKargoDTO.KargoFirmasiId;
+        KargoFirmasi = ayarKargoDTO.KargoFirmasi;
+        KargoUcreti = ayarKargoDTO.KargoUcreti;
+    }
+
+    async Task Artir(CihazDTO dto)
+    {
+        dto.Miktar++;
+
+        await SepetiGuncelle();
+
+        await InvokeAsync(StateHasChanged);
+
+        await js.InvokeVoidAsync("SweetToast", "Sepetiniz güncellendi", "success");
+    }
+
+    async Task Azalt(CihazDTO dto)
+    {
+        if (dto.Miktar == 1)
+        {
+            var confirm = await js.InvokeAsync<bool>("SweetConfirm", "Uyarı", $"{dto.Marka} {dto.Model} isimli cihaz sepetten çıkarılacak, devam edilsin mi?", "question", "Evet", "Hayır");
+
+            if (confirm)
+            {
+                DSCihaz.Remove(dto);
+
+                await SepetiGuncelle();
+
+                await InvokeAsync(StateHasChanged);
+
+                await js.InvokeVoidAsync("SweetToast", "Sepetiniz güncellendi", "success");
+            }
+        }
+        else
+        {
+            dto.Miktar--;
+
+            await SepetiGuncelle();
+
+            await InvokeAsync(StateHasChanged);
+
+            await js.InvokeVoidAsync("SweetToast", "Sepetiniz güncellendi", "success");
+        }
+    }
+
+    async Task Delete(CihazDTO dto)
+    {
+        var confirm = await js.InvokeAsync<bool>("SweetConfirm", "Uyarı", $"{dto.Marka} {dto.Model} isimli cihaz sepetten çıkarılacak, devam edilsin mi?", "question", "Evet", "Hayır");
+
+        if (confirm)
+        {
+            DSCihaz.Remove(dto);
+
+            await SepetiGuncelle();
+
+            await InvokeAsync(StateHasChanged);
+
+            await js.InvokeVoidAsync("SweetToast", "Sepetiniz güncellendi", "success");
+        }
+    }
+
+    public async Task SepetiBosalt(bool MesajVer)
+    {
+        DSCihaz.Clear();
+
+        await SepetiGuncelle();
+
+        await InvokeAsync(StateHasChanged);
+
+        if (MesajVer)
+        {
+            await js.InvokeVoidAsync("SweetToast", "Sepetiniz boşaltıldı", "success");
+        }
+    }
+}

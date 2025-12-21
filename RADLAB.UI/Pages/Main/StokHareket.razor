@@ -1,0 +1,811 @@
+﻿@page "/Main/StokHareket"
+
+@inject IJSRuntime js
+
+@using System.Threading
+@using System.Threading.Tasks
+@using System.Net.Http
+@using System.Text.Json
+
+<style>
+    .input-group-text {
+        font-size:0.8rem !important;
+    }
+</style>
+
+<div class="card info-card">
+    <div class="table-responsive">
+        <table class="table table-bordered table-hover">
+            <thead>
+                <tr>
+                    <td width="8%"></td>
+                    <td width="8%" align="center">Hareket ID</td>
+                    <td width="8%" align="center">Hareket Türü</td>
+                    <td width="8%" align="center">İşlem Tarihi</td>
+                    <td width="8%" align="center">Evrak No</td>
+                    <td width="8%" align="center">Evrak Tarihi</td>
+                    <td width="36%" align="center">Açıklama</td>
+                    <td width="8%" align="center">Ürün Sayısı</td>
+                    <td width="8%" align="center">
+                        @if (YetkiEkle)
+                        {
+                            <button class="btn text-success grid-command" @onclick="AddStokHareket"><i class="bi bi-plus-circle"></i></button>
+                        }
+                    </td>
+                </tr>
+                <tr>
+                    <td width="8%"></td>
+                    <td width="8%">
+                        <input class="form-control form-control-sm SpinButtonWithoutButtons text-center" type="number" @bind-value="filterDTO.Id">
+                    </td>
+                    <td width="8%">
+                        <select class="form-select form-select-sm" @onchange="async eventArgs => { await StokHareketTuruSecSorgu(eventArgs.Value); }">
+                            <option value="0"></option>
+                            @foreach (var item in DSStokHareketTuruSorgu)
+                            {
+                                if (filterDTO.StokHareketTuruId == item.Id)
+                                {
+                                    <option selected value="@item.Id">@item.Ad</option>
+                                }
+                                else
+                                {
+                                    <option value="@item.Id">@item.Ad</option>
+                                }
+                            }
+                        </select>
+                    </td>
+                    <td width="8%">
+                        <input id="tbTarihAraligi" class="form-control form-control-sm" type="text" @bind-value="filterDTO.HareketTarihiAraligi" autocomplete="off" />
+                    </td>
+                    <td width="8%">
+                        <input class="form-control form-control-sm" type="text" @bind-value="filterDTO.EvrakNo">
+                    </td>
+                    <td width="8%">
+                    </td>
+                    <td width="36%">
+                        <input class="form-control form-control-sm" type="text" @bind-value="filterDTO.Aciklama">
+                    </td>
+                    <td width="8%">
+                    </td>
+                    <td width="8%" align="center">
+                        <div class="btn-group">
+                            <button class="btn text-success grid-command" @onclick="Sorgula"><i class="bi bi-search"></i></button>
+                            <button class="btn text-success grid-command" @onclick="ExportToExcel"><i class="bi bi-file-earmark-excel"></i></button>
+                        </div>
+                    </td>
+                </tr>
+            </thead>
+            <tbody>
+                @if (DSStokHareket.ToList().Count == 0)
+                {
+                    <tr>
+                        <td colspan="9" align="center" valign="bottom" height="64px">
+                            <h6>Görüntülenecek Veri Yok</h6>
+                        </td>
+                    </tr>
+                }
+                else
+                {
+                    @foreach (var data in DSStokHareket)
+                    {
+                        string checkBoxId = "ExpandCollapseCheckBox" + data.Id.ToString();
+                        string tdCenterStyle = data.Expanded ? "border-top: 2px solid orange" : "";
+                        string tdLeftStyle = data.Expanded ? "border-top: 2px solid orange; border-left: 2px solid orange" : "";
+                        string tdRightStyle = data.Expanded ? "border-top: 2px solid orange; border-right: 2px solid orange" : "";
+                        <tr>
+                            <td width="8%" align="center" style="@tdLeftStyle">
+                                <div class="ExpandCollapseDiv">
+                                    <input id="@checkBoxId" type="checkbox" name="@checkBoxId" @bind="data.Expanded" />
+                                    <label for="@checkBoxId"></label>
+                                </div>
+                            </td>
+                            <td width="8%" align="center" style="@tdCenterStyle">@data.Id</td>
+                            <td width="8%" align="center" style="@tdCenterStyle">@data.StokHareketTuru</td>
+                            <td width="10%" align="center" style="@tdCenterStyle">@data.HareketTarihi.Value.ToString("dd.MM.yyyy HH:mm")</td>
+                            <td width="8%" align="center" style="@tdCenterStyle">@data.EvrakNo</td>
+                            <td width="8%" align="center" style="@tdCenterStyle">@(data.EvrakTarihi.HasValue ? data.EvrakTarihi.Value.ToString("dd.MM.yyyy") : "")</td>
+                            <td width="36%" align="center" style="@tdCenterStyle">@data.Aciklama</td>
+                            <td width="8%" align="center" style="@tdCenterStyle">@data.DetailCount</td>
+                            <td width="8%" align="center" style="@tdRightStyle">
+                                <div class="btn-group">
+                                    @if (YetkiDegistir)
+                                    {
+                                        <button class="btn text-info grid-command" @onclick="@(async () => { await EditStokHareket(data.Id); })" data-bs-toggle="tooltip" data-bs-placement="top" title="Düzenle"><i class="bi bi-pencil"></i></button>
+                                    }
+                                    @if (YetkiSil)
+                                    {
+                                        <button class="btn text-danger grid-command" @onclick="@(async () => { await DeleteStokHareket(data); })" data-bs-toggle="tooltip" data-bs-placement="top" title="Sil"><i class="bi bi-trash3"></i></button>
+                                    }
+                                </div>
+                            </td>
+                        </tr>
+                        @if (data.Expanded)
+                        {
+                            <tr>
+                                <td colspan="9" style="border: 2px solid orange; border-top:none;">
+                                    <table class="table table-bordered table-hover" style="font-size:0.75rem;">
+                                        <thead>
+                                            <tr>
+                                                <td width="10%" align="center">Cihaz ID</td>
+                                                <td width="30%" align="center">Marka</td>
+                                                <td width="30%" align="center">Model</td>
+                                                <td width="10%" align="center">Miktar</td>
+                                                <td width="20%" align="center">
+                                                    @if (YetkiEkle)
+                                                    {
+                                                        <button class="btn text-success grid-command" @onclick="@(async () => { await AddStokHareketCihaz(data); })" data-bs-toggle="tooltip" data-bs-placement="top" title="StokHareketCihaz Ekle"><i class="bi bi-plus-circle"></i></button>
+                                                    }
+                                                </td>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @if (data.StokHareketCihazList.ToList().Count == 0)
+                                            {
+                                                <tr>
+                                                    <td colspan="5" align="center" valign="bottom" height="64px">
+                                                        <h6>Görüntülenecek Veri Yok</h6>
+                                                    </td>
+                                                </tr>
+                                            }
+                                            else
+                                            {
+                                                @foreach (var StokHareketCihaz in data.StokHareketCihazList)
+                                                {
+                                                    <tr>
+                                                        <td width="10%" align="center">@StokHareketCihaz.Id</td>
+                                                        @if (currentStokHareketCihazDTO.Id == StokHareketCihaz.Id)
+                                                        {
+                                                            <td width="30%" align="center">
+                                                                <select class="form-select form-select-sm" @onchange="async eventArgs => { await MarkaSec(eventArgs.Value, StokHareketCihaz); }">
+                                                                    <option value="0"></option>
+                                                                    @foreach (var item in DSMarka)
+                                                                    {
+                                                                        if (StokHareketCihaz.MarkaId == item.Id)
+                                                                        {
+                                                                            <option selected value="@item.Id">@item.Ad</option>
+                                                                        }
+                                                                        else
+                                                                        {
+                                                                            <option value="@item.Id">@item.Ad</option>
+                                                                        }
+                                                                    }
+                                                                </select>
+                                                            </td>
+                                                            <td width="30%" align="center">
+                                                                <select class="form-select form-select-sm" @bind="StokHareketCihaz.ModelId">
+                                                                    <option value="0"></option>
+                                                                    @foreach (var item in StokHareketCihaz.DataSourceModel)
+                                                                    {
+                                                                        <option value="@item.Id">@item.Ad</option>
+                                                                    }
+                                                                </select>
+                                                            </td>
+                                                            <td width="10%" align="center">
+                                                                <input type="number" class="form-control form-control-sm SpinButtonWithoutButtons" style="text-align:center;" @bind-value="StokHareketCihaz.Miktar" />
+                                                            </td>
+                                                        }
+                                                        else
+                                                        {
+                                                            <td width="25%" align="center">@StokHareketCihaz.Marka</td>
+                                                            <td width="25%" align="center">@StokHareketCihaz.Model</td>
+                                                            <td width="10%" align="center">@StokHareketCihaz.Miktar</td>
+                                                        }
+                                                        @if (currentStokHareketCihazDTO.Id == StokHareketCihaz.Id)
+                                                        {
+                                                            <td width="20%" align="center">
+                                                                <div class="btn-group">
+                                                                    <button class="btn text-success grid-command" @onclick="@(async () => { await KaydetStokHareketCihaz(currentStokHareketCihazDTO); })"><i class="bi bi-check-circle"></i></button>
+                                                                    <button class="btn text-primary grid-command" @onclick="@(async () => { await VazgecStokHareketCihaz(data); })"><i class="bi bi-x-circle"></i></button>
+                                                                </div>
+                                                            </td>
+                                                        }
+                                                        else
+                                                        {
+                                                            <td width="20%" align="center">
+                                                                <div class="btn-group">
+                                                                    @if (YetkiDegistir)
+                                                                    {
+                                                                        <button class="btn text-info grid-command" @onclick=@(async () => { await EditStokHareketCihaz(StokHareketCihaz); }) data-bs-toggle="tooltip" data-bs-placement="top" title="Düzenle"><i class="bi bi-pencil"></i></button>
+                                                                    }
+                                                                    @if (YetkiSil)
+                                                                    {
+                                                                        <button class="btn text-danger grid-command" @onclick="@(async () => { await DeleteStokHareketCihaz(StokHareketCihaz); })" data-bs-toggle="tooltip" data-bs-placement="top" title="Sil"><i class="bi bi-trash3"></i></button>
+                                                                    }
+                                                                </div>
+                                                            </td>
+                                                        }
+                                                    </tr>
+                                                }
+                                            }
+                                        </tbody>
+                                    </table>
+                                </td>
+                            </tr>
+                        }
+                    }
+                }
+            </tbody>
+            <thead>
+                <tr>
+                    <td colspan="9" align="center">
+                        <Pager RowCount="@RowCount"
+                               PageNoChanged="@((int pageNo) => PageNoChanged(pageNo))"
+                               PageSizeChanged="@((int pageSize) => PageSizeChanged(pageSize))"></Pager>
+                    </td>
+                </tr>
+            </thead>
+        </table>
+    </div>
+</div>
+
+<button id="popupKayitStokHareketAc" type="button" data-bs-toggle="modal" data-bs-target="#popupKayitStokHareket" style="visibility:hidden;">
+</button>
+
+<div class="modal fade" id="popupKayitStokHareket" tabindex="-1" aria-labelledby="popupKayitStokHareketLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="popupKayitStokHareketLabel">Stok Hareket Kaydı</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" style="padding-bottom:0">
+                <div class="row">
+                    <div class="col-md-12 mb-3">
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text" id="spnHareketTarihiKayitStokHareket" style="width: 160px;">İşlem Tarihi</span>
+                            <input class="form-control form-control-sm" type="datetime-local" @bind-value="currentDTO.HareketTarihi" aria-describedby="spnHareketTarihiKayitStokHareket">
+                        </div>
+                    </div>
+                    <div class="col-md-12 mb-3">
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text" id="spnStokHareketTuruayitStokHareket" style="width: 160px;">Stok Hareketi Türü</span>
+                            <select class="form-select form-select-sm" @bind="currentDTO.StokHareketTuruId" aria-describedby="spnStokHareketTuruayitStokHareket">
+                                <option value="0"></option>
+                                @foreach (var item in DSStokHareketTuruKayitStokHareket)
+                                {
+                                    <option value="@item.Id">@item.Ad</option>
+                                }
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-12 mb-3">
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text" id="spnEvrakNoKayitStokHareket" style="width: 160px;">Evrak No</span>
+                            <input class="form-control form-control-sm" type="text" @bind-value="currentDTO.EvrakNo" aria-describedby="spnEvrakNoKayitStokHareket">
+                        </div>
+                    </div>
+                    <div class="col-md-12 mb-3">
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text" id="spnEvrakTarihiKayitStokHareket" style="width: 160px;">Evrak Tarihi</span>
+                            <input class="form-control form-control-sm" type="date" @bind-value="currentDTO.EvrakTarihi" aria-describedby="spnEvrakTarihiKayitStokHareket">
+                        </div>
+                    </div>
+                    <div class="col-md-12 mb-3">
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text" id="spnAciklamaKayitStokHareket" style="width: 160px;">Açıklama</span>
+                            <InputTextArea class="form-control form-control-sm" type="text" @bind-Value="currentDTO.Aciklama" rows="4" aria-describedby="spnAciklamaKayitStokHareket">
+                            </InputTextArea>
+                        </div>
+                    </div>
+                    @if (currentDTO.Id == 0)
+                    {
+                        <div class="col-md-12 mb-3">
+                            @if (currentDTO.StokHareketCihazList != null)
+                            {
+                                <table class="table table-bordered table-hover">
+                                    <thead>
+                                        <tr>
+                                            <td width="35%" align="center">Marka</td>
+                                            <td width="35%" align="center">Model</td>
+                                            <td width="15%" align="center">Miktar</td>
+                                            <td width="15%" align="center">
+                                                <button class="btn text-success grid-command" @onclick="AddStokHareketCihazKayitStokHareket" data-bs-toggle="tooltip" data-bs-placement="top"><i class="bi bi-plus-circle"></i></button>
+                                            </td>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var StokHareketCihaz in currentDTO.StokHareketCihazList)
+                                        {
+                                            <tr>
+                                                <td width="35%" align="center">
+                                                    <select class="form-select form-select-sm" @onchange="async eventArgs => { await MarkaSec(eventArgs.Value, StokHareketCihaz); }">
+                                                        <option value="0"></option>
+                                                        @foreach (var item in DSMarka)
+                                                        {
+                                                            if (StokHareketCihaz.MarkaId == item.Id)
+                                                            {
+                                                                <option selected value="@item.Id">@item.Ad</option>
+                                                            }
+                                                            else
+                                                            {
+                                                                <option value="@item.Id">@item.Ad</option>
+                                                            }
+                                                        }
+                                                    </select>
+                                                </td>
+                                                <td width="35%" align="center">
+                                                    <select class="form-select form-select-sm" @bind="StokHareketCihaz.ModelId">
+                                                        <option value="0"></option>
+                                                        @foreach (var item in StokHareketCihaz.DataSourceModel)
+                                                        {
+                                                            <option value="@item.Id">@item.Ad</option>
+                                                        }
+                                                    </select>
+                                                </td>
+                                                <td width="15%" align="center">
+                                                    <input type="number" class="form-control form-control-sm SpinButtonWithoutButtons" style="text-align:center;" @bind-value="StokHareketCihaz.Miktar" />
+                                                </td>
+                                                <td width="15%" align="center">
+                                                    <button class="btn text-danger grid-command" @onclick="@(async () => { await DeleteKayitStokHareketCihaz(StokHareketCihaz); })" data-bs-toggle="tooltip" data-bs-placement="top"><i class="bi bi-trash3"></i></button>
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="submit" class="btn btn-success btn-sm" @onclick="KaydetKayitStokHareket"><i class="bi bi-check-circle"></i>&nbsp;Kaydet</button>
+                <button id="popupKayitStokHareketKapat" type="button" class="btn btn-danger btn-sm" data-bs-dismiss="modal"><i class="bi bi-x-circle"></i>&nbsp;Vazgeç</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (loading)
+{
+    <div class="progressBackground">
+        <div class="progressPopup">
+            <img alt="Bekleyiniz..." src="img/loading.gif" width="100" height="100" />
+        </div>
+    </div>
+}
+
+@code
+{
+    [Inject] protected ILookupService lookupService { get; set; }
+    [Inject] protected IRolService rolService { get; set; }
+    [Inject] protected ISMSMailService smsMailService { get; set; }
+    [Inject] protected IStokHareketService stokHareketService { get; set; }
+
+    List<StokHareketDTO> DSStokHareket = new List<StokHareketDTO>();
+    List<LookupBasicDTO> DSStokHareketTuruSorgu = new List<LookupBasicDTO>();
+    List<LookupBasicDTO> DSStokHareketTuruKayitStokHareket = new List<LookupBasicDTO>();
+    List<LookupBasicDTO> DSMarka = new List<LookupBasicDTO>();
+
+    StokHareketDTO currentDTO = new StokHareketDTO();
+    StokHareketCihazDTO currentStokHareketCihazDTO = new StokHareketCihazDTO();
+    StokHareketFilterDTO filterDTO = new StokHareketFilterDTO() { PageNo = 1, PageSize = 10 };
+
+    bool loading = false;
+
+    bool YetkiGor = false;
+    bool YetkiEkle = false;
+    bool YetkiDegistir = false;
+    bool YetkiSil = false;
+
+    int RowCount = 0;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            YetkiGor = await rolService.YetkiKontrolByYetki("Satış - Stok İşlemleri - Gör");
+            YetkiEkle = await rolService.YetkiKontrolByYetki("Satış - Stok İşlemleri - Ekle");
+            YetkiDegistir = await rolService.YetkiKontrolByYetki("Satış - Stok İşlemleri - Değiştir");
+            YetkiSil = await rolService.YetkiKontrolByYetki("Satış - Stok İşlemleri - Sil");
+
+            DSStokHareketTuruSorgu = await lookupService.GetLookupBasic("StokHareketTuru");
+            DSStokHareketTuruKayitStokHareket = await lookupService.GetLookupBasic("StokHareketTuru");
+            DSMarka = await lookupService.GetLookupFromMasterDetail("Cihaz", 0);
+
+            await js.InvokeVoidAsync("dateRangePick", "tbTarihAraligi", true);
+
+            await GetData();
+
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    async Task GetData()
+    {
+        filterDTO.HareketTarihiAraligi = await js.InvokeAsync<string>("getValue", "tbTarihAraligi");
+
+        var result = await stokHareketService.GetStokHareketList(filterDTO);
+
+        if (result.Success)
+        {
+            DSStokHareket = result.Value;
+            RowCount = result.RowCount;
+        }
+        else
+        {
+            await js.InvokeVoidAsync("SweetMessage", "Hata", result.Message, "error");
+        }
+    }
+
+    ////////////////////////////////////////// StokHareket //////////////////////////////////////////
+
+    async Task Sorgula()
+    {
+        await GetData();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task PageNoChanged(int pageNo)
+    {
+        filterDTO.PageNo = pageNo;
+        await GetData();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task PageSizeChanged(int pageSize)
+    {
+        filterDTO.PageSize = pageSize;
+        await GetData();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task StokHareketTuruSecSorgu(object value)
+    {
+        filterDTO.StokHareketTuruId = Convert.ToInt32(value.ToString());
+        await GetData();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task AddStokHareket()
+    {
+        currentDTO = new StokHareketDTO() { HareketTarihi = DateTime.Now };
+
+        currentDTO.StokHareketCihazList = new List<StokHareketCihazDTO>();
+
+        var dto = new StokHareketCihazDTO()
+            {
+                DataSourceModel = new List<LookupBasicDTO>(),
+            };
+
+        currentDTO.StokHareketCihazList.Add(dto);
+
+        await InvokeAsync(StateHasChanged);
+
+        await js.InvokeVoidAsync("bsPopupAc", "popupKayitStokHareket");
+    }
+
+    async Task DeleteKayitStokHareketCihaz(StokHareketCihazDTO dto)
+    {
+        currentDTO.StokHareketCihazList.Remove(dto);
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task EditStokHareket(int Id)
+    {
+        var fDTO = new StokHareketFilterDTO() { Id = Id, PageNo = 1, PageSize = 1, DonusTipi = 0 };
+
+        var result = await stokHareketService.GetStokHareketList(fDTO);
+
+        if (result.Success == false)
+        {
+            loading = false;
+
+            await InvokeAsync(StateHasChanged);
+
+            await js.InvokeVoidAsync("SweetMessage", "Hata", result.Message, "error");
+
+            return;
+        }
+
+        currentDTO = result.Value[0];
+
+        foreach (var item in currentDTO.StokHareketCihazList)
+        {
+            item.DataSourceModel = new List<LookupBasicDTO>();
+        }
+
+        await InvokeAsync(StateHasChanged);
+
+        await js.InvokeVoidAsync("bsPopupAc", "popupKayitStokHareket");
+    }
+
+    async Task KaydetKayitStokHareket()
+    {
+        if (currentDTO.HareketTarihi.HasValue == false || currentDTO.StokHareketTuruId == 0)
+        {
+            await js.InvokeVoidAsync("SweetMessage", "Hata", "İşlem tarihi ve hareket türü zorunlu alandır", "error");
+            return;
+        }
+
+        if (currentDTO.StokHareketCihazList.Count == 0)
+        {
+            await js.InvokeVoidAsync("SweetMessage", "Hata", "Listede en az bir cihaz olmalıdır", "error");
+            return;
+        }
+
+        if (currentDTO.Id == 0)
+        {
+            foreach (var item in currentDTO.StokHareketCihazList)
+            {
+                if (item.MarkaId == 0 || item.ModelId == 0 || item.Miktar == 0)
+                {
+                    await js.InvokeVoidAsync("SweetMessage", "Hata", "Marka, model ve miktar zorunlu alandır. Boş veri içeren satırları kaydetmek istemiyorsanız siliniz.", "error");
+                    return;
+                }
+            }
+        }
+
+        var result = await stokHareketService.InsertOrUpdateStokHareket(currentDTO);
+
+        if (result.Success == false)
+        {
+            loading = false;
+
+            await InvokeAsync(StateHasChanged);
+
+            await js.InvokeVoidAsync("SweetMessage", "Hata", result.Message, "error");
+
+            return;
+        }
+
+        loading = false;
+
+        await GetData();
+
+        await InvokeAsync(StateHasChanged);
+
+        await js.InvokeVoidAsync("bsPopupKapat", "popupKayitStokHareket");
+
+        await js.InvokeVoidAsync("SweetToast", "Kaydedildi", "success");
+    }
+
+    async Task DeleteStokHareket(StokHareketDTO dto)
+    {
+        var dtos = new List<StokHareketDTO>();
+
+        foreach (var item in dto.StokHareketCihazList)
+        {
+            item.DataSourceModel = new List<LookupBasicDTO>();
+        }
+
+        dtos.Add(dto);
+
+        var confirm = await js.InvokeAsync<bool>("SweetConfirm", "Uyarı", "Kayıt silinecek, emin misiniz?", "question", "Evet", "Hayır");
+
+        if (confirm)
+        {
+            var resultDelete = await stokHareketService.DeleteStokHareket(dtos);
+
+            if (resultDelete.Success == false)
+            {
+                await js.InvokeVoidAsync("SweetMessage", "Hata", resultDelete.Message, "error");
+                return;
+            }
+
+            await GetData();
+
+            await InvokeAsync(StateHasChanged);
+
+            await js.InvokeVoidAsync("SweetToast", "Kayıt silindi", "success");
+        }
+    }
+
+    public async Task ExportToExcel()
+    {
+        using (var workbook = new XLWorkbook())
+        {
+            IXLWorksheet worksheet = workbook.Worksheets.Add("Sayfa1");
+
+            worksheet.Cell(1, 1).Value = "Hareket ID";
+            worksheet.Cell(1, 2).Value = "Hareket Türü";
+            worksheet.Cell(1, 3).Value = "İşlem Tarihi";
+            worksheet.Cell(1, 4).Value = "Evrak No";
+            worksheet.Cell(1, 5).Value = "Evrak Tarihi";
+            worksheet.Cell(1, 6).Value = "Açıklama";
+            worksheet.Cell(1, 7).Value = "Ürün Sayısı Durumu";
+
+            for (int i = 1; i <= 7; i++)
+            {
+                worksheet.Cell(1, i).Style.Font.Bold = true;
+            }
+
+            int index = 1;
+
+            foreach (var data in DSStokHareket)
+            {
+                worksheet.Cell(index + 1, 1).Value = data.Id;
+                worksheet.Cell(index + 1, 2).Value = data.StokHareketTuru;
+                worksheet.Cell(index + 1, 3).Value = data.HareketTarihi.Value.ToString("dd.MM.yyyy");
+                worksheet.Cell(index + 1, 4).Value = data.EvrakNo;
+                worksheet.Cell(index + 1, 5).Value = data.EvrakTarihi.Value.ToString("dd.MM.yyyy");
+                worksheet.Cell(index + 1, 6).Value = data.Aciklama;
+                worksheet.Cell(index + 1, 7).Value = data.DetailCount.ToString();
+
+                index++;
+            }
+
+            using (var stream = new MemoryStream())
+            {
+                workbook.SaveAs(stream);
+                var content = stream.ToArray();
+                var fileName = "StokHareketListesi" + DateTime.Now.ToString("yyyyMMddss") + ".xlsx";
+                await js.InvokeAsync<object>("saveAsFile", fileName, Convert.ToBase64String(content));
+            }
+        }
+    }
+
+    ////////////////////////////////////////// StokHareketCihaz //////////////////////////////////////////
+
+    async Task MarkaSec(object value, StokHareketCihazDTO dto)
+    {
+        int MarkaId = Convert.ToInt32(value.ToString());
+
+        dto.DataSourceModel = await lookupService.GetLookupFromMasterDetail("Cihaz", (MarkaId == 0 ? -1 : MarkaId));
+
+        dto.MarkaId = MarkaId;
+        dto.ModelId = 0;
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task AddStokHareketCihazKayitStokHareket()
+    {
+        var dto = new StokHareketCihazDTO()
+        {
+            DataSourceModel = new List<LookupBasicDTO>(),
+        };
+
+        currentDTO.StokHareketCihazList.Add(dto);
+
+        await InvokeAsync(StateHasChanged);
+    }    
+
+    async Task AddStokHareketCihaz(StokHareketDTO dto)
+    {
+        bool AcilmisKayitVar = false;
+
+        foreach (var StokHareketDTO in DSStokHareket)
+        {
+            var exist = StokHareketDTO.StokHareketCihazList.SingleOrDefault(x => x.Id == 0);
+
+            if (exist != null)
+            {
+                AcilmisKayitVar = true;
+                break;
+            }
+        }
+
+        if (AcilmisKayitVar == false)
+        {
+            currentStokHareketCihazDTO = new StokHareketCihazDTO()
+                {
+                    StokHareketId = dto.Id,
+                    DataSourceModel = new List<LookupBasicDTO>()
+                };
+
+            dto.StokHareketCihazList.Add(currentStokHareketCihazDTO);
+
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    async Task EditStokHareketCihaz(StokHareketCihazDTO dto)
+    {
+        bool AcilmisKayitVar = false;
+
+        foreach (var StokHareketDTO in DSStokHareket)
+        {
+            var exist = StokHareketDTO.StokHareketCihazList.SingleOrDefault(x => x.Id == 0 & x.StokHareketId > 0);
+
+            if (exist != null)
+            {
+                AcilmisKayitVar = true;
+                break;
+            }
+        }
+
+        if (AcilmisKayitVar == false)
+        {
+            currentStokHareketCihazDTO = dto;
+
+            dto.DataSourceModel = new List<LookupBasicDTO>();
+            dto.DataSourceModel.AddRange(await lookupService.GetLookupFromMasterDetail("Cihaz", (dto.MarkaId == 0 ? -1 : dto.MarkaId)));
+
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    async Task KaydetStokHareketCihaz(StokHareketCihazDTO dto)
+    {
+        if (dto.MarkaId == 0 || dto.ModelId == 0 || dto.Miktar <= 0)
+        {
+            await js.InvokeVoidAsync("SweetMessage", "Uyarı", $"Marka, model ve miktar girilmelidir", "error");
+
+            return;
+        }
+
+        var result = await stokHareketService.InsertOrUpdateStokHareketCihaz(dto);
+
+        if (result.Success == false)
+        {
+            await InvokeAsync(StateHasChanged);
+
+            await js.InvokeVoidAsync("SweetMessage", "Uyarı", result.Message, "error");
+
+            return;
+        }
+
+        await GetData();
+
+        currentStokHareketCihazDTO = new StokHareketCihazDTO();
+
+        var DSStokHareketRow = DSStokHareket.SingleOrDefault(x => x.Id == dto.StokHareketId);
+
+        DSStokHareketRow.Expanded = true;
+
+        await InvokeAsync(StateHasChanged);
+
+        await js.InvokeVoidAsync("SweetToast", "Kaydedildi", "success");
+    }
+
+    async Task VazgecStokHareketCihaz(StokHareketDTO dto)
+    {
+        if (currentStokHareketCihazDTO.Id == 0)
+        {
+            dto.StokHareketCihazList.Remove(currentStokHareketCihazDTO);
+        }
+        else
+        {
+            currentStokHareketCihazDTO = new StokHareketCihazDTO();
+        }
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task DeleteStokHareketCihaz(StokHareketCihazDTO dto)
+    {
+        var resultStokHareket = await stokHareketService.GetStokHareketList(new StokHareketFilterDTO() { Id = dto.StokHareketId, PageNo = 1, PageSize = 1 });
+
+        if (resultStokHareket.Success == false)
+        {
+            await InvokeAsync(StateHasChanged);
+
+            await js.InvokeVoidAsync("SweetMessage", "Hata", resultStokHareket.Message, "error");
+
+            return;
+        }
+
+        if (resultStokHareket.Value[0].StokHareketCihazList.Count() == 1)
+        {
+            await InvokeAsync(StateHasChanged);
+
+            await js.InvokeVoidAsync("SweetMessage", "Hata", "Son cihazı da silerseniz kayıt geçersiz olacak. Cihaz özelliklerini değiştirebilir veya stok hareketi kaydını tamamen silebilirsiniz.", "error");
+
+            return;
+        }
+
+        var confirm = await js.InvokeAsync<bool>("SweetConfirm", "Uyarı", "Kayıt silinecek, emin misiniz?", "question", "Evet", "Hayır");
+
+        if (confirm)
+        {
+            dto.DataSourceModel = new List<LookupBasicDTO>();
+
+            var resultDelete = await stokHareketService.DeleteStokHareketCihaz(new List<StokHareketCihazDTO>() { dto } );
+
+            if (resultDelete.Success == false)
+            {
+                await js.InvokeVoidAsync("SweetMessage", "Hata", resultDelete.Message, "error");
+                return;
+            }
+
+            await GetData();
+
+            DSStokHareket.SingleOrDefault(x => x.Id == dto.StokHareketId).Expanded = true;
+
+            await InvokeAsync(StateHasChanged);
+
+            await js.InvokeVoidAsync("SweetToast", "Kayıt silindi", "success");
+        }
+    }
+}

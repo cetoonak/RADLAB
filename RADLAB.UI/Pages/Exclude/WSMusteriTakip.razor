@@ -1,0 +1,101 @@
+﻿@inject IJSRuntime js
+@inject NavigationManager navManager
+
+<div style="text-align:center">
+    <br />
+    <br />
+    <br />
+    <br />
+    <br />
+    <EditForm Model="@musteriTakipDTO" OnSubmit="Ara" class="row g-3 needs-validation" style="place-content:center;">
+        <DataAnnotationsValidator />
+        <div class="col-3">
+            <div class="row">
+                <div class="col-12 mb-4">
+                    <h2>
+                        Müşteri Takip
+                    </h2>
+                </div>
+                <div class="col-12 mb-4">
+                    <div class="input-group has-validation">
+                        <span class="input-group-text" id="inputGroupPrepend"><i class="bi bi-phone-fill"></i></span>
+                        <input @bind-value="musteriTakipDTO.TelefonCep" class="form-control"
+                               type="text" placeholder="GSM numaranız" autocomplete="off" required />
+                        <div class="invalid-feedback">GSM numaranızı giriniz.</div>
+                    </div>
+                </div>
+                <div class="col-12 mb-4">
+                    <div class="input-group has-validation">
+                        <span class="input-group-text" id="inputGroupPrepend"><i class="bi bi-key-fill"></i></span>
+                        <input @bind-value="musteriTakipDTO.ReferansNo" class="form-control"
+                               type="text" placeholder="Referans numaranız" autocomplete="off" required />
+                        <div class="invalid-feedback">Referans numaranızı giriniz.</div>
+                    </div>
+                </div>
+                <div class="col-12">
+                    <button class="btn btn-primary btn-block w-100" disabled="@loading"><i class="bi bi-search"></i>&nbsp;&nbsp;Ara</button>
+                </div>
+            </div>
+        </div>
+    </EditForm>
+    <br />
+    <br />
+    <br />
+    <br />
+    <br />
+</div>
+
+@if (loading)
+{
+    <div class="progressBackground">
+        <div class="progressPopup">
+            <img alt="Bekleyiniz..." src="img/loading.gif" width="100" height="100" />
+        </div>
+    </div>
+}
+
+@code
+{
+    private bool loading = false;
+    private MusteriTakipDTO musteriTakipDTO = new MusteriTakipDTO();
+
+    private async Task Ara()
+    {
+        //loading = true;
+
+        //string message = "";
+
+        //try
+        //{
+        //    var result = await loginService.Login(loginDTO);
+
+        //    if (result.Success)
+        //    {
+        //        await localStorageService.SetItemAsync("token", result.Value.Token);
+        //        await authStateProvider.GetAuthenticationStateAsync();
+        //    }
+        //    else
+        //    {
+        //        message = "Kullanıcı bilgileri hatalı";
+        //    }
+        //}
+        //catch (Exception ex)
+        //{
+        //    message = ex.Message;
+        //}
+        //finally
+        //{
+        //    loading = false;
+        //    StateHasChanged();
+        //}
+
+        //if (message == "")
+        //{
+        //    navManager.NavigateTo("/Index", true);
+        //}
+        //else
+        //{
+        //    await js.InvokeVoidAsync("SweetMessage", "Uyarı", message, "warning");
+        //}
+    }
+}

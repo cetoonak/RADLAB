@@ -1,0 +1,267 @@
+﻿@page "/Mesaj/MesajKutusu/{GelenGidenArsiv:int}"
+
+@inject IJSRuntime js
+@inject NavigationManager navManager
+
+@using System.Threading
+@using System.Threading.Tasks
+@using System.Net.Http
+@using System.Text.Json
+
+<div class="btn-group" role="group" aria-label="Basic radio toggle button group">
+    @if (GelenGidenArsiv == 1)
+    {
+        <input type="radio" class="btn-check" name="btnradio" id="btnGelen" autocomplete="off" checked @onchange="@(async () => { await GelenGidenArsivChange(1); })">
+    }
+    else
+    {
+        <input type="radio" class="btn-check" name="btnradio" id="btnGelen" autocomplete="off" @onchange="@(async () => { await GelenGidenArsivChange(1); })">
+    }
+    <label class="btn btn-outline-primary btn-sm" for="btnGelen">Gelen Mesajlar</label>
+
+    @if (GelenGidenArsiv == 2)
+    {
+        <input type="radio" class="btn-check" name="btnradio" id="btnGiden" autocomplete="off" checked @onchange="@(async () => { await GelenGidenArsivChange(2); })">
+    }
+    else
+    {
+        <input type="radio" class="btn-check" name="btnradio" id="btnGiden" autocomplete="off" @onchange="@(async () => { await GelenGidenArsivChange(2); })">
+    }
+    <label class="btn btn-outline-primary btn-sm" for="btnGiden">Giden Mesajlar</label>
+
+    @if (GelenGidenArsiv == 3)
+    {
+        <input type="radio" class="btn-check" name="btnradio" id="btnArsiv" autocomplete="off" checked @onchange="@(async () => { await GelenGidenArsivChange(3); })">
+    }
+    else
+    {
+        <input type="radio" class="btn-check" name="btnradio" id="btnArsiv" autocomplete="off" @onchange="@(async () => { await GelenGidenArsivChange(3); })">
+    }
+    <label class="btn btn-outline-primary btn-sm" for="btnArsiv">Arşiv</label>
+</div>
+
+<br/>
+<br />
+
+<div class="card info-card">
+    <div class="table-responsive">
+        <table class="table table-bordered table-hover">
+            <thead>
+                <tr>
+                    <td width="10%" align="center"></td>
+                    <td width="40%">Konu</td>
+                    <td width="40%">Kişiler</td>
+                    <td width="10%" align="center">Zaman</td>
+                </tr>
+                <tr>
+                    <td width="10%" align="center">
+                        <input type="checkbox" checked="@CheckAll" @onchange="async eventArgs => { await OnCheckAllChange(eventArgs.Value); }" />
+                    </td>
+                    <td width="90%" colspan="3">
+                        <div style="display:flex; max-width:400px;">
+                            <div class="input-group" style="padding-right:16px">
+                                <input class="form-control form-control-sm" type="text" aria-describedby="btnSorgula"
+                                        placeholder="Konu veya kişi ismi ile arama yapabilirsiniz" @bind-value="filterDTO.SearchText" />
+                                <button class="btn btn-outline-success btn-sm" type="button" id="btnSorgula" @onclick="Sorgula"><i class="bi bi-search"></i></button>
+                            </div>
+                            @if (GelenGidenArsiv == 3)
+                            {
+                                <button class="btn btn-outline-primary btn-sm" type="button" @onclick="SilVeyaGeriAl"><i class="bi bi-arrow-return-left"></i></button>
+                            }
+                            else
+                            {
+                                <button class="btn btn-outline-danger btn-sm" type="button" @onclick="SilVeyaGeriAl"><i class="bi bi-trash"></i></button>
+                            }
+                        </div>
+                    </td>
+                </tr>
+            </thead>
+            @if (DataSource.ToList().Count == 0)
+            {
+                <tbody>
+                    <tr>
+                        <td colspan="4" align="center" valign="bottom" height="64px">
+                            <h6>Görüntülenecek Veri Yok</h6>
+                        </td>
+                    </tr>
+                </tbody>
+            }
+            else
+            {
+                <tbody>
+                    @foreach (var data in DataSource)
+                    {
+                        string stil = data.Bold ? "font-weight:bold" : "";
+
+                        <tr style="@stil">
+                            <td width="10%" align="center">
+                                <input type="checkbox" @bind="data.Checked" />
+                            </td>
+                            <td width="40%">
+                                <a href="/Mesaj/MesajAc/@GelenGidenArsiv/@data.Id">
+                                    @data.Konu
+                                </a>
+                            </td>
+                            <td width="40%">@data.Kim</td>
+                            <td width="10%" align="center">@data.Zaman.Value.ToString("dd.MM.yyyy HH:mm")</td>
+                        </tr>
+                    }
+                </tbody>
+            }
+            <thead>
+                <tr>
+                    <td colspan="4" align="center">
+                        <Pager RowCount="@RowCount"
+                               PageNoChanged="@((int pageNo) => PageNoChanged(pageNo))"
+                               PageSizeChanged="@((int pageSize) => PageSizeChanged(pageSize))"></Pager>
+                    </td>
+                </tr>
+            </thead>
+        </table>
+    </div>
+</div>
+
+@if (loading)
+{
+    <div class="progressBackground">
+        <div class="progressPopup">
+            <img alt="Bekleyiniz..." src="img/loading.gif" width="100" height="100" />
+        </div>
+    </div>
+}
+
+@code
+{
+    [Inject] protected IRolService rolService { get; set; }
+    [Inject] protected IMesajService mesajService { get; set; }
+
+    List<MesajDTO> DataSource = new List<MesajDTO>();
+
+    MesajKutusuFilterDTO filterDTO = new MesajKutusuFilterDTO() { PageNo = 1, PageSize = 10 };
+
+    [Parameter]
+    public int GelenGidenArsiv { get; set; } = 0;
+
+    int RowCount = 0;
+    bool loading = false;
+    bool CheckAll = false;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        filterDTO.GelenGidenArsiv = GelenGidenArsiv;
+
+        await GetData();
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task GetData()
+    {
+        var result = await mesajService.GetMesajKutusu(filterDTO);
+
+        if (result.Success)
+        {
+            DataSource = result.Value;
+            RowCount = result.RowCount;
+        }
+        else
+        {
+            await js.InvokeVoidAsync("SweetToast", result.Message, "error");
+        }
+    }
+
+    async Task PageNoChanged(int pageNo)
+    {
+        filterDTO.PageNo = pageNo;
+        await GetData();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task PageSizeChanged(int pageSize)
+    {
+        filterDTO.PageSize = pageSize;
+        await GetData();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task Sorgula()
+    {
+        await GetData();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task GelenGidenArsivChange(int GGA)
+    {
+        navManager.NavigateTo($"/Mesaj/MesajKutusu/{GGA}");
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task OnCheckAllChange(object checkedValue)
+    {
+        foreach (var data in DataSource)
+        {
+            data.Checked = (bool)checkedValue;
+        }
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task SilVeyaGeriAl()
+    {
+        int CheckedCount = 0;
+
+        foreach (var item in DataSource)
+        {
+            if (item.Checked)
+            {
+                CheckedCount++;
+            }
+        }
+
+        if (CheckedCount == 0)
+        {
+            await js.InvokeVoidAsync("SweetMessage", "Hata", "En az bir satır işaretleyiniz", "error");
+            return;
+        }
+
+        var confirm = await js.InvokeAsync<bool>("SweetConfirm", "Uyarı", "Seçilen mesajlar " + (GelenGidenArsiv == 3 ? "geri alınacak" : "arşivlenecek") + ", devam edilsin mi?", "question", "Evet", "Hayır");
+
+        if (confirm)
+        {
+            int success = 0;
+            string msg = "";
+
+            foreach (var item in DataSource)
+            {
+                if (item.Checked)
+                {
+                    var result = await mesajService.UpdateMesajGonderilenKisiVeyaMesajSilVeyaGeriAl(item);
+
+                    if (result.Success)
+                    {
+                        success++;
+                    }
+                    else
+                    {
+                        msg += result.Message + " ";
+                    }
+                }
+            }
+
+            if (success > 0)
+            {
+                await GetData();
+
+                await InvokeAsync(StateHasChanged);
+
+                await js.InvokeVoidAsync("SweetToast", success.ToString() + " kayıt " + (GelenGidenArsiv == 3 ? "geri alındı" : "arşivlendi"), "success");
+            }
+
+            if (msg != "")
+            {
+                await js.InvokeVoidAsync("SweetMessage", "Hata", msg, "error");
+            }
+        }
+    }
+}

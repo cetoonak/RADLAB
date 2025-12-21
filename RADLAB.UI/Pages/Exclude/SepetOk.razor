@@ -1,0 +1,41 @@
+﻿@page "/SepetOk/{Id}"
+
+@layout WebSiteLayout
+
+@inject IJSRuntime js
+@inject NavigationManager navManager
+
+@if (string.IsNullOrEmpty(iframe_token))
+{
+    <div>
+        Sipariş Başarılı
+    </div>
+}
+else
+{
+    <iframe src=@("https://www.paytr.com/odeme/guvenli/" + iframe_token) id="paytriframe" frameborder="0" scrolling="no" style="width: 100%;"></iframe>
+}
+
+@code
+{
+    [Parameter]
+    public string Id { get; set; }
+
+    [Inject] protected IPayTRService paytrService { get; set; }
+
+    string iframe_token;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await js.InvokeVoidAsync("iFrameResize", "{ }", "#paytriframe");
+
+            var result = await paytrService.GetSiparisPayTRToken(Convert.ToInt32(Id));
+
+            iframe_token = result;
+
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+}

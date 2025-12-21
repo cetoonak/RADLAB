@@ -1,0 +1,79 @@
+﻿@page "/Profil/KisiselDozRaporu"
+
+@inject IJSRuntime js
+
+<embed src="@pdf" type="application/pdf" style="width:100%; height:600px;" />
+
+@if (loading)
+{
+    <div class="progressBackground">
+        <div class="progressPopup">
+            <img alt="Bekleyiniz..." src="img/loading.gif" width="100" height="100" />
+        </div>
+    </div>
+}
+
+@code
+{
+    [Inject] protected IRolService rolService { get; set; }
+    [Inject] protected IFRService frService { get; set; }
+
+    KullaniciForLoginDTO kullaniciForLoginDTO = new KullaniciForLoginDTO();
+
+    bool loading = false;
+    string pdf = "";
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        kullaniciForLoginDTO = await rolService.GetKullaniciForLogin();
+
+        if (!string.IsNullOrEmpty(kullaniciForLoginDTO.TCKimlikNo))
+        {
+            try
+            {
+                loading = true;
+
+                var frDTO = new FRDTO()
+                    {
+                        ReportName = "KisiselListe",
+                        Uzanti = "pdf",
+                        TCKimlikNo = kullaniciForLoginDTO.TCKimlikNo,
+                    };
+
+                var result = await frService.GetReport(frDTO);
+
+                if (result.Success)
+                {
+                    string base64String = Convert.ToBase64String(result.Value);
+
+                    pdf = "data:application/pdf;base64," + base64String; /*+ "#view=FitH";*/
+
+                    loading = false;
+
+                    await InvokeAsync(StateHasChanged);
+                }
+                else
+                {
+                    loading = false;
+
+                    await InvokeAsync(StateHasChanged);
+
+                    await js.InvokeVoidAsync("SweetToast", result.Message, "error");
+                }
+            }
+            catch (Exception ex)
+            {
+                loading = false;
+
+                await InvokeAsync(StateHasChanged);
+
+                await js.InvokeVoidAsync("SweetToast", ex.Message, "error");
+            }
+        }
+    }
+}

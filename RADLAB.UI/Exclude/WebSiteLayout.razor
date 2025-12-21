@@ -1,0 +1,434 @@
+﻿@inherits LayoutComponentBase
+
+<link rel="stylesheet" type="text/css" href="css/website.css" />
+
+@*<link rel="stylesheet" type="text/css" href="finexo/css/bootstrap.css" />*@
+
+<style>
+    /*input[type="radio"] {
+            position: relative;
+            margin-top:0.25rem;
+        }*/
+
+    .form-floating > .form-select {
+        padding-left: 0.7rem;
+    }
+
+    .form-floating > label {
+        left: auto;
+    }
+
+    .form-check-input {
+        margin-left: 0rem !important;
+    }
+
+    /*.form-check-label {
+            margin-left: 1.5rem !important;
+        }*/
+</style>
+
+<header>
+    <nav class="navbar navbar-expand-md navbar-dark fixed-top bg-dark">
+        <div class="container-fluid">
+            <a href="/"><img src="img/logo.jpg" alt="" style="max-width:120px;"></a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarCollapse">
+                <ul class="navbar-nav me-auto mb-2 mb-md-0">
+                </ul>
+                <div class="d-flex">
+                    <ul class="navbar-nav me-auto mb-2 mb-md-0">
+                        <li class="nav-item">
+                            <a class="nav-link" href="/KalibrasyonBasvurusu">KALİBRASYON BAŞVURUSU</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/OnlineSatis">CİHAZLAR</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/RadyoaktifKaynakYukleme">RADYOAKTİF KAYNAK YÜKLEME</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/MusteriTakip">MÜŞTERİ TAKİP</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/Iletisim">İLETİŞİM</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/Hakkinda">HAKKIMIZDA</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/Login">GİRİŞ</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </nav>
+</header>
+
+<main style="margin-top:4rem;">
+
+    @Body
+    
+    <!-- FOOTER -->
+
+    <section class="info_section layout_padding2" style="font-size:smaller">
+        <div class="container">
+            <div class="row" style="font-size:larger">
+                <div class="col-md-6 col-lg-3 info_col">
+                    <div class="info_contact">
+                        <h4 id="Contact">
+                            Radlab
+                        </h4>
+                        <div class="contact_link_box">
+                            <a href="">
+                                <i class="fa fa-map-marker" aria-hidden="true"></i>
+                                <span>
+                                    RadLab İkincil Standart Dozimetri Laboratuvarı ve Radyasyon Ölçüm Sistemleri Sanayi ve Ticaret A.Ş.
+                                </span>
+                            </a>
+                            <a href="">
+                                <i class="fa fa-phone" aria-hidden="true"></i>
+                                <span>
+                                    +90 312 87 019 87
+                                </span>
+                            </a>
+                            <a href="">
+                                <i class="fa fa-mobile" aria-hidden="true"></i>
+                                <span>
+                                    +90 533 402 92 64
+                                </span>
+                            </a>
+                            <a href="">
+                                <i class="fa fa-envelope" aria-hidden="true"></i>
+                                <span>
+                                    bilgi@radlab.com.tr
+                                </span>
+                            </a>
+                            <a href="">
+                                <i class="fa fa-money" aria-hidden="true"></i>
+                                <span>
+                                    VakıfBank Anafartalar Şubesi TR350001500158007313907467
+                                </span>
+                            </a>
+                        </div>
+                    </div>
+                    <div class="info_social">
+                        <a href="">
+                            <i class="fa fa-facebook" aria-hidden="true"></i>
+                        </a>
+                        <a href="">
+                            <i class="fa fa-twitter" aria-hidden="true"></i>
+                        </a>
+                        <a href="">
+                            <i class="fa fa-linkedin" aria-hidden="true"></i>
+                        </a>
+                        <a href="">
+                            <i class="fa fa-instagram" aria-hidden="true"></i>
+                        </a>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-3 info_col">
+                    <div class="info_detail">
+                        <h4>
+                            Bilgi
+                        </h4>
+                        <p>
+                            Şirketimizin kuruluş amacı, faaliyetleri esnasında radyasyon kaynakları kullanan kamu veya özel tüzel kişiler ile gerçek kişilere radyasyon sağlığı ve güvenliği konularında danışmanlık yapmak ve bu kişilerin ihtiyacına yönelik mühendislik, enerji, ithalat, ihracat sanayi ve ticaret konularında faaliyet göstermektir.
+                        </p>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-2 mx-auto info_col">
+                    <div class="info_link_box">
+                        <h4>
+                            Linkler
+                        </h4>
+                        <div class="info_links">
+                            <a class="active" href="/">
+                                Ana Sayfa
+                            </a>
+                            <a class="" href="/Hakkinda">
+                                Hakkımızda
+                            </a>
+                            <a class="" href="/KalibrasyonBasvurusu">
+                                Kalibrasyon Başvurusu
+                            </a>
+                            <a class="" href="/RadyoaktifKaynakYukleme">
+                                Radyoaktif Kaynak Yükleme
+                            </a>
+                            <a class="" href="/MusteriTakip">
+                                Müşteri Takip
+                            </a>
+                            <a class="" href="/EgitimBasvurusu">
+                                Eğitim Başvurusu
+                            </a>
+                            <a class="" href="/Iletisim">
+                                İletişim
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-3 info_col ">
+                    <h4>
+                        Üye ol
+                    </h4>
+                    <form action="#">
+                        <input type="text" placeholder="E-posta adresiniz" />
+                        <button type="submit">
+                            Üye ol
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="footer_section">
+        <div class="container">
+            <p>
+                &copy; <span id="displayYear"></span> Tüm hakları saklıdır
+            </p>
+        </div>
+    </section>
+</main>
+
+
+
+
+
+
+@*<div class="hero_area">
+
+    <div class="hero_bg_box">
+        <div class="bg_img_box">
+            <img src="finexo/images/hero-bg.png" alt="">
+        </div>
+    </div>
+
+    <RADLAB.UI.Pages.WebSite.WSHeader />
+
+    <section class="slider_section ">
+        <div id="customCarousel1" class="carousel slide" data-ride="carousel">
+            <div class="carousel-inner">
+                <div class="carousel-item active">
+                    <div class="container">
+                        <div class="row">
+                            <div class="col-md-6 ">
+                                <div class="detail-box">
+                                    <h1>
+                                        KALİBRASYON
+                                        <br>
+                                        LABORATUVARIMIZ
+                                    </h1>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="detail-box">
+                                    <p class="mb-0">
+                                        Radyasyon Ölçüm Cihazlarının kalibrasyonunu yapıyoruz. Tüm tasarımı Radyasyondan Korunma Derneği tarafından yapılmış ve imal edilmiş bir kalibrasyon laboratuvarıdır. Nükleer Düzenleme Kurumu (NDK) tarafından Lisanslanmış ve TÜRKAK tarafından akredite edilmiştir.
+                                    </p>
+                                    <div class="btn-box mt-0" style="justify-content:right;">
+                                        <a href="/KalibrasyonBasvurusu" class="btn1 mb-4" style="width:auto;">
+                                            Kalibrasyon Başvurusu
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <img src="img/lab-in.jpg" alt="" class="mb-4" style="max-width:500px; max-height:275px;">
+                            </div>
+                            <div class="col-md-3">
+                                <img src="img/akreditasyon2.png" alt="" class="mb-4" style="max-width:500px; max-height:275px;">
+                            </div>
+                            <div class="col-md-3" style="text-align:right">
+                                <img src="img/radlab-lisans.jpg" alt="" class="mb-4" style="max-width:500px; max-height:275px;">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="carousel-item">
+                    <div class="container">
+                        <div class="row">
+                            <div class="col-md-6 ">
+                                <div class="detail-box">
+                                    <h1>
+                                        RADYASYON ÖLÇÜM CİHAZLARIMIZ
+                                    </h1>
+                                    <p>
+                                        Tamamen yerli imkanlarla Radyasyondan Korunma Derneği (TRKD) tarafından üretilen, Beta, Gama ve X Işınlarının tespit ve ölçümlerinde kullanılan;
+                                        <br />
+                                        <br />
+                                        <i class="fa fa-check" aria-hidden="true"></i> TRKD LEY-11 Radyasyon Doz Hızı Ölçüm Cihazlarının,
+                                        <br />
+                                        <i class="fa fa-check" aria-hidden="true"></i> TRKD LEY-20 Radyasyon Doz Hızı Ölçüm Cihazlarının,
+                                        <br />
+                                        <i class="fa fa-check" aria-hidden="true"></i> TRKD LEY-24 Alarmlı Elektronik Personel Dozimetrisinin,
+                                        <br />
+                                        <i class="fa fa-check" aria-hidden="true"></i> TRKD LEY-50 Alan Monitörünün ve
+                                        <br />
+                                        <i class="fa fa-check" aria-hidden="true"></i> OGEM Sabit Radyasyon Ölçüm Cihazının
+                                        <br />
+                                        <br />
+                                        TÜRKİYE’deki tek yetkili satış temsilcisiyiz.
+                                    </p>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <img src="img/cihazlar.png" alt="" class="mb-4" style="max-width:432px;">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="carousel-item">
+                    <div class="container">
+                        <div class="row">
+                            <div class="col-md-6 ">
+                                <div class="detail-box">
+                                    <h2 style="color:white">
+                                        RADYOAKTİF KAYNAK YÜKLEMESİ,
+                                        <br />
+                                        BAKIM-ONARIM,
+                                        <br />
+                                        İTHALAT, İHRACAT VE NAKLİYE
+                                    </h2>
+                                    <br />
+                                    <br />
+                                    <p>
+                                        İşlerinde iyonlaştırıcı radyasyon kaynakları kullanan lisanslı müşterilerimiz için radyoaktif kaynakların ihracatını, ithalatını ve nakliyesi ile Gamagrafi Cihazlarına Ir-192 ve Se-75 Yüklemesi ve Gamagrafi Cihazlarının Bakım-Onarımını yapıyoruz.
+                                    </p>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <img src="img/rafyoaktif-kaynak-ith-ihr.jpeg" alt="" class="mb-4" style="max-width:648px;">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="carousel-item">
+                    <div class="container">
+                        <div class="row">
+                            <div class="col-md-6 ">
+                                <div class="detail-box">
+                                    <h1 style="font-size:2.3rem;">
+                                        RADYASYONDAN
+                                        <br>
+                                        KORUNMA EĞİTİMLERİMİZ
+                                    </h1>
+                                    <p>
+                                        Nükleer Düzenleme Kurumundan alınacak lisanslar için alınması gereken;
+                                        <br />
+                                        <br />
+                                        <i class="fa fa-check" aria-hidden="true"></i> ERRK (Endüstriyel Radyografide Radyasyondan Korunma)
+                                        <br />
+                                        <i class="fa fa-check" aria-hidden="true"></i> EURK (Endüstriyel Uygulamalarda Radyasyondan Korunma)
+                                        <br />
+                                        <i class="fa fa-check" aria-hidden="true"></i> RÖRK (Radyasyon Ölçümü ve Radyasyondan Korunma)
+                                        <br />
+                                        <i class="fa fa-check" aria-hidden="true"></i> RMTRK (Radyoaktif Madde Taşımacılığında Radyasyondan Korunma)
+                                        <br />
+                                        <i class="fa fa-check" aria-hidden="true"></i> TRRK (Tanısal Radyolojide Radyasyondan Korunma) ve
+                                        <br />
+                                        <i class="fa fa-check" aria-hidden="true"></i> 1 Günlük Radyasyondan Korunma ve Taşınabilir Radyasyon Ölçüm Cihazlarının Kullanılması
+                                        <br />
+                                        <br />
+                                        Kurslarını düzenliyor ve katılım belgesi veriyoruz
+                                    </p>
+                                    <div class="btn-box">
+                                        <a href="/EgitimBasvurusu" class="btn1" style="width:auto;">
+                                            Başvuru İçin Tıklayınız
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <img src="img/egitimler.png" alt="" class="mb-4" style="max-width:492px;">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <ol class="carousel-indicators">
+                <li data-target="#customCarousel1" data-slide-to="0" style="margin-right:6px; cursor:pointer" class="active"></li>
+                <li data-target="#customCarousel1" data-slide-to="1" style="margin-right:6px; cursor:pointer"></li>
+                <li data-target="#customCarousel1" data-slide-to="2" style="margin-right:6px; cursor:pointer"></li>
+                <li data-target="#customCarousel1" data-slide-to="3" style="margin-right:6px; cursor:pointer"></li>
+            </ol>
+        </div>
+
+    </section>
+</div>
+
+
+<section class="service_section layout_padding">
+    <div class="service_container">
+        <div class="container ">
+            <div class="heading_container heading_center">
+                <h2>
+                    Ürün ve <span>Hizmetlerimiz</span>
+                </h2>
+                <p>
+                    Bazı hizmetlerimize buradan ulaşabilirsiniz
+                </p>
+            </div>
+            <div class="row">
+                <div class="col-md-4 ">
+                    <div class="box ">
+                        <div class="img-box">
+                            <img src="finexo/images/s2.png" alt="">
+                        </div>
+                        <div class="detail-box">
+                            <h5>
+                                KALİBRASYON HİZMETİ
+                            </h5>
+                            <p>
+                                Radyasyon Ölçüm Cihazlarının kalibrasyonunu yapıyoruz.
+                            </p>
+                            <a href="/KalibrasyonBasvurusu">
+                                Daha Fazla
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4 ">
+                    <div class="box ">
+                        <div class="img-box">
+                            <img src="finexo/images/s3.png" alt="">
+                        </div>
+                        <div class="detail-box">
+                            <h5>
+                                EĞİTİMLER
+                            </h5>
+                            <p>
+                                Şirketimiz radyasyondan korunma eğitimleri vermektedir.
+                            </p>
+                            <a href="/EgitimBasvurusu">
+                                Daha Fazla
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4 ">
+                    <div class="box ">
+                        <div class="img-box">
+                            <img src="finexo/images/w4.png" alt="">
+                        </div>
+                        <div class="detail-box">
+                            <h5>
+                                MÜŞTERİ TAKİP
+                            </h5>
+                            <p>
+                                GSM ve Referans Numaranız ile başvurunuzu takip edebilirsiniz
+                            </p>
+                            <a href="/MusteriTakip">
+                                Daha fazla
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<RADLAB.UI.Pages.WebSite.WSFooter />*@

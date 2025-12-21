@@ -1,0 +1,404 @@
+﻿@layout WebSiteLayout
+
+@inject IJSRuntime js
+
+@page "/"
+
+<style>
+    .customTable {
+    }
+
+        .customTable td {
+            border: 1px solid silver;
+        }
+
+    .customTableCaption {
+        font-weight: bold;
+        background-color: ghostwhite;
+    }
+
+    .tableDuyuru {
+    }
+
+        .tableDuyuru td {
+            vertical-align: middle;
+        }
+</style>
+
+<div id="myCarousel" class="carousel slide" data-bs-ride="carousel">
+    <div class="carousel-indicators">
+        <button type="button" data-bs-target="#myCarousel" data-bs-slide-to="0" class="active" aria-current="true" aria-label="Slide 1"></button>
+        <button type="button" data-bs-target="#myCarousel" data-bs-slide-to="1" aria-label="Slide 2"></button>
+        <button type="button" data-bs-target="#myCarousel" data-bs-slide-to="2" aria-label="Slide 3"></button>
+    </div>
+    <div class="carousel-inner">
+        <div class="carousel-item active">
+            <svg class="bd-placeholder-img" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" preserveAspectRatio="xMidYMid slice" focusable="false"><rect width="100%" height="100%" fill="#00204a" /></svg>
+            <div class="container">
+                <div class="carousel-caption">
+                    <div class="row">
+                        <div class="col">
+                            <h1>
+                                KALİBRASYON LABORATUVARIMIZ
+                            </h1>
+                            <p>Radyasyon Ölçüm Cihazlarının kalibrasyonunu yapıyoruz. Tüm tasarımı Radyasyondan Korunma Derneği tarafından yapılmış ve imal edilmiş bir kalibrasyon laboratuvarıdır. Nükleer Düzenleme Kurumu (NDK) tarafından Lisanslanmış ve TÜRKAK tarafından akredite edilmiştir.</p>
+                            <a class="btn btn-lg btn-primary" href="/KalibrasyonBasvurusu">Kalibrasyon Başvurusu</a>
+                        </div>
+                        <div class="col">
+                            <img src="img/belgeler.jpg" alt="" style="width:30rem;" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="carousel-item">
+            <svg class="bd-placeholder-img" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" preserveAspectRatio="xMidYMid slice" focusable="false"><rect width="100%" height="100%" fill="#00204a" /></svg>
+            <div class="container">
+                <div class="carousel-caption">
+                    <div class="row">
+                        <div class="col text-start">
+                            <h2>
+                                RADYASYON ÖLÇÜM CİHAZLARIMIZ
+                            </h2>
+                            <p style="font-size:0.9rem">
+                                Tamamen yerli imkanlarla Radyasyondan Korunma Derneği (TRKD) tarafından üretilen, Beta, Gama ve X Işınlarının tespit ve ölçümlerinde kullanılan;
+                            </p>
+                            <p style="font-size:0.9rem">
+                                <i class="fa fa-check" aria-hidden="true"></i>&nbsp;TRKD LEY-11 Radyasyon Doz Hızı Ölçüm Cihazlarının,
+                                <br />
+                                <i class="fa fa-check" aria-hidden="true"></i>&nbsp;TRKD LEY-20 Radyasyon Doz Hızı Ölçüm Cihazlarının,
+                                <br />
+                                <i class="fa fa-check" aria-hidden="true"></i>&nbsp;TRKD LEY-24 Alarmlı Elektronik Personel Dozimetrisinin,
+                                <br />
+                                <i class="fa fa-check" aria-hidden="true"></i>&nbsp;TRKD LEY-50 Alan Monitörünün ve
+                                <br />
+                                <i class="fa fa-check" aria-hidden="true"></i>&nbsp;OGEM Sabit Radyasyon Ölçüm Cihazının
+                            </p>
+                            <p style="font-size:0.9rem">
+                                TÜRKİYE’deki tek yetkili satış temsilcisiyiz.
+                            </p>
+                            <a class="btn btn-lg btn-primary" href="/OnlineSatis">Satın Almak İçin Tıklayınız</a>
+                        </div>
+                        <div class="col">
+                            <img src="img/cihazlar.png" alt="" style="width:20rem;" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="carousel-item">
+            <svg class="bd-placeholder-img" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" preserveAspectRatio="xMidYMid slice" focusable="false"><rect width="100%" height="100%" fill="#00204a" /></svg>
+            <div class="container">
+                <div class="carousel-caption">
+                    <div class="row">
+                        <div class="col text-start">
+                            <h3>
+                                RADYASYONDAN KORUNMA EĞİTİMLERİMİZ
+                            </h3>
+                            <p style="font-size:0.9rem">
+                                Nükleer Düzenleme Kurumundan alınacak lisanslar için alınması gereken;
+                            </p>
+                            <p style="font-size:0.9rem">
+                                <i class="fa fa-check" aria-hidden="true"></i>&nbsp;ERRK (Endüstriyel Radyografide Radyasyondan Korunma)
+                                <br />
+                                <i class="fa fa-check" aria-hidden="true"></i>&nbsp;EURK (Endüstriyel Uygulamalarda Radyasyondan Korunma)
+                                <br />
+                                <i class="fa fa-check" aria-hidden="true"></i>&nbsp;RÖRK (Radyasyon Ölçümü ve Radyasyondan Korunma)
+                                <br />
+                                <i class="fa fa-check" aria-hidden="true"></i>&nbsp;RMTRK (Radyoaktif Madde Taşımacılığında Radyasyondan Korunma)
+                                <br />
+                                <i class="fa fa-check" aria-hidden="true"></i>&nbsp;TRRK (Tanısal Radyolojide Radyasyondan Korunma) ve
+                                <br />
+                                <i class="fa fa-check" aria-hidden="true"></i>&nbsp;1 Günlük Radyasyondan Korunma ve Taşınabilir Radyasyon Ölçüm Cihazlarının Kullanılması
+                            </p>
+                            <p style="font-size:0.9rem">
+                                Kurslarını düzenliyor ve katılım belgesi veriyoruz
+                            </p>
+                        </div>
+                        <div class="col">
+                            <img src="img/egitimler.png" alt="" style="width:20rem;" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <button class="carousel-control-prev" type="button" data-bs-target="#myCarousel" data-bs-slide="prev">
+        <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+        <span class="visually-hidden">Previous</span>
+    </button>
+    <button class="carousel-control-next" type="button" data-bs-target="#myCarousel" data-bs-slide="next">
+        <span class="carousel-control-next-icon" aria-hidden="true"></span>
+        <span class="visually-hidden">Next</span>
+    </button>
+</div>
+
+<!-- Marketing messaging and featurettes
+================================================== -->
+<!-- Wrap the rest of the page in another container to center all the content. -->
+
+<div class="container marketing">
+
+    @if (DSKursYayin.Count > 0)
+    {
+        <div class="row">
+            <div class="col-md-12">
+                <table class="table table-bordered tableDuyuru" style="margin-bottom:0 !important;">
+                    <thead>
+                        <tr class="grid-row-header">
+                            <td colspan="8" align="center">
+                                EĞİTİM TAKVİMİ
+                            </td>
+                        </tr>
+                        <tr class="grid-row-header">
+                            <td width="28%" align="center">Eğitim</td>
+                            <td width="8%" align="center">Kurs Ortamı</td>
+                            <td width="8%" align="center">Başvuru Dönemi</td>
+                            <td width="8%" align="center">Eğitim Dönemi</td>
+                            <td width="8%" align="center">Eğitim Süresi</td>
+                            <td width="16%" align="center">Durum</td>
+                            <td width="14%" align="center"></td>
+                            <td width="10%" align="center"></td>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var kurs in DSKursYayin)
+                        {
+                            <tr style="display: table; table-layout: fixed; width: 100%;">
+                                <td width="28%" align="center">@kurs.Egitim</td>
+                                <td width="8%" align="center">@kurs.KursOrtami</td>
+                                <td width="8%" align="center">@kurs.BasvuruDonemi</td>
+                                <td width="8%" align="center">@kurs.EgitimDonemi</td>
+                                <td width="8%" align="center">@kurs.Sure</td>
+                                <td width="16%" align="center">
+                                    @if (kurs.Durum == "Başvuru Dönemi İçinde")
+                                    {
+                                        <span class="badge bg-success">@kurs.Durum</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-warning">@kurs.Durum</span>
+                                    }
+                                </td>
+                                <td width="14%" align="center">
+                                    <button class="btn btn-link btn-sm" @onclick="@(() => { KursBilgileri(kurs); })">Eğitim Bilgileri</button>
+                                </td>
+                                <td width="10%" align="center">
+                                    @if (kurs.Durum == "Başvuru Dönemi İçinde")
+                                    {
+                                        <a href=@("/EgitimBasvurusu/" + kurs.Id.ToString()) class="btn btn-success btn-sm">Başvur</a>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+
+    <br />
+
+    @if (DSDuyuru.Count > 0)
+    {
+        <div class="row">
+            @foreach (var duyuru in DSDuyuru)
+            {
+                <div class="col-md-12">
+                    <br/>
+                    @((MarkupString)duyuru.Icerik)
+                    <br />
+                </div>
+            }
+        </div>
+    }
+
+    <!-- START THE FEATURETTES -->
+
+    @* <hr class="featurette-divider">
+
+    <div class="row featurette">
+        <div class="col-md-7">
+            <h2 class="featurette-heading" style="margin-top:0">Radyoaktif Kaynak Yüklemesi, Bakım-Onarım, İthalat, İhracat ve Nakliye</h2>
+            <p class="lead">
+                İşlerinde iyonlaştırıcı radyasyon kaynakları kullanan lisanslı müşterilerimiz için radyoaktif kaynakların ihracatını, ithalatını ve nakliyesi ile Gamagrafi Cihazlarına Ir-192 ve Se-75 Yüklemesi ve Gamagrafi Cihazlarının Bakım-Onarımını yapıyoruz.
+            </p>
+            <a class="btn btn-lg btn-primary" href="/RadyoaktifKaynakYukleme">Daha Fazla..</a>
+        </div>
+        <div class="col-md-5">
+            <img alt="" src="img/rafyoaktif-kaynak-ith-ihr.jpeg" width="400" height="400" />
+        </div>
+    </div>
+
+    <hr class="featurette-divider">
+
+    <div class="row featurette">
+        <div class="col-md-7 order-md-2">
+            <h2 class="featurette-heading" style="margin-top:0">Hakkımızda</h2>
+            <p class="lead">
+                Şirketimizin kuruluş amacı, faaliyetleri esnasında radyasyon kaynakları kullanan kamu veya özel tüzel kişiler ile gerçek kişilere radyasyon sağlığı ve güvenliği konularında danışmanlık yapmak ve bu kişilerin ihtiyacına yönelik mühendislik, enerji, ithalat, ihracat sanayi ve ticaret konularında faaliyet göstermektir.
+            </p>
+            <a class="btn btn-lg btn-primary" href="/Hakkinda">Daha Fazla..</a>
+        </div>
+        <div class="col-md-5 order-md-1">
+            <a href="img/radlab_logo.jpg" download title="Tıklayıp indirebilirsiniz">
+                <img src="img/radlab_logo.jpg" alt="" width="400">
+            </a>
+        </div>
+    </div>
+
+    <hr class="featurette-divider">
+
+    <div class="row featurette">
+        <div class="col-md-7">
+            <h2 class="featurette-heading" style="margin-top:0">Bize<span class="text-muted">ulaşın</span></h2>
+            <br />
+            <p class="lead">
+                RadLab İkincil Standart Dozimetri Laboratuvarı ve Radyasyon Ölçüm Sistemleri Sanayi ve Ticaret A.Ş.
+            </p>
+            <br />
+            <p>
+                <i class="fa fa-compass" style="font-size:20px"></i>&nbsp;&nbsp;Ahi Evran OSB Mah. Erkunt Cad. No:3/11 Sincan Ankara
+            </p>
+            <p>
+                <i class="fa fa-mobile" style="font-size:20px"></i>&nbsp;&nbsp;+90 533 402 92 64
+            </p>
+            <p>
+                <i class="fa fa-phone" style="font-size:2 0px"></i>&nbsp;&nbsp;+90 312 87 019 87
+            </p>
+            <p>
+                <i class="fa fa-envelope" style="font-size:20px"></i>&nbsp;&nbsp;<a href="mailto:bilgi@radlab.com.tr">bilgi@radlab.com.tr</a>
+            </p>
+        </div>
+        <div class="col-md-5">
+            <div class="box" style="padding-top:0px;">
+                <iframe src="https://www.google.com/maps/embed?pb=!1m14!1m8!1m3!1d24457.73446021599!2d32.554174!3d39.98126!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x14d3300989c19055%3A0xb403ba60681a14ad!2sErkunt%20Cd.%20No%3A3%20D%3A2%2C%2006930%20Ahi%20Evran%20Osb%2FSincan%2FAnkara!5e0!3m2!1str!2str!4v1690729630364!5m2!1str!2str" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade" style="border: 0; width:100%; height:23.3rem;"></iframe>
+            </div>
+        </div>
+    </div> *@
+
+    <!-- /END THE FEATURETTES -->
+
+</div><!-- /.container -->
+
+<button id="popupKursYayinAc" type="button" data-bs-toggle="modal" data-bs-target="#popupKursYayin" style="visibility:hidden;">
+</button>
+
+<div class="modal fade" id="popupKursYayin" tabindex="-1" aria-labelledby="popupKursYayinLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="popupKursYayinLabel">Eğitim Bilgileri</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-12">
+                        <table class="customTable" width="100%" cellpadding="8" cellspacing="16">
+                            <tbody>
+                                <tr>
+                                    <td class="customTableCaption">Eğitim</td>
+                                    <td>@currentKursYayinDTO.Egitim</td>
+                                </tr>
+                                <tr>
+                                    <td class="customTableCaption">Kurs Ortamı</td>
+                                    <td>@currentKursYayinDTO.KursOrtami</td>
+                                </tr>
+                                <tr>
+                                    <td class="customTableCaption">Başvuru Dönemi</td>
+                                    <td>@currentKursYayinDTO.BasvuruDonemi</td>
+                                </tr>
+                                <tr>
+                                    <td class="customTableCaption">Eğitim Dönemi</td>
+                                    <td>@currentKursYayinDTO.EgitimDonemi</td>
+                                </tr>
+                                <tr>
+                                    <td class="customTableCaption">Eğitim Süresi</td>
+                                    <td>@currentKursYayinDTO.Sure</td>
+                                </tr>
+                                <tr>
+                                    <td class="customTableCaption">Amacı</td>
+                                    <td>
+                                        <p>
+                                            @((MarkupString)currentKursYayinDTO.Amac)
+                                        </p>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="customTableCaption">Başvuru Şartları</td>
+                                    <td>
+                                        <p>
+                                            @((MarkupString)currentKursYayinDTO.Sart)
+                                        </p>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="customTableCaption">Kurs Yeri</td>
+                                    <td>
+                                        <p>
+                                            @((MarkupString)currentKursYayinDTO.KursYeri)
+                                        </p>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="popupKursYayinKapat" type="button" class="btn btn-primary btn-sm" data-bs-dismiss="modal"><i class="bi bi-x-circle"></i>&nbsp;Kapat</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code
+{
+    [Inject] protected IKursService kursService { get; set; }
+    [Inject] protected IDuyuruService duyuruService { get; set; }
+
+    List<KursYayinDTO> DSKursYayin = new List<KursYayinDTO>();
+    List<DuyuruDTO> DSDuyuru = new List<DuyuruDTO>();
+
+    KursYayinDTO currentKursYayinDTO = new KursYayinDTO();
+    DuyuruFilterDTO duyuruFilterDTO = new DuyuruFilterDTO() { SistemKullanicilarinaGoster = -1, WebSitesindeGoster = 1, Aktif = 1 };
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            var resultKurs = await kursService.GetKursYayinList(0);
+
+            if (resultKurs.Success)
+            {
+                DSKursYayin = resultKurs.Value;
+            }
+            else
+            {
+                await js.InvokeVoidAsync("SweetMessage", "Hata", resultKurs.Message, "error");
+            }
+
+            var resultDuyuru = await duyuruService.GetDuyuruList(duyuruFilterDTO);
+
+            if (resultDuyuru.Success)
+            {
+                DSDuyuru = resultDuyuru.Value;
+            }
+            else
+            {
+                await js.InvokeVoidAsync("SweetMessage", "Hata", resultKurs.Message, "error");
+            }
+
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    async Task KursBilgileri(KursYayinDTO dto)
+    {
+        currentKursYayinDTO = dto;
+
+        await InvokeAsync(StateHasChanged);
+
+        await js.InvokeVoidAsync("bsPopupAc", "popupKursYayin");
+    }
+}

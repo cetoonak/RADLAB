@@ -1,0 +1,101 @@
+﻿@page "/Mesaj/MesajAc/{GelenGiden:int}/{Id:int}"
+
+@inject IJSRuntime js
+@inject NavigationManager navManager
+
+@using System.Threading
+@using System.Threading.Tasks
+@using System.Net.Http
+@using System.Text.Json
+
+<EditForm Model="@currentDTO">
+    <div class="row">
+        <div class="col-md-12 mb-3">
+            <label>@(GelenGiden == 1 ? "Kimden" : "Kişiler")</label>
+            <p class="form-control">@currentDTO.Kim</p>
+        </div>
+        <div class="col-md-9 mb-3">
+            <label>Konu</label>
+            <p class="form-control">@currentDTO.Konu</p>
+        </div>
+        <div class="col-md-3 mb-3">
+            <label>Zaman</label>
+            <p class="form-control">@(currentDTO.Zaman.HasValue ? currentDTO.Zaman.Value.ToString("dd.MM.yyyy HH:mm") : "")</p>
+        </div>
+        <div class="col-md-12 mb-3">
+            <label>İçerik</label>
+            @{
+                MarkupString ms = (MarkupString)currentDTO.Icerik;
+            }
+            <p class="form-control">
+                @ms
+            </p>
+        </div>
+        <div class="col-md-12">
+            <div class="btn-group w-100">
+                <button class="btn btn-success btn-sm" @onclick="Yanitla"><i class="bi bi-arrow-90deg-left"></i>&nbsp;Yanıtla</button>
+                <button class="btn btn-primary btn-sm" @onclick="Ilet"><i class="bi bi-arrow-90deg-right"></i>&nbsp;İlet</button>
+            </div>
+        </div>
+    </div>
+</EditForm>
+
+@if (loading)
+{
+    <div class="progressBackground">
+        <div class="progressPopup">
+            <img alt="Bekleyiniz..." src="img/loading.gif" width="100" height="100" />
+        </div>
+    </div>
+}
+
+@code
+{
+    [Inject] protected IRolService rolService { get; set; }
+    [Inject] protected IMesajService mesajService { get; set; }
+
+    [Parameter]
+    public int GelenGiden { get; set; } = 0;
+
+    [Parameter]
+    public int Id { get; set; } = 0;
+
+    MesajDTO currentDTO = new MesajDTO();
+
+    bool loading = false;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        var result = await mesajService.GetMesaj(GelenGiden, Id);
+
+        if (result.Success)
+        {
+            currentDTO = result.Value;
+
+            var resultOkundu = await mesajService.UpdateMesajGonderilenKisiOkundu(currentDTO);
+
+            if (result.Success == false)
+            {
+                await js.InvokeVoidAsync("SweetToast", result.Message, "error");
+            }
+        }
+        else
+        {
+            await js.InvokeVoidAsync("SweetToast", result.Message, "error");
+        }
+    }
+
+    async Task Yanitla()
+    {
+        navManager.NavigateTo($"/Mesaj/MesajYaz/1/{GelenGiden}/{currentDTO.Id}", false);
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task Ilet()
+    {
+        navManager.NavigateTo($"/Mesaj/MesajYaz/2/{GelenGiden}/{currentDTO.Id}", false);
+
+        await InvokeAsync(StateHasChanged);
+    }
+}

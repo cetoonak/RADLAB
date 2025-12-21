@@ -1,0 +1,301 @@
+﻿@page "/Tanim/Dosya"
+
+@inject IJSRuntime js
+
+@using System.Threading
+@using System.Threading.Tasks
+@using System.Net.Http
+@using System.Text.Json
+
+<div class="card info-card">
+    <div class="table-responsive">
+        <table class="table table-bordered table-hover">
+            <thead>
+                <tr>
+                    <td align="center">Görünen Ad</td>
+                    <td align="center">Dosya Adı</td>
+                    <td align="center">Dosya Tipi</td>
+                    <td align="center">Boyut</td>
+                    <td align="center">
+                        <button class="btn text-success grid-command" @onclick="ExportToExcel"><i class="bi bi-file-earmark-excel"></i></button>
+                    </td>
+                </tr>
+                <tr>
+                    <td align="center">
+                        <input class="form-control form-control-sm" type="text" @bind-value="addingDTO.GorunenAd" />
+                    </td>
+                    <td colspan="3" align="center">
+                        <InputFile OnChange="HandleFileUpload"></InputFile>
+                    </td>
+                    <td align="center">
+                        @if (YetkiEkle)
+                        {
+                            <button class="btn text-success grid-command" @onclick="@(async () => { await Kaydet(addingDTO); })"><i class="bi bi-plus-circle"></i></button>
+                        }
+                    </td>
+                </tr>
+            </thead>
+            @if (DS.ToList().Count == 0)
+            {
+                <tbody>
+                    <tr>
+                        <td colspan="5" align="center" valign="bottom" height="64px">
+                            <h6>Görüntülenecek Veri Yok</h6>
+                        </td>
+                    </tr>
+                </tbody>
+            }
+            else
+            {
+                <tbody>
+                    @foreach (var data in DS)
+                    {
+                        <tr>
+                            @if (editingDTO.Id == data.Id)
+                            {
+                                <td align="center">
+                                    <input class="form-control form-control-sm" type="text" @bind-value="editingDTO.GorunenAd" />
+                                </td>
+                                <td colspan="3" align="center">
+                                </td>
+                                <td align="center">
+                                    <div class="btn-group">
+                                        <button class="btn text-success grid-command" @onclick="@(async () => { await Kaydet(editingDTO); })"><i class="bi bi-check-circle"></i></button>
+                                        <button class="btn text-primary grid-command" @onclick="Vazgec"><i class="bi bi-x-circle"></i></button>
+                                    </div>
+                                </td>
+                            }
+                            else
+                            {
+                                <td align="center">@data.GorunenAd</td>
+                                <td align="center">
+                                    <a href="javascript:void()" @onclick=@(async () => { await Download(data.Id); })>
+                                        @data.DosyaAdi
+                                    </a>
+                                </td>
+                                <td align="center">@data.Tip</td>
+                                <td align="center">@(data.Boyut.ToString() + "KB")</td>
+                                <td align="center">
+                                    <div class="btn-group">
+                                        @if (YetkiDegistir)
+                                        {
+                                            <button class="btn text-primary grid-command" @onclick="@(async () => { await Edit(data); })"><i class="bi bi-pencil"></i></button>
+                                        }
+                                        @if (YetkiSil)
+                                        {
+                                            <button class="btn text-danger grid-command" @onclick="@(async () => { await Delete(data); })"><i class="bi bi-trash3"></i></button>
+                                        }
+                                    </div>
+                                </td>
+                            }
+                        </tr>
+                    }
+                </tbody>
+            }
+        </table>
+    </div>
+</div>
+
+@if (loading)
+{
+    <div class="progressBackground">
+        <div class="progressPopup">
+            <img alt="Bekleyiniz..." src="img/loading.gif" width="100" height="100" />
+        </div>
+    </div>
+}
+
+@code
+{
+    [Inject] protected IRolService rolService { get; set; }
+    [Inject] protected IDosyaService dosyaService { get; set; }
+
+    List<DosyaDTO> DS = new List<DosyaDTO>();
+
+    DosyaDTO addingDTO = new DosyaDTO();
+    DosyaDTO editingDTO = new DosyaDTO();
+
+    bool loading = false;
+    bool YetkiEkle = false;
+    bool YetkiDegistir = false;
+    bool YetkiSil = false;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            YetkiEkle = await rolService.YetkiKontrolByYetki("Tanımlamalar - Dosyalar - Ekle");
+            YetkiDegistir = await rolService.YetkiKontrolByYetki("Tanımlamalar - Dosyalar - Değiştir");
+            YetkiSil = await rolService.YetkiKontrolByYetki("Tanımlamalar - Dosyalar - Sil");
+
+            await GetData();
+
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    async Task HandleFileUpload(InputFileChangeEventArgs e)
+    {
+        var stream = e.File.OpenReadStream(1024 * 1024 * 10);
+
+        MemoryStream ms = new MemoryStream();
+
+        await stream.CopyToAsync(ms);
+
+        stream.Close();
+
+        var streamArray = ms.ToArray();
+
+        ms.Close();
+
+        addingDTO.Dosya = Convert.ToBase64String(streamArray);
+        addingDTO.DosyaAdi = e.File.Name;
+        addingDTO.Tip = e.File.ContentType;
+        addingDTO.Boyut = e.File.Size;
+
+        stream.Close();
+    }
+
+    async Task Download(int Id)
+    {
+        var result = await dosyaService.GetDosya(Id);
+
+        if (result.Success)
+        {
+            var dosya = result.Value;
+
+            await js.InvokeVoidAsync("downloadFile", dosya.Tip, dosya.Dosya, dosya.DosyaAdi);
+        }
+        else
+        {
+            await js.InvokeVoidAsync("SweetMessage", "Hata", result.Message, "error");
+        }
+    }
+
+    async Task GetData()
+    {
+        var result = await dosyaService.GetDosyaList();
+
+        if (result.Success)
+        {
+            DS = result.Value;
+        }
+        else
+        {
+            await js.InvokeVoidAsync("SweetMessage", "Hata", result.Message, "error");
+        }
+    }
+
+    async Task Edit(DosyaDTO dto)
+    {
+        editingDTO = dto;
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task Kaydet(DosyaDTO dto)
+    {
+        if (string.IsNullOrEmpty(dto.GorunenAd) || (dto == addingDTO & string.IsNullOrEmpty(dto.DosyaAdi)))
+        {
+            await js.InvokeVoidAsync("SweetToast", "Tüm alanlar zorunludur", "error");
+            return;
+        }
+
+        loading = true;
+
+        var result = await dosyaService.InsertOrUpdateDosya(dto);
+
+        if (result.Success == false)
+        {
+            loading = false;
+            await InvokeAsync(StateHasChanged);
+
+            await js.InvokeVoidAsync("SweetToast", result.Message, "error");
+            return;
+        }
+
+        await GetData();
+
+        if (dto == addingDTO)
+            addingDTO = new DosyaDTO();
+        else if (dto == editingDTO)
+            editingDTO = new DosyaDTO();
+
+        loading = false;
+
+        await InvokeAsync(StateHasChanged);
+
+        await js.InvokeVoidAsync("SweetToast", "Kaydedildi", "success");
+    }
+
+    async Task Vazgec()
+    {
+        editingDTO = new DosyaDTO();
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task Delete(DosyaDTO dto)
+    {
+        var dtos = new List<DosyaDTO>();
+
+        dtos.Add(dto);
+
+        var confirm = await js.InvokeAsync<bool>("SweetConfirm", "Uyarı", "Kayıt silinecek, emin misiniz?", "question", "Evet", "Hayır");
+
+        if (confirm)
+        {
+            var result = await dosyaService.DeleteDosya(dtos);
+
+            if (result.Success == false)
+            {
+                await js.InvokeVoidAsync("SweetMessage", "Hata", result.Message, "error");
+                return;
+            }
+
+            await GetData();
+
+            await InvokeAsync(StateHasChanged);
+
+            await js.InvokeVoidAsync("SweetToast", "Kayıtlar silindi", "success");
+        }
+    }
+
+    public async Task ExportToExcel()
+    {
+        using (var workbook = new XLWorkbook())
+        {
+            IXLWorksheet worksheet = workbook.Worksheets.Add("Sayfa1");
+
+            worksheet.Cell(1, 1).Value = "Görünen Ad";
+            worksheet.Cell(1, 2).Value = "Dosya Adı";
+            worksheet.Cell(1, 3).Value = "Dosya Tipi";
+            worksheet.Cell(1, 4).Value = "Boyut";
+
+            for (int i = 1; i <= 4; i++)
+            {
+                worksheet.Cell(1, i).Style.Font.Bold = true;
+            }
+
+            int index = 1;
+
+            foreach (var data in DS)
+            {
+                worksheet.Cell(index + 1, 1).Value = data.GorunenAd;
+                worksheet.Cell(index + 1, 2).Value = data.DosyaAdi;
+                worksheet.Cell(index + 1, 3).Value = data.Tip;
+                worksheet.Cell(index + 1, 4).Value = data.Boyut.ToString() + "KB";
+
+                index++;
+            }
+
+            using (var stream = new MemoryStream())
+            {
+                workbook.SaveAs(stream);
+                var content = stream.ToArray();
+                var fileName = "DosyaListesi" + DateTime.Now.ToString("yyyyMMddss") + ".xlsx";
+                await js.InvokeAsync<object>("saveAsFile", fileName, Convert.ToBase64String(content));
+            }
+        }
+    }
+}

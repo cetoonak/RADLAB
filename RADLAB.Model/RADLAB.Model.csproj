@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="Exclude\AyarPayTRDTO.cs" />
+    <Compile Remove="Exclude\PayTRDTO.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Exclude\" />
+  </ItemGroup>
+
+</Project>

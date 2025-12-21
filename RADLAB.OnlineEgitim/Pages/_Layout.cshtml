@@ -1,0 +1,85 @@
+﻿@using Microsoft.AspNetCore.Components.Web
+@namespace RADLAB.UI.Pages
+@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Radlab Uzaktan Eğitim</title>
+    <base href="~/" />
+
+    <!-- Favicons -->
+    <link href="img/favicon.png" rel="icon">
+    <link href="img/apple-touch-icon.png" rel="apple-touch-icon">
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
+    <!-- Vendor CSS Files -->
+    <link href="wallet/fontawesome.min.css" rel="stylesheet" />
+    <link href="wallet/slick.css" rel="stylesheet">
+    <link href="vendor/bootstrap-icons/bootstrap-icons.css" rel="stylesheet" />
+    <link href="vendor/boxicons/css/boxicons.min.css" rel="stylesheet" />
+    <link href="vendor/quill/quill.snow.css" rel="stylesheet" />
+    <link href="vendor/quill/quill.bubble.css" rel="stylesheet" />
+    <link href="vendor/remixicon/remixicon.css" rel="stylesheet" />
+    <link href="vendor/simple-datatables/style.css" rel="stylesheet" />
+    <link href="_content/Radzen.Blazor/css/default-base.css" rel="stylesheet" />
+    <link href="_content/Blazored.Typeahead/blazored-typeahead.css" rel="stylesheet" />
+
+    <!-- Template Main CSS File -->
+    <link href="css/bootstrap/bootstrap.min.css" rel="stylesheet" />
+    <link href="css/jquery/jquery-ui.min.css" rel="stylesheet" />
+    <link href="css/daterangepicker.css" rel="stylesheet" />
+    <link href="css/site.css" rel="stylesheet" />
+    <link href="css/custom.css" rel="stylesheet" />
+
+    <component type="typeof(HeadOutlet)" render-mode="ServerPrerendered" />
+</head>
+<body>
+    @RenderBody()
+
+    <div id="blazor-error-ui">
+        <environment include="Staging,Production">
+            RadLab İkincil Standart Dozimetri Laboratuvarı ve Radyasyon Ölçüm Sistemleri Sanayi ve Ticaret A.Ş.
+        </environment>
+        <environment include="Development">
+            Çözülemeyen bir istisna oldu. Ayrıntılar için tarayıcı geliştirme araçlarına bakın.
+        </environment>
+        <a href="" class="reload">Yenile</a>
+        <a class="dismiss">🗙</a>
+    </div>
+
+    <script src="js/jquery.min.js"></script>
+    <script src="js/jquery-ui.js"></script>
+    <script src="js/moment.min.js"></script>
+
+    @*<script src="wallet/jquery.min.js"></script> *@
+    @* <script src="wallet/bootstrap.min.js"></script> *@
+    <script src="wallet/bootstrap.bundle.min.js"></script>
+    <script src="wallet/slick.min.js"></script>
+    @* <script src="wallet/scrollmenu.min.js"></script> *@
+    <script src="wallet/script.js"></script>
+
+    <script src="vendor/apexcharts/apexcharts.min.js"></script>
+    <script src="vendor/tinymce/tinymce.min.js"></script>
+    <script src="vendor/simple-datatables/simple-datatables.js"></script>
+
+    <script src="_content/Radzen.Blazor/Radzen.Blazor.js"></script>
+    <script src="_content/Blazored.Typeahead/blazored-typeahead.js"></script>
+
+    <script src="js/sweetalert2@11.js"></script>
+    <script src="js/easypicker.min.js"></script>
+    <script src="js/litepicker.js"></script>
+    <script src="js/daterangepicker.min.js"></script>
+
+    <script src="js/dashboard.js"></script>
+    <script src="js/alert.js"></script>
+    <script src="js/site.js"></script>
+
+    <script src="_framework/blazor.server.js"></script>
+</body>
+</html>

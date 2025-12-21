@@ -1,0 +1,666 @@
+﻿@layout MainLayout
+
+@page "/Main/OnlineEgitimCanli/{Id}"
+
+@inject IJSRuntime js
+@inject NavigationManager navManager
+@inject IConfiguration configuration
+
+<style>
+    #main, #footer {
+    margin-left: 0px !important;
+    }
+</style>
+
+<button id="btnVideoTimeKaydet" @onclick="VideoTimeKaydet" style="visibility:hidden"></button>
+<input type="hidden" id="HFSupposedCurrentTime" @bind-value=@supposedCurrentTime />
+<input type="hidden" id="HFSonKaydedilenTime" @bind-value=@sonKaydedilenTime />
+
+<section class="section dashboard" style="padding-top:0; padding-bottom:0">
+    <div class="row">
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">@onlineEgitimDTO.OnlineEgitim</h5>
+                    <div class="row" style="overflow-y:auto; max-height:calc(100vh - 16rem)">
+                        @foreach (var onlineEgitimTree in DSOnlineEgitimTree)
+                        {
+                            <div class="col-md-12">
+                                @if (onlineEgitimTree.ParentId == 0)
+                                {
+                                    <span><b>@onlineEgitimTree.Baslik</b></span>
+                                }
+                                else
+                                {
+                                    <div style="padding-left:24px; display: flex; align-items: center;">
+                                        @if (onlineEgitimTree.BuradaKaldi || onlineEgitimTree.Tamamlandi)
+                                        {
+                                            string style = (onlineEgitimTree.VideoIdSoruId != 0 & ((onlineEgitimTree.VideoIdSoruId == 99999999 & sonuclarda) || (0 - onlineEgitimTree.VideoIdSoruId) == videoDTO.Id || onlineEgitimTree.VideoIdSoruId == soruDTO.Id)) ? "font-weight:bold;" : "";
+
+                                            if (onlineEgitimTree.Tamamlandi)
+                                            {
+                                                <i class="bi bi-check-lg" style="font-size:large; color:blue; padding-right:0.2rem;"></i>
+                                            }
+                                            else if (style != "")
+                                            {
+                                                <i class="bi bi-chevron-double-right" style="font-size:large; padding-right:0.2rem;"></i>
+                                            }
+                                            else
+                                            {
+                                                <div style="width:1.2rem; height:1.6rem;">
+                                                </div>
+                                            }
+
+                                            <a href="javascript:void();" style=@style @onclick="@(async () => { await OnlineEgitimTreeClick(onlineEgitimTree.VideoIdSoruId); })">@onlineEgitimTree.Baslik</a>
+                                        }
+                                        else
+                                        {
+                                            <div style="width:1.2rem; height:1.6rem;">
+                                            </div>
+                                            <span>@onlineEgitimTree.Baslik</span>
+                                        }
+                                    </div>
+                                }
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+            <div class="mt-3">
+                @if (videoBitti)
+                {
+                    <button class="btn btn-success btn-sm w-100" @onclick="Kaydet"><i class="bi bi-check-circle"></i>&nbsp;Devam Et</button>
+                }
+                else
+                {
+                    <button class="btn btn-success btn-sm w-100" @onclick="Kaydet" disabled><i class="bi bi-check-circle"></i>&nbsp;Devam Et</button>
+                }
+            </div>
+        </div>
+        <div class="col-md-9">
+            @if (videoDTO.Id > 0)
+            {
+                <BlazoredVideo id="video" class="w-100" controls Ended="OnEnded" oncontextmenu="return false;" ontimeupdate="videoTimeUpdate()" onseeking="videoSeeking()">
+                    <source src=@(videoBaseUrl + "video/" + videoDTO.DosyaAdi) type=@("video/" + videoDTO.Uzanti) />
+                    <source src=@(videoBaseUrl + "video/" + videoDTO.DosyaAdi.Replace("." + videoDTO.Uzanti, ".ogg")) type="video/ogg" />
+                    Tarayıcınız bu videoyu göstermeyi desteklemiyor
+                </BlazoredVideo>
+                @*<video autoplay muted>
+                    <source src=@(videoBaseUrl + "video/" + videoDTO.DosyaAdi) type=@("video/" + videoDTO.Uzanti) />
+                    <source src=@(videoBaseUrl + "video/" + videoDTO.DosyaAdi.Replace("." + videoDTO.Uzanti, ".ogg")) type="video/ogg" />
+                    Tarayıcınız bu videoyu göstermeyi desteklemiyor
+                </video> *@
+            }
+            else if (soruDTO.Id > 0)
+            {
+                <div class="card">
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-12 mt-3 mb-3">
+                                <table width="100%">
+                                    <tr>
+                                        <td>
+                                            <h5>@soruDTO.Soru</h5>
+                                        </td>
+                                        <td align="right">
+                                            <div style="font-weight:bold; font-size:x-large; color: red;">
+                                                @("Kalan Süre " + (kalanSaniye / 60).ToString().PadLeft(2, '0') + ":" + (kalanSaniye % 60).ToString().PadLeft(2, '0'))
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </div>
+                            @if (string.IsNullOrEmpty(soruDTO.DosyaAdi) == false)
+                            {
+                                <div class="col-md-12 mb-3">
+                                    <img src=@("data:image/" + soruDTO.Uzanti + ";base64," + soruDTO.Dosya) type=@("image/" + soruDTO.Uzanti) style="max-width:400px; max-height: 400px;">
+                                </div>
+                            }
+                            <div class="col-md-12 mb-3">
+                                <fieldset disabled=@(kalanSaniye == 0)>
+                                    <InputRadioGroup @bind-Value="onlineEgitimTreeDTO.Cevap">
+                                        <InputRadio Value="1" id="CevapA"></InputRadio><label for="CevapA" style="padding-left:0.5rem; cursor:pointer;">@soruDTO.CevapA</label><br />
+                                        <InputRadio Value="2" id="CevapB"></InputRadio><label for="CevapB" style="padding-left:0.5rem; cursor:pointer;">@soruDTO.CevapB</label><br />
+                                        <InputRadio Value="3" id="CevapC"></InputRadio><label for="CevapC" style="padding-left:0.5rem; cursor:pointer;">@soruDTO.CevapC</label><br />
+                                        <InputRadio Value="4" id="CevapD"></InputRadio><label for="CevapD" style="padding-left:0.5rem; cursor:pointer;">@soruDTO.CevapD</label><br />
+                                        <InputRadio Value="5" id="CevapE"></InputRadio><label for="CevapE" style="padding-left:0.5rem; cursor:pointer;">@soruDTO.CevapE</label>
+                                    </InputRadioGroup>
+                                </fieldset>
+                            </div>
+                            <div class="col-md-12">
+                                <button class="btn btn-success btn-sm" @onclick="Kaydet"><i class="bi bi-check-circle"></i>&nbsp;Kaydet ve İlerle</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+            else if (sonuclarda)
+            {
+                <div class="row">
+                    @foreach (var onlineEgitimSonuc in DSOnlineEgitimSonuc)
+                    {
+                        <div class="col-md-12">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h5 class="card-title">@onlineEgitimSonuc.Baslik</h5>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <table cellpadding="8" style="font-size:1.2rem">
+                                                <tr>
+                                                    <td>
+                                                        Soru Sayısı
+                                                    </td>
+                                                    <td>
+                                                        :
+                                                    </td>
+                                                    <td>
+                                                        @onlineEgitimSonuc.SoruSayisi
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td>
+                                                        Doğru Cevap Sayısı
+                                                    </td>
+                                                    <td>
+                                                        :
+                                                    </td>
+                                                    <td>
+                                                        @onlineEgitimSonuc.DogruSayisi
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td>
+                                                        Yanlış Cevap Sayısı
+                                                    </td>
+                                                    <td>
+                                                        :
+                                                    </td>
+                                                    <td>
+                                                        @onlineEgitimSonuc.YanlisSayisi
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td>
+                                                        Doğru Cevap Oranı
+                                                    </td>
+                                                    <td>
+                                                        :
+                                                    </td>
+                                                    <td>
+                                                        @("%" + onlineEgitimSonuc.DogruOrani.ToString())
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td>
+                                                        Beklenen Oran
+                                                    </td>
+                                                    <td>
+                                                        :
+                                                    </td>
+                                                    <td>
+                                                        @("%" + onlineEgitimSonuc.GecmeOrani.ToString())
+                                                    </td>
+                                                </tr>
+                                            </table>
+                                        </div>
+                                        <div class="col-md-6">
+                                            @if (onlineEgitimSonuc.DogruOrani >= onlineEgitimSonuc.GecmeOrani)
+                                            {
+                                                <div class="alert alert-success" style="font-size:xx-large">
+                                                    <i class="bi bi-patch-check" style="font-size:xx-large; color:green; padding-right:0.2rem;"></i>
+                                                    Tebrikler !! Testte Başarılı Oldunuz
+                                                </div>
+                                                <button class="btn btn-success w-100" @onclick="Yazdir"><i class="bi bi-printer"></i>&nbsp;Sertifika Yazdır</button>
+                                            }
+                                            else
+                                            {
+                                                <button class="btn btn-primary w-100" @onclick="@(async () => { await TekrarDene(onlineEgitimSonuc.OnlineEgitimBolumId); })">Tekrar Denemek İçin Tıklayınız</button>
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+</section>
+
+@if (loading)
+{
+    <div class="progressBackground">
+        <div class="progressPopup">
+            <img alt="Bekleyiniz..." src="img/loading.gif" width="100" height="100" />
+        </div>
+    </div>
+}
+
+@code
+{
+    [Parameter]
+    public string Id { get; set; }
+
+    [Inject] protected IRolService rolService { get; set; }
+    [Inject] protected ILookupService lookupService { get; set; }
+    [Inject] protected IOnlineEgitimService onlineEgitimService { get; set; }
+    [Inject] protected IVideoService videoService { get; set; }
+    [Inject] protected ISoruService soruService { get; set; }
+
+    KullaniciForLoginDTO kullaniciForLoginDTO = new KullaniciForLoginDTO() { Tip = 0 };
+    OnlineEgitimDTO onlineEgitimDTO = new OnlineEgitimDTO();
+    OnlineEgitimTreeDTO onlineEgitimTreeDTO = new OnlineEgitimTreeDTO();
+    VideoDTO videoDTO = new VideoDTO();
+    SoruDTO soruDTO = new SoruDTO();
+    bool sonuclarda = false;
+    bool loading = false;
+    bool videoBitti = false;
+    bool timerDevrede = false;
+    //bool playing = false;
+    int kalanSaniye = 0;
+    int supposedCurrentTime = 0;
+    int sonKaydedilenTime = 0;
+    string videoBaseUrl = "";
+
+    System.Timers.Timer timer;
+
+    public class TestCacheDTO()
+    {
+        public int Id { get; set; }
+        public int GecenSure { get; set; }
+    }
+
+    List<int> DSYil = new List<int>();
+    List<OnlineEgitimTreeDTO> DSOnlineEgitimTree = new List<OnlineEgitimTreeDTO>();
+    List<OnlineEgitimSonucDTO> DSOnlineEgitimSonuc = new List<OnlineEgitimSonucDTO>();
+    List<TestCacheDTO> DSTestCache = new List<TestCacheDTO>();
+
+    //[Parameter] public Dictionary<VideoEvents, VideoStateOptions> videoEventOptions { get; set; }
+    //Dictionary<VideoEvents, VideoStateOptions> videoStateOptions = new Dictionary<VideoEvents, VideoStateOptions>();
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            //videoEventOptions[VideoEvents.TimeUpdate] = new VideoStateOptions { CurrentTime = true, CurrentSrc = true };
+
+            //videoEventOptions[VideoEvents.Play] = new VideoStateOptions { CurrentSrc = true };
+
+            videoBaseUrl = configuration["VideoBaseUrl"];
+
+            timer = new();
+
+            timer.Enabled = true;
+
+            timer.Interval = 1000;
+
+            //timerDevrede = false;
+
+            timer.Elapsed += async (object? sender, System.Timers.ElapsedEventArgs e) =>
+            {
+                string sayfa = navManager.Uri.Replace(navManager.BaseUri, "");
+
+                if (timerDevrede /*& sayfa.ToLower() == $"main/onlineegitimcanli/{Id}"*/)
+                {
+                    kalanSaniye--;
+
+                    if (kalanSaniye <= 0)
+                    {
+                        kalanSaniye = 0;
+                        timerDevrede = false;
+                        //timer.Enabled = false;
+                    }
+
+                    var testCacheDTO = DSTestCache.Find(x => x.Id == onlineEgitimTreeDTO.ParentId);
+
+                    if (testCacheDTO != null)
+                    {
+                        testCacheDTO.GecenSure = (onlineEgitimTreeDTO.ToplamSure * 60) - kalanSaniye;
+                    }
+
+                    //onlineEgitimTreeDTO.GecenSure = (onlineEgitimTreeDTO.ToplamSure * 60) - kalanSaniye;
+
+                    //await onlineEgitimService.UpdateOnlineEgitimBolumTamamlananGecenSure(onlineEgitimTreeDTO);
+
+                    await InvokeAsync(StateHasChanged);
+                }
+            };
+
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        kullaniciForLoginDTO = await rolService.GetKullaniciForLogin();
+
+        if (kullaniciForLoginDTO.Tip == 2)
+        {
+            await GetData();
+
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    async Task GetData()
+    {
+        int IdInt = 0;
+
+        try
+        {
+            IdInt = Convert.ToInt32(Id);
+        }
+        catch
+        {
+
+        }
+
+        if (IdInt != 0)
+        {
+            soruDTO = new SoruDTO();
+            videoDTO = new VideoDTO();
+            sonuclarda = false;
+
+            var resultOnlineEgitim = await onlineEgitimService.GetOnlineEgitim(IdInt);
+
+            if (resultOnlineEgitim.Success)
+            {
+                onlineEgitimDTO = resultOnlineEgitim.Value;
+            }
+            else
+            {
+                await js.InvokeVoidAsync("SweetToast", resultOnlineEgitim.Message, "error");
+            }
+
+            var resultOnlineEgitimTree = await onlineEgitimService.GetOnlineEgitimTreeList(0 - IdInt);
+
+            if (resultOnlineEgitimTree.Success)
+            {
+                DSOnlineEgitimTree = resultOnlineEgitimTree.Value;
+
+                var siradaki = DSOnlineEgitimTree.Find(x => x.BuradaKaldi);
+
+                if (siradaki != null)
+                {
+                    await OnlineEgitimTreeClick(siradaki.VideoIdSoruId);
+                }
+            }
+            else
+            {
+                await js.InvokeVoidAsync("SweetToast", resultOnlineEgitimTree.Message, "error");
+            }
+
+            var resultOnlineEgitimSonuc = await onlineEgitimService.GetOnlineEgitimSonucList(0 - IdInt);
+
+            if (resultOnlineEgitimSonuc.Success)
+            {
+                DSOnlineEgitimSonuc = resultOnlineEgitimSonuc.Value;
+            }
+            else
+            {
+                await js.InvokeVoidAsync("SweetToast", resultOnlineEgitimSonuc.Message, "error");
+            }
+        }
+    }
+
+    async Task OnlineEgitimTreeClick(int VideoIdSoruId)
+    {
+        timerDevrede = false;
+        //timer.Enabled = false;
+
+        loading = true;
+
+        if (VideoIdSoruId != 0)
+        {
+            onlineEgitimTreeDTO = DSOnlineEgitimTree.Find(x => x.VideoIdSoruId == VideoIdSoruId);
+        }
+
+        if (VideoIdSoruId < 0)
+        {
+            soruDTO = new SoruDTO();
+            sonuclarda = false;
+
+            var resultVideoDTO = await videoService.GetVideo(0 - VideoIdSoruId);
+
+            if (resultVideoDTO.Success)
+            {
+                videoDTO = resultVideoDTO.Value;
+
+                await js.InvokeAsync<string>("setValue", "HFSonKaydedilenTime", onlineEgitimTreeDTO.VideoTime);
+
+                await InvokeAsync(StateHasChanged);
+
+                await js.InvokeVoidAsync("loadVideo", onlineEgitimTreeDTO.VideoTime);
+            }
+            else
+            {
+                loading = false;
+
+                await js.InvokeVoidAsync("SweetToast", resultVideoDTO.Message, "error");
+            }
+        }
+        else if (VideoIdSoruId > 0 & VideoIdSoruId < 99999999)
+        {
+            videoDTO = new VideoDTO();
+            sonuclarda = false;
+
+            var soruFilterDTO = new SoruFilterDTO() { Id = VideoIdSoruId, PageNo = 1, PageSize = 1 };
+
+            var resultSoruDTO = await soruService.GetSoruList(soruFilterDTO);
+
+            if (resultSoruDTO.Success)
+            {
+                soruDTO = resultSoruDTO.Value[0];
+
+                var testCacheDTO = DSTestCache.Find(x => x.Id == onlineEgitimTreeDTO.ParentId);
+
+                if (testCacheDTO == null)
+                {
+                    testCacheDTO = new TestCacheDTO()
+                        {
+                            Id = onlineEgitimTreeDTO.ParentId,
+                            GecenSure = 0
+                        };
+
+                    DSTestCache.Add(testCacheDTO);
+                }
+
+                kalanSaniye = (onlineEgitimTreeDTO.ToplamSure * 60) - testCacheDTO.GecenSure;
+
+                timerDevrede = true;
+                //timer.Enabled = true;
+
+                // var resultOnlineEgitimBolumTamamlananGecenSure = await onlineEgitimService.GetOnlineEgitimBolumTamamlananGecenSure(onlineEgitimTreeDTO.ParentId);
+
+                // if (resultOnlineEgitimBolumTamamlananGecenSure.Success)
+                // {
+                //     kalanSaniye = (onlineEgitimTreeDTO.ToplamSure * 60) - resultOnlineEgitimBolumTamamlananGecenSure.Value;
+
+                //     timerDevrede = true;
+                //     timer.Enabled = true;
+                // }
+                // else
+                // {
+                //     loading = false;
+
+                //     await js.InvokeVoidAsync("SweetToast", resultOnlineEgitimBolumTamamlananGecenSure.Message, "error");
+                // }
+            }
+            else
+            {
+                loading = false;
+
+                await js.InvokeVoidAsync("SweetToast", resultSoruDTO.Message, "error");
+            }
+        }
+        else if (VideoIdSoruId == 99999999)
+        {
+            soruDTO = new SoruDTO();
+            videoDTO = new VideoDTO();
+            sonuclarda = true;
+        }
+
+        loading = false;
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    /*async void OnTimeUpdate(VideoState state)
+    {
+    if (state != null)
+    {
+    Console.Write(state.CurrentTime);
+    }
+
+    await InvokeAsync(StateHasChanged);
+    }*/
+
+    /*async void OnSeeking(VideoState state)
+            {
+            if (state != null)
+            {
+            Console.Write(state.CurrentTime);
+        }
+
+        await InvokeAsync(StateHasChanged);
+    }*/
+
+    async void OnEnded(VideoState state)
+    {
+        supposedCurrentTime = 0;
+
+        videoBitti = true;
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task VideoTimeKaydet()
+    {
+        int IdInt = 0;
+
+        try
+        {
+            IdInt = Convert.ToInt32(Id);
+        }
+        catch
+        {
+
+        }
+
+        string time = await js.InvokeAsync<string>("getValue", "HFSupposedCurrentTime");
+
+        int videoTime = Convert.ToInt32(time);
+
+        onlineEgitimTreeDTO.VideoTime = videoTime;
+
+        var onlineEgitimBolumTamamlananDTO = new OnlineEgitimBolumTamamlananDTO()
+            {
+                OnlineEgitimOgrenciId = 0 - IdInt,
+                OnlineEgitimBolumId = onlineEgitimTreeDTO.ParentId,
+                VideoTime = videoTime
+            };
+
+        var result = await onlineEgitimService.UpdateOnlineEgitimBolumTamamlananVideoTime(onlineEgitimBolumTamamlananDTO);
+
+        if (result.Success == false)
+        {
+            await js.InvokeVoidAsync("SweetMessage", "Uyarı", result.Message, "error");
+        }
+
+        await InvokeAsync(StateHasChanged);      
+
+
+
+        //await js.InvokeVoidAsync("SweetToast", time, "success");
+
+        //Console.WriteLine(supposedCurrentTime);
+
+        //await InvokeAsync(StateHasChanged);
+    }
+
+    async Task Kaydet()
+    {
+        if (soruDTO.Id > 0 & onlineEgitimTreeDTO.Cevap == 0)
+        {
+            await js.InvokeVoidAsync("SweetMessage", "Uyarı", "Lütfen sorunun cevabını seçiniz", "error");
+            return;
+        }
+
+        loading = true;
+
+        int IdInt = 0;
+
+        try
+        {
+            IdInt = Convert.ToInt32(Id);
+        }
+        catch
+        {
+
+        }
+
+        var onlineEgitimBolumTamamlananDTO = new OnlineEgitimBolumTamamlananDTO()
+            {
+                OnlineEgitimId = onlineEgitimDTO.Id,
+                OnlineEgitimOgrenciId = 0 - IdInt,
+                OnlineEgitimBolumId = onlineEgitimTreeDTO.ParentId,
+                //KisiId = kullaniciForLoginDTO.Id,
+                SoruId = soruDTO.Id,
+                Cevap = onlineEgitimTreeDTO.Cevap
+            };
+
+        var result = await onlineEgitimService.InsertUpdateOnlineEgitimBolumTamamlanan(onlineEgitimBolumTamamlananDTO);
+
+        if (result.Success == false)
+        {
+            loading = false;
+            await InvokeAsync(StateHasChanged);
+
+            await js.InvokeVoidAsync("SweetMessage", "Uyarı", result.Message, "error");
+            return;
+        }
+
+        videoBitti = false;
+
+        await GetData();
+
+        loading = false;
+
+        await InvokeAsync(StateHasChanged);
+
+        await js.InvokeVoidAsync("SweetToast", "Kaydedildi", "success");
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task TekrarDene(int OnlineEgitimBolumId)
+    {
+        var onlineEgitimTreeDTO = DSOnlineEgitimTree.Find(x => x.ParentId == OnlineEgitimBolumId & x.Baslik == "1. Soru");
+
+        if (onlineEgitimTreeDTO == null)
+        {
+            await js.InvokeVoidAsync("SweetMessage", "Bilgi", OnlineEgitimBolumId.ToString(), "success");
+            return;
+        }
+
+        var testCacheDTO = DSTestCache.Find(x => x.Id == onlineEgitimTreeDTO.ParentId);
+
+        if (testCacheDTO != null)
+        {
+            testCacheDTO.GecenSure = 0;
+            kalanSaniye = onlineEgitimTreeDTO.ToplamSure * 60;
+        }
+
+        await InvokeAsync(StateHasChanged);
+
+        await OnlineEgitimTreeClick(onlineEgitimTreeDTO.VideoIdSoruId);
+    }
+
+    async Task Yazdir()
+    {
+        await js.InvokeVoidAsync("SweetMessage", "Bilgi", "Hazırlanıyor..", "success");
+
+        await InvokeAsync(StateHasChanged);
+    }
+}

@@ -1,0 +1,432 @@
+﻿@inherits LayoutComponentBase
+
+<link href="https://fonts.googleapis.com/css?family=Open+Sans:300,300i,400,400i,600,600i,700,700i|Nunito:300,300i,400,400i,600,600i,700,700i|Poppins:300,300i,400,400i,500,500i,600,600i,700,700i" rel="stylesheet">
+
+<link href="css/site.css" rel="stylesheet" />
+<link href="css/custom.css" rel="stylesheet" />
+
+@using System.Security.Claims
+@using Microsoft.AspNetCore.Components.Authorization
+
+@inject AuthenticationStateProvider authStateProvider
+@inject ILoginService loginService
+@inject NavigationManager navManager
+@inject IJSRuntime js
+@inject ILocalStorageService localStorageService
+@inject HttpClient httpClient
+
+<PageTitle>RADLAB</PageTitle>
+
+<AuthorizeView>
+    <Authorized>
+        <div class="page">
+            @if (kullaniciForLoginDTO.Tip == 1)
+            {
+                <div class="sidebar">
+                    <aside id="sidebar" class="sidebar">
+
+                        <ul class="sidebar-nav" id="sidebar-nav">
+
+                            @if (kullaniciForLoginDTO.Tip == 3)
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link collapsed" href="/Index">
+                                        <i class="bi bi-grid"></i><span>Ana Sayfa</span>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link collapsed" href="/Rapor/KisiselListe">
+                                        <i class="bi bi-printer"></i><span>Doz Raporunuzu Görmek İçin Tıklayınız</span>
+                                    </a>
+                                </li>
+                            }
+                            else
+                            {
+                                @foreach (var MenuBaslik in MenuBasliklar)
+                                {
+                                    <li class="nav-item">
+                                        <a class="nav-link collapsed" data-bs-target="#nav-@MenuBaslik.Id" data-bs-toggle="collapse" href="#">
+                                            <i class="@MenuBaslik.Icon"></i><span>@MenuBaslik.Ad</span><i class="bi bi-chevron-down ms-auto"></i>
+                                        </a>
+                                        <ul id="nav-@MenuBaslik.Id" class="nav-content collapse " data-bs-parent="#sidebar-nav">
+                                            @{
+                                                var MenuLinklerByMenuBaslik = MenuLinkler.Where(x => x.ParentId == MenuBaslik.Id);
+                                            }
+
+                                            @foreach (var MenuLink in MenuLinklerByMenuBaslik)
+                                            {
+                                                <li>
+                                                    @{
+                                                        string stil = sayfa == MenuLink.Link ? "background-color: #f6f9ff; color: blue;" : "";
+                                                    }
+                                                    <a href="@MenuLink.Link" style="@stil">
+                                                        <i class="bi bi-circle"></i><span>@MenuLink.Ad</span>
+                                                    </a>
+                                                </li>
+                                            }
+                                        </ul>
+                                    </li>
+                                }
+
+                                var MenuLinklerByFavori = MenuLinkler.Where(x => x.Favori == true);
+
+                                if (MenuLinklerByFavori.Count() > 0)
+                                {
+                                    <li class="nav-heading">Sık Kullanılanlar</li>
+                                }
+
+                                foreach (var MenuLink in MenuLinklerByFavori)
+                                {
+                                    <li class="nav-item">
+                                        <a class="nav-link collapsed" href="@MenuLink.Link">
+                                            <i class="@MenuLink.Icon"></i><span>@MenuLink.Ad</span>
+                                        </a>
+                                    </li>
+                                }
+                            }
+                        </ul>
+
+                    </aside>
+                </div>
+            }
+
+            <main>
+
+                <!-- ======= Header ======= -->
+                <header id="header" class="header fixed-top d-flex align-items-center">
+
+                    <div class="d-flex align-items-center justify-content-between">
+                        <a href=@(kullaniciForLoginDTO.Tip == 2 ? "/OnlineEgitimIndex" : "/index" ) class="logo d-flex align-items-center">
+                            <img src="img/logo.png" alt="" width="80">
+                            @*<span class="d-none d-lg-block">RADLAB</span>*@
+                        </a>
+                        @if (kullaniciForLoginDTO.Tip != 2)
+                        {
+                            <i class="bi bi-list toggle-sidebar-btn"></i>
+                        }
+                    </div>
+
+                    <nav class="header-nav ms-auto">
+                        <ul class="d-flex align-items-center">
+
+                            <li class="nav-item d-block d-lg-none">
+                                <a class="nav-link nav-icon search-bar-toggle" href="#">
+                                    <i class="bi bi-search"></i>
+                                </a>
+                            </li>
+
+                            @if (kullaniciForLoginDTO.Tip != 2)
+                            {
+                                <li class="nav-item dropdown">
+
+                                    <a class="nav-link nav-icon" href="#" data-bs-toggle="dropdown">
+                                        <i class="bi bi-chat-left-text"></i>
+                                        @if (MesajSayisi > 0)
+                                        {
+                                            <span class="badge bg-success badge-number">@MesajSayisi</span>
+                                        }
+                                    </a>
+
+                                    <ul class="dropdown-menu dropdown-menu-end dropdown-menu-arrow messages" style="inset: 0px auto auto 0px !important;">
+                                        <li class="dropdown-header">
+                                            @if (MesajSayisi > 0)
+                                            {
+                                                <span>@MesajSayisi yeni mesajınız var</span>
+                                                <a href="/Mesaj/MesajKutusu/1"><span class="badge rounded-pill bg-primary p-2 ms-2">Mesajları Gör</span></a>
+                                            }
+                                            else
+                                            {
+                                                <span>Hiç yeni mesajınız yok</span>
+                                            }
+                                        </li>
+                                        <li>
+                                            <hr class="dropdown-divider">
+                                        </li>
+
+                                        @foreach (var mesaj in DataSourceMesaj)
+                                        {
+                                            <li class="message-item">
+                                                <a href="/Mesaj/MesajAc/1/@(mesaj.Id.ToString())">
+                                                    <i class="bi bi-chat-left-text" style="font-size:24px; padding: 0px .8rem!important;"></i>
+                                                    <div>
+                                                        <h4>@mesaj.Kim</h4>
+                                                        <p>@mesaj.Konu</p>
+                                                        <p>@mesaj.Zaman.Value.ToString("dd.MM.yyyy HH:mm")</p>
+                                                    </div>
+                                                </a>
+                                            </li>
+                                            <li>
+                                                <hr class="dropdown-divider">
+                                            </li>
+                                        }
+
+                                        <li class="message-item" style="padding:0px 10px">
+                                            <a href="/Mesaj/MesajYaz" style="align-items:center; font-size:.9rem;">
+                                                <i class="bi bi-chat-square text-success" style="font-size:24px; padding: 0px .8rem!important;"></i>
+                                                <div>Mesaj Yaz</div>
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <hr class="dropdown-divider">
+                                        </li>
+
+                                        <li class="message-item" style="padding:0px 10px">
+                                            <a href="/Mesaj/MesajKutusu/1" style="align-items:center; font-size:.9rem;">
+                                                <i class="bi bi-chat-right-text text-info" style="font-size:24px; padding: 0px .8rem!important;"></i>
+                                                <div>Gelen Mesajlar</div>
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <hr class="dropdown-divider">
+                                        </li>
+
+                                        <li class="message-item" style="padding:0px 10px">
+                                            <a href="/Mesaj/MesajKutusu/2" style="align-items:center; font-size:.9rem;">
+                                                <i class="bi bi-chat-left-text text-info" style="font-size:24px; padding: 0px .8rem!important;"></i>
+                                                <div>Giden Mesajlar</div>
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <hr class="dropdown-divider">
+                                        </li>
+
+                                        <li class="message-item" style="padding:0px 10px">
+                                            <a href="/Mesaj/MesajGrubu" style="align-items:center; font-size:.9rem;">
+                                                <i class="bi bi-chat-square-heart text-danger" style="font-size:24px; padding: 0px .8rem!important;"></i>
+                                                <div>Mesaj Gruplarım</div>
+                                            </a>
+                                        </li>
+
+                                        <li class="dropdown-footer" style="padding:0px;">
+                                        </li>
+
+                                    </ul><!-- End Messages Dropdown Items -->
+
+                                </li>
+                            }
+                            <!-- End Messages Nav -->
+
+                            <li class="nav-item dropdown pe-3">
+
+                                <a class="nav-link nav-profile d-flex align-items-center pe-0" href="#" data-bs-toggle="dropdown">
+                                    <i class="bi bi-person" style="font-size:28px"></i>
+                                    <span class="d-none d-md-block dropdown-toggle ps-2">@context.User.Identity.Name</span>
+                                </a><!-- End Profile Iamge Icon -->
+
+                                <ul class="dropdown-menu dropdown-menu-end dropdown-menu-arrow profile">
+                                    <li class="dropdown-header">
+                                        <h6>Sistem Kullanıcısı</h6>
+                                        <span>@kullaniciForLoginDTO.EMail</span>
+                                    </li>
+                                    <li>
+                                        <hr class="dropdown-divider">
+                                    </li>
+                                    @if (kullaniciForLoginDTO.Tip != 2)
+                                    {
+                                        <li>
+                                            <a class="dropdown-item d-flex align-items-center" href="/Auth/Profil">
+                                                <i class="bi bi-person"></i>
+                                                <span>Profilim</span>
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <hr class="dropdown-divider">
+                                        </li>
+                                    }
+                                    <li>
+                                        <a class="dropdown-item d-flex align-items-center" href="javascript:void(0)" @onclick="Logout">
+                                            <i class="bi bi-box-arrow-right"></i>
+                                            <span>Güvenli Çıkış</span>
+                                        </a>
+                                    </li>
+
+                                </ul><!-- End Profile Dropdown Items -->
+                            </li><!-- End Profile Nav -->
+
+                        </ul>
+                    </nav><!-- End Icons Navigation -->
+
+                </header><!-- End Header -->
+                @*<article class="content px-4">*@
+                <div id="main" class="main">
+                    @if (SayfaBaslik != "")
+                    {
+                        <div class="pagetitle">
+                            @*<h1>@SayfaBaslik</h1>*@
+                            <nav>
+                                <ol class="breadcrumb">
+                                    <li class="breadcrumb-item"><a href="/index">Ana sayfa</a></li>
+                                    <li class="breadcrumb-item">@SayfaGrupBaslik</li>
+                                    <li class="breadcrumb-item active">@SayfaBaslik</li>
+                                </ol>
+                            </nav>
+                        </div>
+                    }
+                    @Body
+                </div>
+
+                <a href=@(sayfa + "#") class="back-to-top d-flex align-items-center justify-content-center"><i class="bi bi-arrow-up-short"></i></a>
+            </main>
+        </div>
+
+        @if (CerezDiviniGoster)
+        {
+            <div class="row, cerez">
+                <div class="col-md-10" style="align-self: center;">
+                    İnternet sitemizde kullanılan çerezlerle ilgili bilgi almak ve tercihlerinizi yönetmek için <a href="/Ayar/CerezPolitikasi">Çerez Politikası</a>, daha fazla bilgi için <a href="/Ayar/AydinlatmaMetni">Aydınlatma Metni</a> sayfalarını ziyaret edebilirsiniz. Sitemizi kullanarak çerezleri kullanmamızı kabul edersiniz.
+                </div>
+                <div class="col-md-2" style="text-align:right">
+                    <button class="btn btn-success btn-sm" @onclick="CerezleriKabulEt"><i class="bi bi-check-lg"></i> Kabul Et</button>
+                    <button class="btn btn-sm grid-command" style="font-size:22px" @onclick="CerezleriKapat"><i class="bi bi-x-circle"></i></button>
+                </div>
+            </div>
+        }
+    </Authorized>
+    <Authorizing>
+        &nbsp;
+    </Authorizing>
+    <NotAuthorized>
+        <RADLAB.UI.Pages.Login></RADLAB.UI.Pages.Login>
+    </NotAuthorized>
+</AuthorizeView>
+
+@code
+{
+    [Inject] protected IMesajService mesajService { get; set; }
+    [Inject] protected IRolService rolService { get; set; }
+    [Inject] protected IKullaniciService kullaniciService { get; set; }
+
+    List<MenuBaslikDTO> MenuBasliklar = new List<MenuBaslikDTO>();
+    List<MenuLinkDTO> MenuLinkler = new List<MenuLinkDTO>();
+    List<MesajDTO> DataSourceMesaj = new List<MesajDTO>();
+
+    KullaniciForLoginDTO kullaniciForLoginDTO = new KullaniciForLoginDTO();
+
+    int MesajSayisi = 0;
+
+    string sayfa = "";
+    string SayfaBaslik = "";
+    string SayfaGrupBaslik = "";
+    bool CerezDiviniGoster = true;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await js.InvokeVoidAsync("import", "./js/main.js");
+        }
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        sayfa = navManager.Uri.Replace(navManager.BaseUri, "");
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var authState = await authStateProvider.GetAuthenticationStateAsync();
+            var user = authState.User;
+
+            if (user.Identity != null)
+            {
+                if (user.Identity.IsAuthenticated)
+                {
+                    string Id = user.FindFirst(c => c.Type == ClaimTypes.UserData).Value;
+
+                    // Kullanici
+
+                    var resultKullanici = await loginService.GetKisiMenu(Convert.ToInt32(Id));
+
+                    if (resultKullanici.Success)
+                    {
+                        kullaniciForLoginDTO = await rolService.GetKullaniciForLogin();
+
+                        MenuBasliklar = resultKullanici.Value.MenuBasliklar;
+                        MenuLinkler = resultKullanici.Value.MenuLinkler;
+
+                        CerezDiviniGoster = kullaniciForLoginDTO.CookiePolitikasiniGordu == false;
+                    }
+                    else
+                    {
+                        await js.InvokeVoidAsync("SweetToast", resultKullanici.Message, "error");
+                    }
+
+                    // Mesaj
+
+                    var resultOkunmamisMesajlar = await mesajService.GetOkunmamisMesajlar();
+
+                    if (resultOkunmamisMesajlar.Success)
+                    {
+                        DataSourceMesaj = resultOkunmamisMesajlar.Value;
+                    }
+                    else
+                    {
+                        await js.InvokeVoidAsync("SweetToast", resultOkunmamisMesajlar.Message, "error");
+                    }
+
+                    var resultOkunmamisMesajSayisi = await mesajService.GetOkunmamisMesajSayisi();
+
+                    if (resultOkunmamisMesajSayisi.Success)
+                    {
+                        MesajSayisi = resultOkunmamisMesajSayisi.Value;
+                    }
+                    else
+                    {
+                        await js.InvokeVoidAsync("SweetToast", resultOkunmamisMesajSayisi.Message, "error");
+                    }
+                }
+            }
+        }
+        catch
+        {
+
+        }
+    }
+
+    private async Task Logout()
+    {
+        if (kullaniciForLoginDTO.Tip == 1)
+        {
+            navManager.NavigateTo("/Login", false);
+        }
+        else if (kullaniciForLoginDTO.Tip == 2)
+        {
+            navManager.NavigateTo("/OnlineEgitimLogin", false);
+        }
+
+        await localStorageService.RemoveItemAsync("token");
+
+        await authStateProvider.GetAuthenticationStateAsync();
+    }
+
+    async Task CerezleriKabulEt()
+    {
+        kullaniciForLoginDTO.CookiePolitikasiniGordu = true;
+
+        var result = await kullaniciService.UpdateKisiCookiePolitikasiniGordu(kullaniciForLoginDTO);
+
+        if (result.Success)
+        {
+            CerezDiviniGoster = false;
+
+            await InvokeAsync(StateHasChanged);
+
+            await js.InvokeVoidAsync("SweetToast", "Tercihleriniz kaydedildi..", "success");
+        }
+        else
+        {
+            await js.InvokeVoidAsync("SweetToast", result.Message, "error");
+        }
+    }
+
+    async Task CerezleriKapat()
+    {
+        CerezDiviniGoster = false;
+
+        await InvokeAsync(StateHasChanged);
+    }
+}

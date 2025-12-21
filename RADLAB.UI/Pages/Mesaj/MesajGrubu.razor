@@ -1,0 +1,321 @@
+﻿@page "/Mesaj/MesajGrubu"
+
+@inject IJSRuntime js
+
+@using System.Threading
+@using System.Threading.Tasks
+@using System.Net.Http
+@using System.Text.Json
+
+<div class="card info-card">
+    <div class="table-responsive">
+        <table class="table table-bordered table-hover">
+            <thead>
+                <tr>
+                    <td width="20%" align="center">Grup Adı</td>
+                    <td width="70%">Kişiler</td>
+                    <td width="10%" align="center">
+                        @if (YetkiEkle)
+                        {
+                            <button class="btn text-success grid-command" @onclick="Add"><i class="bi bi-plus-circle "></i></button>
+                        }
+                        <button class="btn text-success grid-command" @onclick="ExportToExcel"><i class="bi bi-file-earmark-excel"></i></button>
+                    </td>
+                </tr>
+            </thead>
+            @if (DataSource.ToList().Count == 0)
+            {
+                <tbody>
+                    <tr>
+                        <td colspan="3" align="center" valign="bottom" height="64px">
+                            <h6>Görüntülenecek Veri Yok</h6>
+                        </td>
+                    </tr>
+                </tbody>
+            }
+            else
+            {
+                <tbody>
+                    @foreach (var data in DataSource)
+                    {
+                        <tr style="display: table; table-layout: fixed; width: 100%;">
+                            <td width="20%">@data.GrupAdi</td>
+                            <td width="70%">@data.Kisiler</td>
+                            <td width="10%" align="center">
+                                @if (YetkiDegistir)
+                                {
+                                    <button class="btn text-info grid-command" @onclick="@(async () => { await Edit(data.Id); })"><i class="bi bi-pencil"></i></button>
+                                }
+                                @if (YetkiSil)
+                                {
+                                    <button class="btn text-danger grid-command" @onclick="@(async () => { await Delete(data.Id); })"><i class="bi bi-trash3"></i></button>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            }
+        </table>
+    </div>
+</div>
+
+<button id="popupKayitAc" type="button" data-bs-toggle="modal" data-bs-target="#popupKayit" style="visibility:hidden;">
+</button>
+
+<div class="modal fade" id="popupKayit" tabindex="-1" aria-labelledby="popupKayitLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="popupKayitLabel">Mesaj Grubu Kaydı</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-12 mb-3">
+                        <label for="tbGrupAdi">Grup Adı</label>
+                        <input name="tbGrupAdi" class="form-control" type="text" @bind-value="currentDTO.GrupAdi">
+                    </div>
+                    <div class="col-md-12">
+                        <label>Gruptaki Kişiler</label>
+                        <BlazoredTypeahead SearchMethod="GetKisiler" @bind-Values="@SelectedKisiler">
+                            <SelectedTemplate>
+                                @context.AdSoyad
+                            </SelectedTemplate>
+                            <ResultTemplate>
+                                @context.AdSoyad (@context.Kurulus @context.Birim)
+                            </ResultTemplate>
+                        </BlazoredTypeahead>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="submit" class="btn btn-success btn-sm" @onclick="Save"><i class="bi bi-check-circle"></i>&nbsp;Kaydet</button>
+                <button id="popupKayitKapat" type="button" class="btn btn-danger btn-sm" data-bs-dismiss="modal"><i class="bi bi-x-circle"></i>&nbsp;Vazgeç</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (loading)
+{
+    <div class="progressBackground">
+        <div class="progressPopup">
+            <img alt="Bekleyiniz..." src="img/loading.gif" width="100" height="100" />
+        </div>
+    </div>
+}
+
+@code
+{
+    [Inject] protected IRolService rolService { get; set; }
+    [Inject] protected IMesajService mesajService { get; set; }
+
+    List<MesajGrubuMasterDTO> DataSource = new List<MesajGrubuMasterDTO>();
+
+    MesajGrubuMasterDTO currentDTO = new MesajGrubuMasterDTO();
+
+    IList<MesajKisiDTO> SelectedKisiler = new List<MesajKisiDTO>();
+
+    bool loading = false;
+    bool YetkiEkle = false;
+    bool YetkiDegistir = false;
+    bool YetkiSil = false;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            //YetkiEkle = await rolService.YetkiKontrolByYetki("Ayarlar - Duyurular - Ekle");
+            //YetkiDegistir = await rolService.YetkiKontrolByYetki("Ayarlar - Duyurular - Değiştir");
+            //YetkiSil = await rolService.YetkiKontrolByYetki("Ayarlar - Duyurular - Sil");
+
+            YetkiEkle = true;
+            YetkiDegistir = true;
+            YetkiSil = true;
+
+            await GetData();
+
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    async Task GetData()
+    {
+        var result = await mesajService.GetMesajGrubuMasterList();
+
+        if (result.Success)
+        {
+            DataSource = result.Value;
+        }
+        else
+        {
+            await js.InvokeVoidAsync("SweetToast", result.Message, "error");
+        }
+    }
+
+    private async Task<IEnumerable<MesajKisiDTO>> GetKisiler(string SearchText)
+    {
+        var result = await mesajService.GetMesajKisiList(SearchText);
+
+        if (result.Success)
+        {
+            return result.Value;
+        }
+        else
+        {
+            await js.InvokeVoidAsync("SweetToast", result.Message, "error");
+
+            return new List<MesajKisiDTO>();
+        }
+    }
+
+    async Task Add()
+    {
+        currentDTO = new MesajGrubuMasterDTO();
+        
+        SelectedKisiler = new List<MesajKisiDTO>();
+
+        await InvokeAsync(StateHasChanged);
+
+        await js.InvokeVoidAsync("bsPopupAc", "popupKayit");
+    }
+
+    async Task Edit(int Id)
+    {
+        var result = await mesajService.GetMesajGrubuMaster(Id);
+
+        if (result.Success)
+        {
+            currentDTO = result.Value;
+
+            SelectedKisiler = new List<MesajKisiDTO>();
+
+            foreach (var item in currentDTO.MesajGrubuDetailList)
+            {
+                SelectedKisiler.Add(new MesajKisiDTO()
+                    {
+                        Id = item.UyeKisiId,
+                        AdSoyad = item.UyeKisi
+                    });
+            }
+
+            await InvokeAsync(StateHasChanged);
+
+            await js.InvokeVoidAsync("bsPopupAc", "popupKayit");
+        }
+        else
+        {
+            await js.InvokeVoidAsync("SweetToast", result.Message, "error");
+        }
+    }
+
+    async Task Save()
+    {
+        if (string.IsNullOrEmpty(currentDTO.GrupAdi) || SelectedKisiler.Count == 0)
+        {
+            await js.InvokeVoidAsync("SweetMessage", "Uyarı", "Tüm alanlar girilmelidir", "warning");
+            return;
+        }
+
+        currentDTO.MesajGrubuDetailList = new List<MesajGrubuDetailDTO>();
+
+        foreach (var kisi in SelectedKisiler)
+        {
+            var mesajGrubuDetail = new MesajGrubuDetailDTO()
+                {
+                    UyeKisiId = kisi.Id,
+                    UyeKisi = kisi.AdSoyad
+                };
+
+            currentDTO.MesajGrubuDetailList.Add(mesajGrubuDetail);
+        }
+
+        loading = true;
+
+        var result = await mesajService.InsertOrUpdateMesajGrubu(currentDTO);
+
+        if (result.Success == false)
+        {
+            loading = false;
+            await InvokeAsync(StateHasChanged);
+
+            await js.InvokeVoidAsync("SweetMessage", "Uyarı", result.Message, "error");
+            return;
+        }
+
+        await GetData();
+
+        loading = false;
+
+        await InvokeAsync(StateHasChanged);
+
+        await js.InvokeVoidAsync("bsPopupKapat", "popupKayit");
+
+        await js.InvokeVoidAsync("SweetToast", "Kaydedildi", "success");
+    }
+
+    async Task Delete(int Id)
+    {
+        var confirm = await js.InvokeAsync<bool>("SweetConfirm", "Uyarı", "Kayıt silinecek, emin misiniz?", "question", "Evet", "Hayır");
+
+        if (confirm)
+        {
+            var resultGet = await mesajService.GetMesajGrubuMaster(Id);
+
+            if (resultGet.Success)
+            {
+                var resultDelete = await mesajService.DeleteMesajGrubuMaster(resultGet.Value);
+
+                if (resultDelete.Success)
+                {
+                    await GetData();
+
+                    await InvokeAsync(StateHasChanged);
+
+                    await js.InvokeVoidAsync("SweetToast", "Kayıt silindi", "success");
+                }
+                else
+                {
+                    await js.InvokeVoidAsync("SweetMessage", "Hata", resultDelete.Message, "error");
+                }
+            }
+            else
+            {
+                await js.InvokeVoidAsync("SweetToast", resultGet.Message, "error");
+            }
+        }
+    }
+
+    async Task ExportToExcel()
+    {
+        using (var workbook = new XLWorkbook())
+        {
+            IXLWorksheet worksheet = workbook.Worksheets.Add("Sayfa1");
+
+            worksheet.Cell(1, 1).Value = "Grup Adı";
+            worksheet.Cell(1, 2).Value = "Kişiler";
+
+            for (int i = 1; i <= 2; i++)
+            {
+                worksheet.Cell(1, i).Style.Font.Bold = true;
+            }
+
+            int index = 1;
+
+            foreach (var data in DataSource)
+            {
+                worksheet.Cell(index + 1, 1).Value = data.GrupAdi;
+                worksheet.Cell(index + 1, 2).Value = data.Kisiler;
+                index++;
+            }
+
+            using (var stream = new MemoryStream())
+            {
+                workbook.SaveAs(stream);
+                var content = stream.ToArray();
+                var fileName = "MesajGrubuListesi" + DateTime.Now.ToString("yyyyMMddss") + ".xlsx";
+                await js.InvokeAsync<object>("saveAsFile", fileName, Convert.ToBase64String(content));
+            }
+        }
+    }
+}

@@ -1,0 +1,349 @@
+﻿@layout MainLayout
+
+@page "/Index"
+
+@inject IJSRuntime js
+@inject NavigationManager navManager
+
+<section class="section dashboard" style="padding-top:0; padding-bottom:0">
+    @if (kullaniciForLoginDTO.Tip == 1)
+    {
+        <div class="row">
+            <div class="col-xxl-3 col-md-6">
+                <div class="card info-card sales-card">
+                    <div class="filter">
+                        <a class="icon" href="#" data-bs-toggle="dropdown"><i class="bi bi-three-dots"></i></a>
+                        <ul class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
+                            <li class="dropdown-header text-start"><h6>YIL</h6></li>
+                            <li><button class="dropdown-item" @onclick="@(async () => { await Filtre(0, ""); })">Tüm Yıllar</button></li>
+                            @foreach (var yil in DSYil)
+                            {
+                                <li><button class="dropdown-item" @onclick="@(async () => { await Filtre(@yil, ""); })">@yil</button></li>
+                            }
+                        </ul>
+                    </div>
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            Başvuru Sayısı <span> @(dashboardFilterDTO.Yil == 0 ? "Tüm Yıllar" : dashboardFilterDTO.Yil.ToString())</span>
+                        </h5>
+                        <div class="d-flex align-items-center">
+                            <div class="card-icon rounded-circle d-flex align-items-center justify-content-center">
+                                <i class="bi bi-hash"></i>
+                            </div>
+                            <div class="ps-3">
+                                <h6>@dashboardSayiDTO.BasvuruSayisi</h6>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xxl-3 col-md-6">
+                <div class="card info-card sales-card">
+                    <div class="filter">
+                        <a class="icon" href="#" data-bs-toggle="dropdown"><i class="bi bi-three-dots"></i></a>
+                        <ul class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
+                            <li class="dropdown-header text-start"><h6>YIL</h6></li>
+                            <li><button class="dropdown-item" @onclick="@(async () => { await Filtre(0, ""); })">Tüm Yıllar</button></li>
+                            @foreach (var yil in DSYil)
+                            {
+                                <li><button class="dropdown-item" @onclick="@(async () => { await Filtre(@yil, ""); })">@yil</button></li>
+                            }
+                        </ul>
+                    </div>
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            Teslim Edilen <span> @(dashboardFilterDTO.Yil == 0 ? "Tüm Yıllar" : dashboardFilterDTO.Yil.ToString())</span>
+                        </h5>
+                        <div class="d-flex align-items-center">
+                            <div class="card-icon rounded-circle d-flex align-items-center justify-content-center">
+                                <i class="bi bi-info-circle"></i>
+                            </div>
+                            <div class="ps-3">
+                                <h6>@dashboardSayiDTO.TeslimEdilen</h6>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xxl-3 col-md-6">
+                <div class="card info-card revenue-card">
+                    <div class="filter">
+                        <a class="icon" href="#" data-bs-toggle="dropdown"><i class="bi bi-three-dots"></i></a>
+                        <ul class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
+                            <li class="dropdown-header text-start"><h6>YIL</h6></li>
+                            <li><button class="dropdown-item" @onclick="@(async () => { await Filtre(0, ""); })">Tüm Yıllar</button></li>
+                            @foreach (var yil in DSYil)
+                            {
+                                <li><button class="dropdown-item" @onclick="@(async () => { await Filtre(@yil, ""); })">@yil</button></li>
+                            }
+                        </ul>
+                    </div>
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            Olumlu <span> @(dashboardFilterDTO.Yil == 0 ? "Tüm Yıllar" : dashboardFilterDTO.Yil.ToString())</span>
+                        </h5>
+                        <div class="d-flex align-items-center">
+                            <div class="card-icon rounded-circle d-flex align-items-center justify-content-center">
+                                <i class="bi bi-hand-thumbs-up"></i>
+                            </div>
+                            <div class="ps-3">
+                                <h6>@dashboardSayiDTO.OlumluSonuclanan</h6>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xxl-3 col-md-6">
+                <div class="card info-card customers-card">
+                    <div class="filter">
+                        <a class="icon" href="#" data-bs-toggle="dropdown"><i class="bi bi-three-dots"></i></a>
+                        <ul class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
+                            <li class="dropdown-header text-start"><h6>YIL</h6></li>
+                            <li><button class="dropdown-item" @onclick="@(async () => { await Filtre(0, ""); })">Tüm Yıllar</button></li>
+                            @foreach (var yil in DSYil)
+                            {
+                                <li><button class="dropdown-item" @onclick="@(async () => { await Filtre(@yil, ""); })">@yil</button></li>
+                            }
+                        </ul>
+                    </div>
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            Olumsuz <span> @(dashboardFilterDTO.Yil == 0 ? "Tüm Yıllar" : dashboardFilterDTO.Yil.ToString())</span>
+                        </h5>
+                        <div class="d-flex align-items-center">
+                            <div class="card-icon rounded-circle d-flex align-items-center justify-content-center">
+                                <i class="bi bi-hand-thumbs-down"></i>
+                            </div>
+                            <div class="ps-3">
+                                <h6>@dashboardSayiDTO.OlumsuzSonuclanan</h6>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
+    @if (kullaniciForLoginDTO.Tip != 2)
+    {
+        <div class="row">
+            <div class="col-lg-8">
+                <div class="row">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="filter" style="color:coral">
+                                <a class="icon" href="#" data-bs-toggle="dropdown"><i class="bi bi-three-dots"></i></a>
+                                <ul class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
+                                    <li class="dropdown-header text-start"><h6>AYLIK</h6></li>
+                                    <li><button class="dropdown-item" @onclick="@(async () => { await Filtre(0, "Aylik"); })">Tüm Yıllar</button></li>
+                                    @foreach (var yil in DSYil)
+                                    {
+                                        <li><button class="dropdown-item" @onclick="@(async () => { await Filtre(@yil, "Aylik"); })">@yil</button></li>
+                                    }
+                                    <li class="dropdown-header text-start"><h6>HAFTALIK</h6></li>
+                                    <li><button class="dropdown-item" @onclick="@(async () => { await Filtre(0, "Haftalik"); })">Tüm Yıllar</button></li>
+                                    @foreach (var yil in DSYil)
+                                    {
+                                        <li><button class="dropdown-item" @onclick="@(async () => { await Filtre(@yil, "Haftalik"); })">@yil</button></li>
+                                    }
+                                </ul>
+                            </div>
+                            <div class="card-body">
+                                <h5 class="card-title">Kalibrasyon Grafiği <span>@(dashboardFilterDTO.Yil == 0 ? "Tüm Yıllar" : dashboardFilterDTO.Yil.ToString())</span></h5>
+                                <div id="ChartGrafik"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    @foreach (var item in DSDuyuru)
+                    {
+                        <div class="col-12">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h5 class="card-title">@item.Konu <span> @item.Tarih.Value.ToString("dd.MM.yyyy")</span></h5>
+                                    @{
+                                        MarkupString ms = (MarkupString)item.Icerik;
+                                    }
+                                    <p>
+                                        @ms
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div><!-- End Left side columns -->
+            <!-- Right side columns -->
+            <div class="col-lg-4">
+                <div class="card">
+                    <div class="filter">
+                        <a class="icon" href="#" data-bs-toggle="dropdown"><i class="bi bi-three-dots"></i></a>
+                        <ul class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
+                            <li class="dropdown-header text-start"><h6>AYLIK</h6></li>
+                            <li><button class="dropdown-item" @onclick="@(async () => { await Filtre(0, "Aylik"); })">Tüm Yıllar</button></li>
+                            @foreach (var yil in DSYil)
+                            {
+                                <li><button class="dropdown-item" @onclick="@(async () => { await Filtre(@yil, "Aylik"); })">@yil</button></li>
+                            }
+                            <li class="dropdown-header text-start"><h6>HAFTALIK</h6></li>
+                            <li><button class="dropdown-item" @onclick="@(async () => { await Filtre(0, "Haftalik"); })">Tüm Yıllar</button></li>
+                            @foreach (var yil in DSYil)
+                            {
+                                <li><button class="dropdown-item" @onclick="@(async () => { await Filtre(@yil, "Haftalik"); })">@yil</button></li>
+                            }
+                        </ul>
+                    </div>
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            Sayılar <span> @(dashboardFilterDTO.Yil == 0 ? "Tüm Yıllar" : dashboardFilterDTO.Yil.ToString())</span>
+                        </h5>
+                        <table class="table table-borderless">
+                            <thead>
+                                <tr style="display: table; table-layout: fixed; width: calc(100% - 1.3em);">
+                                    <th>Dönem</th>
+                                    <th>Başvuru</th>
+                                    <th>Teslim</th>
+                                    <th>Olumlu</th>
+                                    <th>Olumsuz</th>
+                                    <th>Devam Eden</th>
+                                </tr>
+                            </thead>
+                            @if (DSDashboardGrafik.ToList().Count == 0)
+                            {
+                                <tbody>
+                                    <tr>
+                                        <td colspan="6" align="center">
+                                            <h6>Görüntülenecek Veri Yok</h6>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            }
+                            else
+                            {
+                                <tbody style="display: block; max-height: 214px; overflow-y: scroll;">
+                                    @foreach (var data in DSDashboardGrafik.OrderByDescending(x => x.Donem))
+                                    {
+                                        <tr style="display: table; table-layout: fixed; width: 100%;">
+                                            <td>@data.Donem.ToString().Insert(4, " - ")</td>
+                                            <td>@data.BasvuruSayisi</td>
+                                            <td>@data.TeslimEdilen</td>
+                                            <td>@data.OlumluSonuclanan</td>
+                                            <td>@data.OlumsuzSonuclanan</td>
+                                            <td>@data.IslemiDevamEden</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            }
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</section>
+
+@if (loading)
+{
+    <div class="progressBackground">
+        <div class="progressPopup">
+            <img alt="Bekleyiniz..." src="img/loading.gif" width="100" height="100" />
+        </div>
+    </div>
+}
+
+@code
+{
+    //[CascadingParameter]
+    //private Task<AuthenticationState> authenticationState { get; set; }
+
+    [Inject] protected IRolService rolService { get; set; }
+    [Inject] protected IDashboardService dashboardService { get; set; }
+
+    KullaniciForLoginDTO kullaniciForLoginDTO = new KullaniciForLoginDTO() { Tip = 0 };
+    DashboardSayiDTO dashboardSayiDTO = new DashboardSayiDTO();
+    DashboardFilterDTO dashboardFilterDTO = new DashboardFilterDTO() { Tip = "GrafikAylik" };
+    bool loading = false;
+
+    List<int> DSYil = new List<int>();
+    List<DashboardGrafikDTO> DSDashboardGrafik = new List<DashboardGrafikDTO>();
+    List<DuyuruDTO> DSDuyuru = new List<DuyuruDTO>();
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            kullaniciForLoginDTO = await rolService.GetKullaniciForLogin();
+
+            if (kullaniciForLoginDTO.Tip == 1)
+            {
+                await GetData();
+
+                DSYil = DSDashboardGrafik.Select(x => Convert.ToInt32(x.Donem.ToString().Substring(0, 4))).Distinct().OrderByDescending(x => x).ToList();
+            }
+
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    async Task GetData()
+    {
+        var resultDashboardSayi = await dashboardService.GetDashboardSayi(dashboardFilterDTO);
+
+        if (resultDashboardSayi.Success)
+        {
+            dashboardSayiDTO = resultDashboardSayi.Value;
+        }
+        else
+        {
+            await js.InvokeVoidAsync("SweetToast", resultDashboardSayi.Message, "error");
+        }
+
+        var resultDashboardGrafik = await dashboardService.GetDashboardGrafik(dashboardFilterDTO);
+
+        if (resultDashboardGrafik.Success)
+        {
+            DSDashboardGrafik = resultDashboardGrafik.Value;
+
+            var DonemValues = DSDashboardGrafik.Select(x => x.Donem.ToString().Insert(4, "-")).ToArray();
+            var BasvurulanValues = DSDashboardGrafik.Select(x => x.BasvuruSayisi).ToArray();
+            var TeslimEdilenValues = DSDashboardGrafik.Select(x => x.TeslimEdilen).ToArray();
+            /*var OlumluValues = DSDashboardGrafik.Select(x => x.OlumluSonuclanan).ToArray();
+            var OlumsuzValues = DSDashboardGrafik.Select(x => x.OlumsuzSonuclanan).ToArray();
+            var DevamEdenValues = DSDashboardGrafik.Select(x => x.IslemiDevamEden).ToArray();*/
+
+            await js.InvokeVoidAsync("ViewChartGrafik", dashboardFilterDTO.Tip == "GrafikHaftalik", DonemValues, BasvurulanValues, TeslimEdilenValues /*OlumluValues, OlumsuzValues, DevamEdenValues*/);
+        }
+        else
+        {
+            await js.InvokeVoidAsync("SweetToast", resultDashboardGrafik.Message, "error");
+        }
+
+        var resultDuyuru = await dashboardService.GetDashboardDuyuru();
+
+        if (resultDuyuru.Success)
+        {
+            DSDuyuru = resultDuyuru.Value;
+        }
+        else
+        {
+            await js.InvokeVoidAsync("SweetToast", resultDuyuru.Message, "error");
+        }
+    }
+
+    async Task Filtre(int yil, string AylikHaftalik)
+    {
+        dashboardFilterDTO.Yil = yil;
+
+        if (string.IsNullOrEmpty(AylikHaftalik) == false)
+        {
+            dashboardFilterDTO.Tip = "Grafik" + AylikHaftalik;
+        }
+
+        await GetData();
+
+        await InvokeAsync(StateHasChanged);
+    }
+}

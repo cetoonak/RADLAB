@@ -1,0 +1,94 @@
+﻿@typeparam TItem
+
+<div class="form-control">
+    @{
+        string CalculatedHeight = (SelectAllVisible ? Height - 28 : Height).ToString() + "px";
+        string CalculatedWidth = Width == 0 ? "auto" : Width.ToString() + "px";
+    }
+    @if (SelectAllVisible)
+    {
+        <div style="padding-left:2px; font-size:0.8rem; height:28px; width:@CalculatedWidth;">
+            <input id="cbAll" type="checkbox" class="form-check-input" @onchange="eventArgs => { SelectAllClicked(eventArgs.Value); }" />
+            <label for="cbAll" class="form-check-label"><b>&nbsp;Tümü</b></label>
+        </div>
+    }
+    <div style="padding-left:2px; overflow-y:auto; font-size:0.8rem; height:@CalculatedHeight; width:@CalculatedWidth;">
+        @if (Data != null)
+        {
+            foreach (var item in Data)
+            {
+                var Text = TextField?.Invoke(item);
+                var Value = ValueField?.Invoke(item).ToString();
+                bool Checked = false;
+            
+                if (SelectedValues.Contains(Value)) Checked = true;
+
+                <div style="padding-top: 2px; padding-bottom:2px;">
+                    <input id="@("cb" + Value)" type="checkbox" class="form-check-input" checked=@Checked @onchange="eventArgs => { CheckboxClicked(Value, eventArgs.Value); }" />
+                    <label for="@("cb" + Value)" class="form-check-label">&nbsp;@Text</label>
+                </div>
+            }
+        }
+    </div>
+    @ChildContent
+</div>
+
+@code
+{
+    [Parameter] public IEnumerable<TItem> Data { get; set; }
+    [Parameter] public Func<TItem, string> TextField { get; set; }
+    [Parameter] public Func<TItem, object> ValueField { get; set; }
+    [Parameter] public RenderFragment ChildContent { get; set; }
+    [Parameter] public List<string> SelectedValues { get; set; }
+    [Parameter] public bool SelectAllVisible { get; set; }
+    [Parameter] public int Height { get; set; }
+    [Parameter] public int Width { get; set; }
+
+    public void CheckboxClicked(string aSelectedId, object aChecked)
+    {
+        if ((bool)aChecked)
+        {
+            if (!SelectedValues.Contains(aSelectedId))
+            {
+                SelectedValues.Add(aSelectedId);
+            }
+        }
+        else
+        {
+            if (SelectedValues.Contains(aSelectedId))
+            {
+                SelectedValues.Remove(aSelectedId);
+            }
+        }
+
+        StateHasChanged();
+    }
+
+    public void SelectAllClicked(object aChecked)
+    {
+        if (Data != null)
+        {
+            foreach (var item in Data)
+            {
+                var Value = ValueField?.Invoke(item).ToString();
+
+                if ((bool)aChecked)
+                {
+                    if (!SelectedValues.Contains(Value))
+                    {
+                        SelectedValues.Add(Value);
+                    }
+                }
+                else
+                {
+                    if (SelectedValues.Contains(Value))
+                    {
+                        SelectedValues.Remove(Value);
+                    }
+                }
+            }
+
+            StateHasChanged();
+        }
+    }
+}

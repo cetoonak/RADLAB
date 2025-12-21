@@ -1,0 +1,392 @@
+﻿@page "/Main/Video"
+
+@inject IJSRuntime js
+@inject IWebHostEnvironment environment
+@inject IConfiguration configuration
+
+@using System.Threading
+@using System.Threading.Tasks
+@using System.Net.Http
+@using System.Text.Json
+
+@using System
+@using System.IO
+@using Microsoft.AspNetCore.Hosting
+
+<style>
+    .badge {
+    font-size: 0.9em;
+    }
+
+    .form-floating > .form-select {
+    padding-left: 0.8rem;
+    }
+</style>
+
+<div class="row">
+    <div class="col-md-3 mb-3">
+        <select id="ddlKlasor" class="form-select form-select-sm" @onchange="async eventArgs => { await KlasorSec(eventArgs.Value); }">
+            <option value="0">Tüm Klasörler</option>
+            @foreach (var item in DataSourceKlasor)
+            {
+                if (filterDTO.KlasorId == item.Id)
+                {
+                    <option selected value="@item.Id">@item.Ad</option>
+                }
+                else
+                {
+                    <option value="@item.Id">@item.Ad</option>
+                }
+            }
+        </select>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="input-group input-group-sm">
+            <input type="text" class="form-control" placeholder="Dosya adı..." aria-label="Dosya adı.." aria-describedby="btnDosyaAdi" @bind-value="filterDTO.DosyaAdi">
+            <button id="btnDosyaAdi" class="btn btn-outline-secondary" type="button" @onclick="DosyaAdiGir">...</button>
+        </div>
+    </div>
+    @if (YetkiEkle)
+    {
+        <div class="col-md-3 mb-3">
+            <button class="btn btn-success btn-sm" @onclick="Add"><i class="bi bi-plus-circle"></i>&nbsp;Video Ekle</button>
+        </div>
+    }
+</div>
+
+<br />
+
+<div class="row">
+    @foreach (var data in DataSource)
+    {
+        <div class="col-md-3 mb-3 mr-3 text-center">
+            <video width="320" height="240" controls>
+                <source src=@(videoBaseUrl + "video/" + data.DosyaAdi) type=@("video/" + data.Uzanti)>
+                <source src=@(videoBaseUrl + "video/" + data.DosyaAdi.Replace("." + data.Uzanti, "") + ".ogg") type="video/ogg">
+                Tarayıcınız bu videoyu göstermeyi desteklemiyor
+            </video>
+            <br />
+            @data.Klasor
+            <br />
+            @data.DosyaAdi
+            <br />
+            @if (YetkiDegistir)
+            {
+                <button class="btn text-info grid-command" @onclick="@(async () => { await Edit(data.Id); })"><i class="bi bi-pencil"></i></button>
+            }
+            @if (YetkiSil)
+            {
+                <button class="btn text-danger grid-command" @onclick="@(async () => { await Delete(data.Id); })"><i class="bi bi-trash3"></i></button>
+            }
+        </div>
+    }
+</div>
+
+<button id="popupKayitAc" type="button" data-bs-toggle="modal" data-bs-target="#popupKayit" style="visibility:hidden;">
+</button>
+
+<div class="modal fade" id="popupKayit" tabindex="-1" aria-labelledby="popupKayitLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <EditForm Model="@currentDTO">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="popupKayitLabel">Video Kaydı</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        @if (klasorModuEkle)
+                        {
+                            <div class="col-md-9 mb-3">
+                                <div class="form-floating">
+                                    <input id="tbKlasor" class="form-control form-control-sm" type="text" @bind-value="currentDTO.Klasor">
+                                    <label for="tbKlasor" class="text-danger">Klasör</label>
+                                </div>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="col-md-9 mb-3">
+                                <div class="form-floating">
+                                    <select id="ddlKlasor" class="form-select form-select-sm" @bind="currentDTO.KlasorId">
+                                        <option value="0"></option>
+                                        @foreach (var item in DataSourceKlasor)
+                                        {
+                                            <option value="@item.Id">@item.Ad</option>
+                                        }
+                                    </select>
+                                    <label for="ddlKlasor" class="text-danger">Klasör</label>
+                                </div>
+                            </div>
+                        }
+                        <div class="col-md-3 mb-3" style="text-align-last: right; align-content: center;">
+                            <div class="btn-group btn-group-sm" role="group" aria-label="Basic radio toggle button group">
+                                <input type="radio" class="btn-check" name="btnradio" id="btnKlasorSec" autocomplete="off" @onclick=@(async () => { await KlasorModuDegistir(false); }) checked>
+                                <label class="btn btn-outline-primary" for="btnKlasorSec">Seç</label>
+                                <input type="radio" class="btn-check" name="btnradio" id="btnKlasorEkle" autocomplete="off" @onclick=@(async () => { await KlasorModuDegistir(true); })>
+                                <label class="btn btn-outline-primary" for="btnKlasorEkle">Ekle</label>
+                            </div>
+                        </div>
+                        @if (kayitModuEkle)
+                        {
+                            <div class="col-md-12">
+                                <div class="form-floating">
+                                    <InputFile id="fuDosya" class="form-control form-control-sm" style="padding-left: 1.2rem;" OnChange="HandleFileUploadDosya" multiple></InputFile>
+                                    <label for="fuDosya" class="text-danger">Video</label>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-success btn-sm" @onclick="Save"><i class="bi bi-check-circle"></i>&nbsp;Kaydet</button>
+                    <button id="popupKayitKapat" type="button" class="btn btn-danger btn-sm" data-bs-dismiss="modal"><i class="bi bi-x-circle"></i>&nbsp;Vazgeç</button>
+                </div>
+            </EditForm>
+        </div>
+    </div>
+</div>
+
+@if (loading)
+{
+    <div class="progressBackground">
+        <div class="progressPopup">
+            <img alt="Bekleyiniz..." src="img/loading.gif" width="100" height="100" />
+        </div>
+    </div>
+}
+
+@code
+{
+    [Inject] protected IAyarService ayarService { get; set; }
+    [Inject] protected IRolService rolService { get; set; }
+    [Inject] protected IVideoService videoService { get; set; }
+    [Inject] protected ILookupService lookupService { get; set; }
+    [Inject] protected ITanimBasicService tanimBasicService { get; set; }
+
+    List<VideoDTO> DataSource = new List<VideoDTO>();
+    List<LookupBasicDTO> DataSourceKlasor = new List<LookupBasicDTO>();
+
+    VideoFilterDTO filterDTO = new VideoFilterDTO() { PageNo = 1, PageSize = 10 };
+
+    VideoDTO currentDTO = new VideoDTO();
+
+    bool loading = false;
+    bool YetkiEkle = false;
+    bool YetkiDegistir = false;
+    bool YetkiSil = false;
+
+    bool kayitModuEkle = false;
+    bool klasorModuEkle = false;
+
+    string videoBaseUrl = "";
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            videoBaseUrl = configuration["VideoBaseUrl"];
+
+            YetkiEkle = await rolService.YetkiKontrolByYetki("Online Eğitim - Video Havuzu - Ekle");
+            YetkiDegistir = await rolService.YetkiKontrolByYetki("Online Eğitim - Video Havuzu - Değiştir");
+            YetkiSil = await rolService.YetkiKontrolByYetki("Online Eğitim - Video Havuzu - Sil");
+
+            DataSourceKlasor = await lookupService.GetLookupBasic("Klasor");
+
+            await GetData();
+
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    async Task GetData()
+    {
+        var result = await videoService.GetVideoList(filterDTO);
+
+        if (result.Success)
+        {
+            DataSource = result.Value;
+        }
+        else
+        {
+            await js.InvokeVoidAsync("SweetMessage", "Hata", result.Message, "error");
+        }
+    }
+
+    async Task KlasorSec(object value)
+    {
+        filterDTO.KlasorId = Convert.ToInt32(value.ToString());
+
+        await GetData();
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task DosyaAdiGir()
+    {
+        await GetData();
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task Add()
+    {
+        currentDTO = new VideoDTO();
+
+        klasorModuEkle = false;
+
+        kayitModuEkle = true;
+
+        await InvokeAsync(StateHasChanged);
+
+        await js.InvokeVoidAsync("bsPopupAc", "popupKayit");
+    }
+
+    async Task Edit(int id)
+    {
+        klasorModuEkle = false;
+
+        kayitModuEkle = false;
+
+        var fDTO = new VideoFilterDTO() { PageNo = 1, PageSize = 10, Id = id };
+
+        var result = await videoService.GetVideoList(fDTO);
+
+        if (result.Success)
+        {
+            currentDTO = result.Value[0];
+
+            await InvokeAsync(StateHasChanged);
+
+            await js.InvokeVoidAsync("bsPopupAc", "popupKayit");
+        }
+        else
+        {
+            await js.InvokeVoidAsync("SweetMessage", "Hata", result.Message, "error");
+        }
+    }
+
+    async Task HandleFileUploadDosya(InputFileChangeEventArgs e)
+    {
+        var browserFile = e.File;
+
+        if (browserFile != null)
+        {
+            loading = true;
+
+            try
+            {
+                var fileStream = browserFile.OpenReadStream(500000 * 1024); // 200 mb
+
+                string targetFilePath = $"{environment.WebRootPath}\\video\\{browserFile.Name}";
+                //string targetFilePath = $"https://radlab.com.tr/video/{browserFile.Name}";
+
+                var destinationStream = new FileStream(targetFilePath, FileMode.Create);
+                await fileStream.CopyToAsync(destinationStream);
+                destinationStream.Close();
+
+                currentDTO.DosyaAdi = e.File.Name;
+                currentDTO.Uzanti = Path.GetExtension(e.File.Name).Replace(".", "").ToLower();
+            }
+            catch
+            {
+
+            }
+
+            loading = false;
+        }
+    }
+
+    async Task KlasorModuDegistir(bool ekle)
+    {
+        klasorModuEkle = ekle;
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task Save()
+    {
+        if (string.IsNullOrEmpty(currentDTO.DosyaAdi) || (klasorModuEkle == false & currentDTO.KlasorId == 0) || (klasorModuEkle & string.IsNullOrEmpty(currentDTO.Klasor)))
+        {
+            await js.InvokeVoidAsync("SweetToast", "Lütfen zorunlu alanları doldurunuz", "error");
+            return;
+        }
+
+        loading = true;
+
+        if (klasorModuEkle)
+        {
+            var tanimBasicDTO = new TanimBasicDTO() { Id = 0, Tanim = currentDTO.Klasor };
+
+            var resultKlasor = await tanimBasicService.InsertOrUpdateTanimBasic("Klasor", tanimBasicDTO);
+
+            if (resultKlasor.Success == false)
+            {
+                loading = false;
+                await InvokeAsync(StateHasChanged);
+
+                await js.InvokeVoidAsync("SweetMessage", "Uyarı", resultKlasor.Message, "error");
+                return;
+            }
+
+            currentDTO.KlasorId = Convert.ToInt32(resultKlasor.Value);
+        }
+
+        var result = await videoService.InsertOrUpdateVideo(currentDTO);
+
+        if (result.Success == false)
+        {
+            loading = false;
+            await InvokeAsync(StateHasChanged);
+
+            await js.InvokeVoidAsync("SweetMessage", "Uyarı", result.Message, "error");
+            return;
+        }
+
+        await GetData();
+
+        DataSourceKlasor = await lookupService.GetLookupBasic("Klasor");
+
+        loading = false;
+
+        await InvokeAsync(StateHasChanged);
+
+        await js.InvokeVoidAsync("bsPopupKapat", "popupKayit");
+
+        await js.InvokeVoidAsync("SweetToast", "Kaydedildi", "success");
+    }
+
+    async Task Delete(int id)
+    {
+        var fDTO = new VideoFilterDTO() { PageNo = 1, PageSize = 10, Id = id };
+
+        var resultSelect = await videoService.GetVideoList(fDTO);
+
+        if (resultSelect.Success == false)
+        {
+            await js.InvokeVoidAsync("SweetMessage", "Hata", resultSelect.Message, "error");
+            return;
+        }
+
+        var confirm = await js.InvokeAsync<bool>("SweetConfirm", "Uyarı", "Kayıt silinecek, emin misiniz?", "question", "Evet", "Hayır");
+
+        if (confirm == false)
+        {
+            return;
+        }
+
+        var resultDelete = await videoService.DeleteVideo(resultSelect.Value);
+
+        if (resultDelete.Success == false)
+        {
+            await js.InvokeVoidAsync("SweetMessage", "Hata", resultDelete.Message, "error");
+            return;
+        }
+
+        await GetData();
+
+        await InvokeAsync(StateHasChanged);
+
+        await js.InvokeVoidAsync("SweetToast", "Kayıt silindi", "success");
+    }
+}

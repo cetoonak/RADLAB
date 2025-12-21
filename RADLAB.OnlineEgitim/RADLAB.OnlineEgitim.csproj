@@ -1,0 +1,165 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="wwwroot\assets\**" />
+    <Compile Remove="wwwroot\finexo\**" />
+    <Compile Remove="wwwroot\video\**" />
+    <Content Remove="wwwroot\assets\**" />
+    <Content Remove="wwwroot\finexo\**" />
+    <Content Remove="wwwroot\video\**" />
+    <EmbeddedResource Remove="wwwroot\assets\**" />
+    <EmbeddedResource Remove="wwwroot\finexo\**" />
+    <EmbeddedResource Remove="wwwroot\video\**" />
+    <None Remove="wwwroot\assets\**" />
+    <None Remove="wwwroot\finexo\**" />
+    <None Remove="wwwroot\video\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="Exclude\IKisiManager.cs" />
+    <Compile Remove="Exclude\IKisiService.cs" />
+    <Compile Remove="Exclude\IPayTRService.cs" />
+    <Compile Remove="Exclude\KisiController.cs" />
+    <Compile Remove="Exclude\KisiDTO.cs" />
+    <Compile Remove="Exclude\KisiManager.cs" />
+    <Compile Remove="Exclude\KisiOnayDTO.cs" />
+    <Compile Remove="Exclude\KisiParamDTO.cs" />
+    <Compile Remove="Exclude\KisiService.cs" />
+    <Compile Remove="Exclude\PayTRService.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Remove="Exclude\Default.razor" />
+    <Content Remove="Exclude\DropDownCheckBoxList.razor" />
+    <Content Remove="Exclude\Kalibrasyon.razor" />
+    <Content Remove="Exclude\KalibrasyonCihaz.razor" />
+    <Content Remove="Exclude\KisiselDozRaporu.razor" />
+    <Content Remove="Exclude\Kurs.razor" />
+    <Content Remove="Exclude\NavMenu.razor" />
+    <Content Remove="Exclude\Siparis.razor" />
+    <Content Remove="Exclude\Sonuc - Copy.razor" />
+    <Content Remove="Exclude\Sonuc.razor" />
+    <Content Remove="Exclude\SurveyPrompt.razor" />
+    <Content Remove="Exclude\WebSiteLayout.razor" />
+    <Content Remove="Exclude\_Layout.cshtml" />
+    <Content Remove="Pages\Exclude\Kalibrasyon.razor" />
+    <Content Remove="Pages\Exclude\PayTRCallBack.razor" />
+    <Content Remove="Pages\Exclude\SepetFail.razor" />
+    <Content Remove="Pages\Exclude\SepetOk.razor" />
+    <Content Remove="Pages\Exclude\SepetSuccess.razor" />
+    <Content Remove="Pages\Exclude\WSEgitimBasvurusu.razor" />
+    <Content Remove="Pages\Exclude\WSFooter.razor" />
+    <Content Remove="Pages\Exclude\WSHakkinda.razor" />
+    <Content Remove="Pages\Exclude\WSHeader.razor" />
+    <Content Remove="Pages\Exclude\WSIletisim.razor" />
+    <Content Remove="Pages\Exclude\WSKalibrasyonBasvurusu.razor" />
+    <Content Remove="Pages\Exclude\WSMusteriTakip.razor" />
+    <Content Remove="Pages\Exclude\WSOnlineSatis.razor" />
+    <Content Remove="Pages\Exclude\WSRadyoaktifKaynakYukleme.razor" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Remove="Exclude\NavMenu.razor.css" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Ardalis.GuardClauses" Version="5.0.0" />
+    <PackageReference Include="Blazored.LocalStorage" Version="4.5.0" />
+    <PackageReference Include="Blazored.Typeahead" Version="4.7.0" />
+    <PackageReference Include="Blazored.Video" Version="1.0.1" />
+    <PackageReference Include="ClosedXML" Version="0.104.2" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="9.0.4" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.Authorization" Version="9.0.4" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <PackageReference Include="Radzen.Blazor" Version="6.6.1" />
+    <PackageReference Include="System.Drawing.Common" Version="9.0.4" />
+    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.8.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Exclude\" />
+    <Folder Include="FR\" />
+    <Folder Include="Pages\Exclude\" />
+    <Folder Include="wwwroot\export\" />
+    <Folder Include="wwwroot\upload\image\" />
+    <Folder Include="wwwroot\upload\VakifBankPostBack\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="wwwroot\wallet\fonts\slick.svg" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\RADLAB.Model\RADLAB.Model.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Update="wwwroot\wallet\ajax-loader.gif">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Update="wwwroot\wallet\bootstrap.bundle.min.js">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Update="wwwroot\wallet\bootstrap.min.js">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Update="wwwroot\wallet\brands.css">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Update="wwwroot\wallet\fontawesome.min.css">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Update="wwwroot\wallet\fonts\slick.ttf">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Update="wwwroot\wallet\fonts\slick.woff">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Update="wwwroot\wallet\jquery.min.js">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Update="wwwroot\wallet\script.js">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Update="wwwroot\wallet\scrollmenu.min.js">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Update="wwwroot\wallet\slick.css">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Update="wwwroot\wallet\slick.min.js">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Update="wwwroot\wallet\solid.css">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Update="wwwroot\wallet\style.css">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Update="wwwroot\wallet\style.css.map">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+  </ItemGroup>
+
+</Project>

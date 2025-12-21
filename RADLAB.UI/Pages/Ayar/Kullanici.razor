@@ -1,0 +1,308 @@
+﻿@page "/Ayar/Kullanici"
+
+@inject IJSRuntime js
+
+@using System.Threading
+@using System.Threading.Tasks
+@using System.Net.Http
+@using System.Text.Json
+
+<div class="card info-card">
+    <div class="table-responsive">
+        <table class="table table-bordered table-hover">
+            <thead>
+                <tr>
+                    <td width="15%">Adı</td>
+                    <td width="15%">Soyadı</td>
+                    <td width="15%">E-Posta Adresi</td>
+                    <td width="15%">Cep Telefonu</td>
+                    <td width="10%" align="center">Kalibrasyon Bilgilendirme</td>
+                    <td width="10%" align="center">Kurs Bilgilendirme</td>
+                    <td width="10%" align="center">Satış Bilgilendirme</td>
+                    <td width="10%" align="center">
+                        @if (YetkiEkle)
+                        {
+                            <button class="btn text-success grid-command" @onclick="Add"><i class="bi bi-plus-circle "></i></button>
+                        }
+                        <button class="btn text-success grid-command" @onclick="ExportToExcel"><i class="bi bi-file-earmark-excel"></i></button>
+                    </td>
+                </tr>
+            </thead>
+            @if (DataSource.ToList().Count == 0)
+            {
+                <tbody>
+                    <tr>
+                        <td colspan="8" align="center" valign="bottom" height="64px">
+                            <h6>Görüntülenecek Veri Yok</h6>
+                        </td>
+                    </tr>
+                </tbody>
+            }
+            else
+            {
+                <tbody>
+                    @foreach (var data in DataSource)
+                    {
+                        var RowFontColor = data.Aktif ? "black" : "gray";
+
+                        <tr style="color:@RowFontColor">
+                            <td width="15%">@data.Ad</td>
+                            <td width="15%">@data.Soyad</td>
+                            <td width="15%">@data.EMail</td>
+                            <td width="15%">@data.TelefonCep</td>
+                            <td width="10%" align="center">@(data.SMSKalibrasyon ? "Evet" : "Hayır")</td>
+                            <td width="10%" align="center">@(data.SMSEgitim? "Evet" : "Hayır")</td>
+                            <td width="10%" align="center">@(data.SMSSiparis? "Evet" : "Hayır")</td>
+                            <td width="10%" align="center">
+                                @if (YetkiDegistir)
+                                {
+                                    <button class="btn text-info grid-command" @onclick="@(async () => { await Edit(data.Id); })"><i class="bi bi-pencil"></i></button>
+                                }
+                                @if (YetkiSil)
+                                {
+                                    <button class="btn text-danger grid-command" @onclick="@(async () => { await Delete(data.Id); })"><i class="bi bi-trash3"></i></button>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            }
+        </table>
+    </div>
+</div>
+
+<button id="popupKayitAc" type="button" data-bs-toggle="modal" data-bs-target="#popupKayit" style="visibility:hidden;">
+</button>
+
+<div class="modal fade" id="popupKayit" tabindex="-1" aria-labelledby="popupKayitLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <EditForm Model="@currentDTO">
+                <DataAnnotationsValidator />
+                <div class="modal-header">
+                    <h5 class="modal-title" id="popupKayitLabel">Kullanıcı Kaydı</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="tbAd">Adı</label>
+                            <input name="tbAd" class="form-control form-control-sm" type="text" @bind-value="currentDTO.Ad">
+                            <ValidationMessage For="@(() => currentDTO.Ad)" />
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="tbSoyad">Soyadı</label>
+                            <input name="tbSoyad" class="form-control form-control-sm" type="text" @bind-value="currentDTO.Soyad">
+                            <ValidationMessage For="@(() => currentDTO.Soyad)" />
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="tbEMail">E-Posta Adresi</label>
+                            <input name="tbEMail" class="form-control form-control-sm" type="text" @bind-value="currentDTO.EMail">
+                            <ValidationMessage For="@(() => currentDTO.EMail)" />
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="tbTelefonCep">Cep Telefonu</label>
+                            <input name="tbTelefonCep" class="form-control form-control-sm" type="text" @bind-value="currentDTO.TelefonCep">
+                        </div>
+                        <div class="col-md-12 mb-3">
+                            <label for="lbRoller">Sahip Olunan Roller</label>
+                            <CheckBoxList Data="@DataSourceRol" TextField="@((item)=>item.Rol)" ValueField="@((item)=>item.Id)"
+                                          SelectedValues="@SelectedValues" Height="200" SelectAllVisible="true">
+                            </CheckBoxList>
+                        </div>
+                        <div class="col-md-12 mb-3">
+                            <input id="cbSMSKalibrasyon" type="checkbox" class="form-check-input" @bind="currentDTO.SMSKalibrasyon" />
+                            <label for="cbSMSKalibrasyon" class="form-check-label">Kalibrasyon başvurusuna SMS ile bilgilendir</label>
+                        </div>
+                        <div class="col-md-12 mb-3">
+                            <input id="cbSMSEgitim" type="checkbox" class="form-check-input" @bind="currentDTO.SMSEgitim" />
+                            <label for="cbSMSEgitim" class="form-check-label">Kurs başvurusuna SMS ile bilgilendir</label>
+                        </div>
+                        <div class="col-md-12 mb-3">
+                            <input id="cbSMSSiparis" type="checkbox" class="form-check-input" @bind="currentDTO.SMSSiparis" />
+                            <label for="cbSMSSiparis" class="form-check-label">Sipariş alındığında SMS ile bilgilendir</label>
+                        </div>
+                        <div class="col-md-12">
+                            <input id="cbAktif" type="checkbox" class="form-check-input" @bind="currentDTO.Aktif" />
+                            <label for="cbAktif" class="form-check-label">Kullanıcı aktif</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-success btn-sm" @onclick="Save"><i class="bi bi-check-circle"></i>&nbsp;Kaydet</button>
+                    <button id="popupKayitKapat" type="button" class="btn btn-danger btn-sm" data-bs-dismiss="modal"><i class="bi bi-x-circle"></i>&nbsp;Vazgeç</button>
+                </div>
+            </EditForm>
+        </div>
+    </div>
+</div>
+
+@if (loading)
+{
+    <div class="progressBackground">
+        <div class="progressPopup">
+            <img alt="Bekleyiniz..." src="img/loading.gif" width="100" height="100" />
+        </div>
+    </div>
+}
+
+@code
+{
+    [Inject] protected IRolService rolService { get; set; }
+    [Inject] protected IKullaniciService kullaniciService { get; set; }
+
+    List<KullaniciDTO> DataSource = new List<KullaniciDTO>();
+    List<RolDTO> DataSourceRol = new List<RolDTO>();
+
+    List<string> SelectedValues = new List<string>();
+
+    KullaniciDTO currentDTO = new KullaniciDTO() { };
+
+    bool loading = false;
+    bool YetkiEkle = false;
+    bool YetkiDegistir = false;
+    bool YetkiSil = false;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            YetkiEkle = await rolService.YetkiKontrolByYetki("Ayarlar - Kullanıcılar - Ekle");
+            YetkiDegistir = await rolService.YetkiKontrolByYetki("Ayarlar - Kullanıcılar - Değiştir");
+            YetkiSil = await rolService.YetkiKontrolByYetki("Ayarlar - Kullanıcılar - Sil");
+
+            await GetData();
+
+            DataSourceRol = await rolService.GetRolList();
+
+            StateHasChanged();
+        }
+    }
+
+    async Task GetData()
+    {
+        DataSource = await kullaniciService.GetKullaniciList();
+    }
+
+    async Task Add()
+    {
+        currentDTO = new KullaniciDTO();
+
+        SelectedValues = new List<string>();
+
+        StateHasChanged();
+
+        await js.InvokeVoidAsync("bsPopupAc", "popupKayit");
+    }
+
+    async Task Edit(int Id)
+    {
+        currentDTO = await kullaniciService.GetKullanici(Id);
+
+        SelectedValues = currentDTO.Roller.Select(x => x.Id.ToString()).ToList();
+
+        StateHasChanged();
+
+        await js.InvokeVoidAsync("bsPopupAc", "popupKayit");
+    }
+
+    async Task Save()
+    {
+        if (string.IsNullOrEmpty(currentDTO.Ad) || string.IsNullOrEmpty(currentDTO.Soyad) || string.IsNullOrEmpty(currentDTO.EMail))
+        {
+            return;
+        }
+
+        loading = true;
+
+        currentDTO.Roller = DataSourceRol.Join(SelectedValues, rol => rol.Id.ToString(), selectedValue => selectedValue, (rol, selectedValue) => rol).ToList();
+
+        var result = await kullaniciService.InsertOrUpdateKullanici(currentDTO);
+
+        if (result.Success == false)
+        {
+            loading = false;
+            StateHasChanged();
+
+            await js.InvokeVoidAsync("SweetMessage", "Uyarı", result.Message, "error");
+            return;
+        }
+
+        await GetData();
+
+        loading = false;
+        StateHasChanged();
+
+        await js.InvokeVoidAsync("bsPopupKapat", "popupKayit");
+
+        await js.InvokeVoidAsync("SweetToast", "Kaydedildi", "success");
+    }
+
+    async Task Delete(int Id)
+    {
+        var dto = await kullaniciService.GetKullanici(Id);
+
+        var dtos = new List<KullaniciDTO>();
+
+        dtos.Add(dto);
+
+        var confirm = await js.InvokeAsync<bool>("SweetConfirm", "Uyarı", "Kayıt silinecek, emin misiniz?", "question", "Evet", "Hayır");
+
+        if (confirm)
+        {
+            var result = await kullaniciService.DeleteKullanici(dtos);
+
+            if (result.Success == false)
+            {
+                await js.InvokeVoidAsync("SweetMessage", "Hata", result.Message, "error");
+                return;
+            }
+
+            await GetData();
+
+            StateHasChanged();
+
+            await js.InvokeVoidAsync("SweetToast", "Kayıtlar silindi", "success");
+        }
+    }
+
+    public async Task ExportToExcel()
+    {
+        using (var workbook = new XLWorkbook())
+        {
+            IXLWorksheet worksheet = workbook.Worksheets.Add("Sayfa1");
+
+            worksheet.Cell(1, 1).Value = "Adı";
+            worksheet.Cell(1, 2).Value = "Soyadı";
+            worksheet.Cell(1, 3).Value = "E-Posta Adresi";
+            worksheet.Cell(1, 4).Value = "Cep Telefonu";
+            worksheet.Cell(1, 5).Value = "Aktif/Pasif";
+
+            for (int i = 1; i <= 5; i++)
+            {
+                worksheet.Cell(1, i).Style.Font.Bold = true;
+            }
+
+            int index = 1;
+
+            foreach (var data in DataSource)
+            {
+                worksheet.Cell(index + 1, 1).Value = data.Ad;
+                worksheet.Cell(index + 1, 2).Value = data.Soyad;
+                worksheet.Cell(index + 1, 3).Value = data.EMail;
+                worksheet.Cell(index + 1, 4).Value = data.TelefonCep;
+                worksheet.Cell(index + 1, 5).Value = data.Aktif ? "Aktif" : "Pasif";
+
+                index++;
+            }
+
+            using (var stream = new MemoryStream())
+            {
+                workbook.SaveAs(stream);
+                var content = stream.ToArray();
+                var fileName = "KullaniciListesi" + DateTime.Now.ToString("yyyyMMddss") + ".xlsx";
+                await js.InvokeAsync<object>("saveAsFile", fileName, Convert.ToBase64String(content));
+            }
+        }
+    }
+}

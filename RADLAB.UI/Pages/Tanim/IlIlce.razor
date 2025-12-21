@@ -1,0 +1,322 @@
+﻿@page "/Tanim/IlIlce"
+
+@inject IJSRuntime js
+
+@using System.Threading
+@using System.Threading.Tasks
+@using System.Net.Http
+@using System.Text.Json
+
+<div class="card info-card">
+    <div class="table-responsive">
+        <table class="table table-bordered table-hover">
+            <thead>
+                <tr>
+                    <td width="35%">İl/İlçe</td>
+                    <td width="20%">Kod</td>
+                    <td width="20%">Eğitim Yapılan İl</td>
+                    <td width="25%" align="center">
+                        @if (YetkiEkle)
+                        {
+                            <button class="btn text-success grid-command" @onclick="AddTop"><i class="bi bi-plus-circle "></i></button>
+                        }
+                        <button class="btn text-success grid-command" @onclick="ExportToExcel"><i class="bi bi-file-earmark-excel"></i></button>
+                    </td>
+                </tr>
+            </thead>
+            @if (DataSource.ToList().Count == 0)
+            {
+                <tbody>
+                    <tr>
+                        <td colspan="4" align="center" valign="bottom" height="64px">
+                            <h6>Görüntülenecek Veri Yok</h6>
+                        </td>
+                    </tr>
+                </tbody>
+            }
+            else
+            {
+                <tbody>
+                    @foreach (var data in DataSource)
+                    {
+                        <tr>
+                            <td width="35%">
+                                <div style="padding-left:@(data.Seviye * 28)px">
+                                    @if (!string.IsNullOrEmpty(@data.Icon))
+                                    {
+                                        <button class="btn btn-sm btn-link grid-command" style="color:black; box-shadow: none;" @onclick="@(async () => { await ExpandCollapse(data); })"><i class="@data.Icon"></i></button>
+                                    }
+                                    else
+                                    {
+                                        <span style="padding:15px;"></span>
+                                    }
+                                    <span>@data.IlIlce</span>
+                                </div>
+                            </td>
+                            <td width="20%">@data.Kod</td>
+                            <td width="20%">@(data.Seviye == 0 & data.EgitimYapilanIl ? "Evet" : "")</td>
+                            <td width="25%" align="center">
+                                @if (YetkiEkle & data.Seviye < 1)
+                                {
+                                    <button class="btn text-success grid-command" @onclick="@(async () => { await AddIn(data); })"><i class="bi bi-plus-circle "></i></button>
+                                }
+                                @if (YetkiDegistir)
+                                {
+                                    <button class="btn text-info grid-command" @onclick="@(async () => { await Edit(data); })"><i class="bi bi-pencil"></i></button>
+                                }
+                                @if (YetkiSil)
+                                {
+                                    <button class="btn text-danger grid-command" @onclick="@(async () => { await Delete(data); })"><i class="bi bi-trash3"></i></button>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            }
+        </table>
+    </div>
+</div>
+
+<button id="popupKayitAc" type="button" data-bs-toggle="modal" data-bs-target="#popupKayit" style="visibility:hidden;">
+</button>
+
+<div class="modal fade" id="popupKayit" tabindex="-1" aria-labelledby="popupKayitLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content">
+            <EditForm Model="@currentDTO">
+                <DataAnnotationsValidator />
+                <div class="modal-header">
+                    <h5 class="modal-title" id="popupKayitLabel">@(currentDTO.Seviye == 0 ? "İl" : "İlçe") Kaydı</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-12 mb-3">
+                            <label for="tbIlIlce">@(currentDTO.Seviye == 0 ? "İl" : "İlçe") Adı</label>
+                            <input name="tbIlIlce" class="form-control form-control-sm" type="text" @bind-value="currentDTO.IlIlce">
+                            <ValidationMessage For="@(() => currentDTO.IlIlce)" />
+                        </div>
+                        <div class="col-md-12 mb-3">
+                            <label for="tbKod">Kod</label>
+                            <input name="tbKod" class="form-control form-control-sm" type="text" @bind-value="currentDTO.Kod">
+                            <ValidationMessage For="@(() => currentDTO.Kod)" />
+                        </div>
+                        @if (currentDTO.Seviye == 0)
+                        {
+                            <div class="col-md-12 mb-3">
+                                <input type="checkbox" class="form-check-input" id="cbEgitimYapilanIl" @bind="currentDTO.EgitimYapilanIl">
+                                <label for="cbEgitimYapilanIl" class="form-check-label">Eğitim Yapılan İl</label>
+                            </div>
+                        }
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-success btn-sm" @onclick="Save"><i class="bi bi-check-circle"></i>&nbsp;Kaydet</button>
+                    <button id="popupKayitKapat" type="button" class="btn btn-danger btn-sm" data-bs-dismiss="modal"><i class="bi bi-x-circle"></i>&nbsp;Vazgeç</button>
+                </div>
+            </EditForm>
+        </div>
+    </div>
+</div>
+
+@if (loading)
+{
+    <div class="progressBackground">
+        <div class="progressPopup">
+            <img alt="Bekleyiniz..." src="img/loading.gif" width="100" height="100" />
+        </div>
+    </div>
+}
+
+@code
+{
+    [Inject] protected IRolService rolService { get; set; }
+    [Inject] protected IIlIlceService IlIlceService { get; set; }
+
+    List<IlIlceDTO> DataSource = new List<IlIlceDTO>();
+
+    IlIlceDTO currentDTO = new IlIlceDTO() { };
+
+    bool loading = false;
+    bool YetkiEkle = false;
+    bool YetkiDegistir = false;
+    bool YetkiSil = false;
+    string Acilanlar = "0";
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            YetkiEkle = await rolService.YetkiKontrolByYetki("Tanımlamalar - İl ve İlçeler - Ekle");
+            YetkiDegistir = await rolService.YetkiKontrolByYetki("Tanımlamalar - İl ve İlçeler - Değiştir");
+            YetkiSil = await rolService.YetkiKontrolByYetki("Tanımlamalar - İl ve İlçeler - Sil");
+
+            await GetData();
+
+            StateHasChanged();
+        }
+    }
+
+    async Task GetData()
+    {
+        DataSource = await IlIlceService.GetIlIlceList(Acilanlar);
+    }
+
+    async Task ExpandCollapse(IlIlceDTO _dto)
+    {
+        string sAcilanlar = "";
+        string sIdAcilimi = "";
+
+        if (_dto.Icon.Contains("right"))
+            sAcilanlar = _dto.Id.ToString() + "_";
+        else if (_dto.Icon.Contains("down"))
+            sIdAcilimi = _dto.IdAcilimi;
+
+        foreach (IlIlceDTO dto in DataSource)
+        {
+            if (_dto.Id != dto.Id)
+            {
+                if (sIdAcilimi == "" || !dto.IdAcilimi.StartsWith(sIdAcilimi))
+                {
+                    if (dto.Icon.Contains("down")) sAcilanlar += dto.Id.ToString() + "_";
+                }
+            }
+        }
+
+        if (sAcilanlar != "") sAcilanlar = sAcilanlar.Substring(0, sAcilanlar.Length - 1);
+
+        Acilanlar = sAcilanlar;
+
+        if (Acilanlar == "") Acilanlar = "0";
+
+        await GetData();
+
+        StateHasChanged();
+    }
+
+    async Task AddTop()
+    {
+        currentDTO = new IlIlceDTO();
+        currentDTO.Seviye = 0;
+        currentDTO.ParentId = 0;
+
+        StateHasChanged();
+
+        await js.InvokeVoidAsync("bsPopupAc", "popupKayit");
+    }
+
+    async Task AddIn(IlIlceDTO dto)
+    {
+        currentDTO = new IlIlceDTO();
+        currentDTO.Seviye = dto.Seviye + 1;
+        currentDTO.ParentId = dto.Id;
+        currentDTO.EgitimYapilanIl = false;
+
+        StateHasChanged();
+
+        await js.InvokeVoidAsync("bsPopupAc", "popupKayit");
+    }
+
+    async Task Edit(IlIlceDTO dto)
+    {
+        currentDTO = await IlIlceService.GetIlIlce(dto.Id);
+
+        StateHasChanged();
+
+        await js.InvokeVoidAsync("bsPopupAc", "popupKayit");
+    }
+
+    async Task Save()
+    {
+        if (string.IsNullOrEmpty(currentDTO.IlIlce) || string.IsNullOrEmpty(currentDTO.Kod))
+        {
+            return;
+        }
+
+        loading = true;
+
+        var result = await IlIlceService.InsertOrUpdateIlIlce(currentDTO);
+
+        if (result.Success == false)
+        {
+            loading = false;
+            StateHasChanged();
+
+            await js.InvokeVoidAsync("SweetMessage", "Uyarı", result.Message, "error");
+            return;
+        }
+
+        await GetData();
+
+        loading = false;
+        StateHasChanged();
+
+        await js.InvokeVoidAsync("bsPopupKapat", "popupKayit");
+
+        await js.InvokeVoidAsync("SweetToast", "Kaydedildi", "success");
+    }
+
+    async Task Delete(IlIlceDTO _dto)
+    {
+        var dto = await IlIlceService.GetIlIlce(_dto.Id);
+
+        var dtos = new List<IlIlceDTO>();
+
+        dtos.Add(dto);
+
+        var confirm = await js.InvokeAsync<bool>("SweetConfirm", "Uyarı", "Kayıt silinecek, emin misiniz?", "question", "Evet", "Hayır");
+
+        if (confirm)
+        {
+            var result = await IlIlceService.DeleteIlIlce(dtos);
+
+            if (result.Success == false)
+            {
+                await js.InvokeVoidAsync("SweetMessage", "Hata", result.Message, "error");
+                return;
+            }
+
+            await GetData();
+
+            StateHasChanged();
+
+            await js.InvokeVoidAsync("SweetToast", "Kayıtlar silindi", "success");
+        }
+    }
+
+    public async Task ExportToExcel()
+    {
+        using (var workbook = new XLWorkbook())
+        {
+            IXLWorksheet worksheet = workbook.Worksheets.Add("Sayfa1");
+
+            worksheet.Cell(1, 1).Value = "İl/İlçe";
+            worksheet.Cell(1, 2).Value = "Kod";
+            worksheet.Cell(1, 3).Value = "Eğitim Yapılan İl";
+
+            for (int i = 1; i <= 3; i++)
+            {
+                worksheet.Cell(1, i).Style.Font.Bold = true;
+            }
+
+            int index = 1;
+
+            foreach (var data in DataSource)
+            {
+                worksheet.Cell(index + 1, 1).Value = data.IlIlce;
+                worksheet.Cell(index + 1, 2).Value = data.Kod;
+                worksheet.Cell(index + 1, 3).Value = (data.Seviye == 0 & data.EgitimYapilanIl ? "Evet" : "");
+
+                index++;
+            }
+
+            using (var stream = new MemoryStream())
+            {
+                workbook.SaveAs(stream);
+                var content = stream.ToArray();
+                var fileName = "IlIlceListesi" + DateTime.Now.ToString("yyyyMMddss") + ".xlsx";
+                await js.InvokeAsync<object>("saveAsFile", fileName, Convert.ToBase64String(content));
+            }
+        }
+    }
+}

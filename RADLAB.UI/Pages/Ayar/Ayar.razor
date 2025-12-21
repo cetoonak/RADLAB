@@ -1,0 +1,529 @@
+﻿@page "/Ayar/Ayar"
+
+@inject IJSRuntime js
+
+@using System.Threading
+@using System.Threading.Tasks
+@using System.Net.Http
+@using System.Text.Json
+
+<style>
+    .form-floating > label {
+        left: 0;
+    }
+
+    .form-floating > .form-select {
+        padding-left: 0.8rem;
+    }
+</style>
+
+<ul class="nav nav-tabs mb-3" id="AyarTab" role="tablist">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link active" style="font-size:small;" id="ayar-genel-tab" data-bs-toggle="tab" data-bs-target="#ayar-genel-tab-pane" type="button" role="tab" aria-controls="ayar-genel-tab-pane" aria-selected="true">Genel Ayarlar</button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" style="font-size:small;" id="ayar-RadyoaktifKaynakYuklemeMetni-tab" data-bs-toggle="tab" data-bs-target="#ayar-RadyoaktifKaynakYuklemeMetni-tab-pane" type="button" role="tab" aria-controls="ayar-RadyoaktifKaynakYuklemeMetni-tab-pane" aria-selected="false">Radyoaktif Kaynak Yükleme</button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" style="font-size:small;" id="ayar-GizlilikSozlesmesiMetni-tab" data-bs-toggle="tab" data-bs-target="#ayar-GizlilikSozlesmesiMetni-tab-pane" type="button" role="tab" aria-controls="ayar-GizlilikSozlesmesiMetni-tab-pane" aria-selected="false">Gizlilik Sözleşmesi</button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" style="font-size:small;" id="ayar-OnBilgilendirmeFormuMetni-tab" data-bs-toggle="tab" data-bs-target="#ayar-OnBilgilendirmeFormuMetni-tab-pane" type="button" role="tab" aria-controls="ayar-OnBilgilendirmeFormuMetni-tab-pane" aria-selected="false">Ön Bilgilendirme Formu</button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" style="font-size:small;" id="ayar-MesafeliSatisSozlesmesiMetni-tab" data-bs-toggle="tab" data-bs-target="#ayar-MesafeliSatisSozlesmesiMetni-tab-pane" type="button" role="tab" aria-controls="ayar-MesafeliSatisSozlesmesiMetni-tab-pane" aria-selected="false">Mesafeli Satış Sözleşmesi</button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" style="font-size:small;" id="ayar-IadeSozlesmesiMetni-tab" data-bs-toggle="tab" data-bs-target="#ayar-IadeSozlesmesiMetni-tab-pane" type="button" role="tab" aria-controls="ayar-IadeSozlesmesiMetni-tab-pane" aria-selected="false">İade Sözleşmesi</button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" style="font-size:small;" id="ayar-MailSablonu-tab" data-bs-toggle="tab" data-bs-target="#ayar-MailSablonu-tab-pane" type="button" role="tab" aria-controls="ayar-MailSablonu-tab-pane" aria-selected="false">E-Posta Şablonu</button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" style="font-size:small;" id="ayar-resim-tab" data-bs-toggle="tab" data-bs-target="#ayar-resim-tab-pane" type="button" role="tab" aria-controls="ayar-resim-tab-pane" aria-selected="false">Resimler ve Logolar</button>
+    </li>
+</ul>
+<div class="tab-content" id="AyarTabContent">
+    <div class="tab-pane fade show active" id="ayar-genel-tab-pane" role="tabpanel" aria-labelledby="ayar-genel-tab" tabindex="0">
+        <div class="row">
+            <div class="col-md-3">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Kurum Bilgileri</h5>
+                        <div class="form-floating mb-3">
+                            <input type="text" class="form-control form-control-sm" id="tbKurumAdi" @bind-value="currentDTO.KurumAdi">
+                            <label for="tbKurumAdi">Kurum Adı</label>
+                        </div>
+                        <div class="form-floating mb-3">
+                            <textarea class="form-control form-control-sm" id="tbAdres" style="height:72px" @bind="currentDTO.Adres"></textarea>
+                            <label for="tbAdres">Adres</label>
+                        </div>
+                        <div class="form-floating mb-3">
+                            <input type="text" class="form-control form-control-sm" id="tbTelefon" @bind-value="currentDTO.Telefon">
+                            <label for="tbTelefon">Telefon</label>
+                        </div>
+                        <div class="form-floating mb-3">
+                            <input type="text" class="form-control form-control-sm" id="tbFaks" @bind-value="currentDTO.Faks">
+                            <label for="tbFaks">Faks</label>
+                        </div>
+                        <div class="form-floating mb-3">
+                            <input type="text" class="form-control form-control-sm" id="tbEMail" @bind-value="currentDTO.EMail">
+                            <label for="tbEMail">E-Posta</label>
+                        </div>
+                        <div class="form-floating mb-3">
+                            <input type="text" class="form-control form-control-sm" id="tbWebAdresi" @bind-value="currentDTO.WebAdresi">
+                            <label for="tbWebAdresi">İnternet Adresi</label>
+                        </div>
+                        <div class="form-floating mb-3">
+                            <input type="text" class="form-control form-control-sm" id="tbVergiDairesi" @bind-value="currentDTO.VergiDairesi">
+                            <label for="tbVergiNo">Vergi Dairesi</label>
+                        </div>
+                        <div class="form-floating mb-3">
+                            <input type="text" class="form-control form-control-sm" id="tbVergiNo" @bind-value="currentDTO.VergiNo">
+                            <label for="tbVergiNo">Vergi No</label>
+                        </div>
+                        <div class="form-floating mb-3">
+                            <input type="text" class="form-control form-control-sm" id="tbBanka" @bind-value="currentDTO.Banka">
+                            <label for="tbBanka">Banka</label>
+                        </div>
+                        <div class="form-floating mb-3">
+                            <input type="text" class="form-control form-control-sm" id="tbIBAN" @bind-value="currentDTO.IBAN">
+                            <label for="tbIBAN">IBAN</label>
+                        </div>
+                        <div class="form-floating mb-3">
+                            <select id="ddlKisiLaboratuvarSorumlusu" class="form-select form-select-sm" @bind="currentDTO.KisiIdLaboratuvarSorumlusu">
+                                <option value="0"></option>
+                                @foreach (var item in DSKisi)
+                                {
+                                    <option value="@item.Id">@item.Ad</option>
+                                }
+                            </select>
+                            <label for="ddlKisiLaboratuvarSorumlusu">Laboratuvar Sorumlusu</label>
+                        </div>
+                        <div class="form-floating">
+                            <select id="ddlKisiKurumSorumlusu" class="form-select form-select-sm" @bind="currentDTO.KisiIdKurumSorumlusu">
+                                <option value="0"></option>
+                                @foreach (var item in DSKisi)
+                                {
+                                    <option value="@item.Id">@item.Ad</option>
+                                }
+                            </select>
+                            <label for="ddlKisiKurumSorumlusu">Kurum Sorumlusu</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">E-Posta Ayarları</h5>
+                        <div class="form-floating mb-3">
+                            <input type="text" class="form-control form-control-sm" id="tbEMailSunucusu" @bind-value="currentDTO.EMailSunucusu">
+                            <label for="tbEMailSunucusu">SMTP Sunucu</label>
+                        </div>
+                        <div class="form-floating mb-3">
+                            <input type="text" class="form-control form-control-sm" id="tbEMailGonderenAdres" @bind-value="currentDTO.EMailGonderenAdres">
+                            <label for="tbEMailGonderenAdres">E-Posta Adresi</label>
+                        </div>
+                        <div class="form-floating mb-3">
+                            <input type="text" class="form-control form-control-sm" id="tbEMailGonderenSifre" @bind-value="currentDTO.EMailGonderenSifre">
+                            <label for="tbEMailGonderenSifre">Şifre</label>
+                        </div>
+                        <div class="form-floating mb-3">
+                            <input type="number" class="form-control form-control-sm SpinButtonWithoutButtons" id="tbEMailPort" @bind-value="currentDTO.EMailPort">
+                            <label for="tbEMailPort">Port</label>
+                        </div>
+                        <div class="form-control form-control-sm">
+                            <input type="checkbox" class="form-check-input" id="cbEMailSSL" @bind="currentDTO.EMailSSL">
+                            <label for="cbEMailSSL" class="form-check-label">SSL Kullan</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Ücret ve Oranlar</h5>
+                        <div class="form-floating mb-3">
+                            <input type="number" class="form-control form-control-sm SpinButtonWithoutButtons" id="tbDamgaVergisiOrani" @bind-value="currentDTO.DamgaVergisiOrani">
+                            <label for="tbDamgaVergisiOrani">Damga Vergisi Oranı</label>
+                        </div>
+                        <div class="form-floating">
+                            <input type="number" class="form-control form-control-sm SpinButtonWithoutButtons" id="tbSozlesmePuluOrani" @bind-value="currentDTO.SozlesmePuluOrani">
+                            <label for="tbSozlesmePuluOrani">Sözleşme Pulu Oranı</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Ölçüm Varsayılan Değerleri</h5>
+                        <div class="row">
+                            <div class="col-md-12 mb-3">
+                                <div class="form-floating">
+                                    <input class="form-control form-control-sm" type="date" @bind-value="currentDTO.ReferansTarihi" id="tbReferansTarihi">
+                                    <label for="tbReferansTarihi">Referans Tarihi</label>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <div class="form-floating">
+                                    <input type="number" class="form-control form-control-sm SpinButtonWithoutButtons" id="tbSicaklik1" @bind-value="currentDTO.Sicaklik1">
+                                    <label for="tbSicaklik1">Sıcaklık1</label>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <div class="form-floating">
+                                    <input type="number" class="form-control form-control-sm SpinButtonWithoutButtons" id="tbSicaklik2" @bind-value="currentDTO.Sicaklik2">
+                                    <label for="tbSicaklik2">Sıcaklık2</label>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <div class="form-floating">
+                                    <input type="number" class="form-control form-control-sm SpinButtonWithoutButtons" id="tbBasinc1" @bind-value="currentDTO.Basinc1">
+                                    <label for="tbBasinc1">Basınç1</label>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <div class="form-floating">
+                                    <input type="number" class="form-control form-control-sm SpinButtonWithoutButtons" id="tbBasinc2" @bind-value="currentDTO.Basinc2">
+                                    <label for="tbBasinc2">Basınç2</label>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <div class="form-floating">
+                                    <input type="number" class="form-control form-control-sm SpinButtonWithoutButtons" id="tbNem1" @bind-value="currentDTO.Nem1">
+                                    <label for="tbNem1">Nem1</label>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <div class="form-floating">
+                                    <input type="number" class="form-control form-control-sm SpinButtonWithoutButtons" id="tbNem2" @bind-value="currentDTO.Nem2">
+                                    <label for="tbNem2">Nem2</label>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <div class="form-floating">
+                                    <input type="number" class="form-control form-control-sm SpinButtonWithoutButtons" id="tbDDozCarpimDozHizi1" @bind-value="currentDTO.DDozCarpimDozHizi1">
+                                    <label for="tbDDozCarpimDozHizi1">Doz Hızı Çarpılan 1 </label>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <div class="form-floating">
+                                    <input type="number" class="form-control form-control-sm SpinButtonWithoutButtons" id="tbDDozCikarilanDozHizi1" @bind-value="currentDTO.DDozCikarilanDozHizi1">
+                                    <label for="tbDDozCikarilanDozHizi1">Doz Hızı Toplanan 1 </label>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <div class="form-floating">
+                                    <input type="number" class="form-control form-control-sm SpinButtonWithoutButtons" id="tbDDozCarpimDozHizi2" @bind-value="currentDTO.DDozCarpimDozHizi2">
+                                    <label for="tbDDozCarpimDozHizi2">Doz Hızı Çarpılan 2 </label>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <div class="form-floating">
+                                    <input type="number" class="form-control form-control-sm SpinButtonWithoutButtons" id="tbDDozCikarilanDozHizi2" @bind-value="currentDTO.DDozCikarilanDozHizi2">
+                                    <label for="tbDDozCikarilanDozHizi2">Doz Hızı Toplanan 2 </label>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <div class="form-floating">
+                                    <input type="number" class="form-control form-control-sm SpinButtonWithoutButtons" id="tbDDozCarpimDozHizi3" @bind-value="currentDTO.DDozCarpimDozHizi3">
+                                    <label for="tbDDozCarpimDozHizi3">Doz Hızı Çarpılan 3 </label>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <div class="form-floating">
+                                    <input type="number" class="form-control form-control-sm SpinButtonWithoutButtons" id="tbDDozCikarilanDozHizi3" @bind-value="currentDTO.DDozCikarilanDozHizi3">
+                                    <label for="tbDDozCikarilanDozHizi3">Doz Hızı Toplanan 3 </label>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <div class="form-floating">
+                                    <input type="number" class="form-control form-control-sm SpinButtonWithoutButtons" id="tbDDozCarpimDozHizi4" @bind-value="currentDTO.DDozCarpimDozHizi4">
+                                    <label for="tbDDozCarpimDozHizi4">Doz Hızı Çarpılan 4 </label>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <div class="form-floating">
+                                    <input type="number" class="form-control form-control-sm SpinButtonWithoutButtons" id="tbDDozCikarilanDozHizi4" @bind-value="currentDTO.DDozCikarilanDozHizi4">
+                                    <label for="tbDDozCikarilanDozHizi4">Doz Hızı Toplanan 4 </label>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <div class="form-floating">
+                                    <input type="number" class="form-control form-control-sm SpinButtonWithoutButtons" id="tbDDozCarpimDozHizi5" @bind-value="currentDTO.DDozCarpimDozHizi5">
+                                    <label for="tbDDozCarpimDozHizi5">Doz Hızı Çarpılan 5 </label>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <div class="form-floating">
+                                    <input type="number" class="form-control form-control-sm SpinButtonWithoutButtons" id="tbDDozCikarilanDozHizi5" @bind-value="currentDTO.DDozCikarilanDozHizi5">
+                                    <label for="tbDDozCikarilanDozHizi5">Doz Hızı Toplanan 5 </label>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-floating">
+                                    <input type="number" class="form-control form-control-sm SpinButtonWithoutButtons" id="tbDDozCarpimToplamDoz" @bind-value="currentDTO.DDozCarpimToplamDoz">
+                                    <label for="tbDDozCarpimToplamDoz">Toplam Doz Çarpılan</label>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-floating">
+                                    <input type="number" class="form-control form-control-sm SpinButtonWithoutButtons" id="tbDDozCikarilanToplamDoz" @bind-value="currentDTO.DDozCikarilanToplamDoz">
+                                    <label for="tbDDozCikarilanToplamDoz">Toplam Doz Toplanan</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Kargo Ayarları</h5>
+                        <div class="form-floating mb-3">
+                            <select id="ddlKargoFirmasi" class="form-select form-select-sm" @bind="currentDTO.KargoFirmasiId">
+                                <option value="0"></option>
+                                @foreach (var item in DSKargoFirmasi)
+                                {
+                                    <option value="@item.Id">@item.Ad</option>
+                                }
+                            </select>
+                            <label for="ddlKargoFirmasi">Kargo Firması</label>
+                        </div>
+                        <div class="form-floating mb-3">
+                            <select id="ddlKargoBedavaLimitliDesili" class="form-select form-select-sm" @bind="currentDTO.KargoBedavaLimitliDesili">
+                                <option value="0"></option>
+                                <option value="1">Ücretsiz</option>
+                                <option value="2">Limitli</option>
+                                <option value="3">Desiye Göre</option>
+                            </select>
+                            <label for="ddlKargoBedavaLimitliDesili">Kargo Ücretlendirme</label>
+                        </div>
+                        <div class="form-floating mb-3">
+                            <input type="text" class="form-control form-control-sm" id="tbKargoLimiti" @bind-value="currentDTO.KargoBedavaLimiti">
+                            <label for="tbKargoLimiti">Ücretsiz Kargo Limiti</label>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <div class="form-floating">
+                                    <input type="text" class="form-control form-control-sm" id="tbKargoDesi1" @bind-value="currentDTO.KargoDesi1">
+                                    <label for="tbKargoDesi1">Kargo Desi 1</label>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <div class="form-floating">
+                                    <input type="text" class="form-control form-control-sm" id="tbKargoDesiUcret1" @bind-value="currentDTO.KargoDesiUcret1">
+                                    <label for="tbKargoDesiUcret1">Kargo Desi Ücreti 1</label>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <div class="form-floating">
+                                    <input type="text" class="form-control form-control-sm" id="tbKargoDesi2" @bind-value="currentDTO.KargoDesi2">
+                                    <label for="tbKargoDesi2">Kargo Desi 2</label>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <div class="form-floating">
+                                    <input type="text" class="form-control form-control-sm" id="tbKargoDesiUcret2" @bind-value="currentDTO.KargoDesiUcret2">
+                                    <label for="tbKargoDesiUcret2">Kargo Desi Ücreti 2</label>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <div class="form-floating">
+                                    <input type="text" class="form-control form-control-sm" id="tbKargoDesi3" @bind-value="currentDTO.KargoDesi3">
+                                    <label for="tbKargoDesi3">Kargo Desi 3</label>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <div class="form-floating">
+                                    <input type="text" class="form-control form-control-sm" id="tbKargoDesiUcret3" @bind-value="currentDTO.KargoDesiUcret3">
+                                    <label for="tbKargoDesiUcret3">Kargo Desi Ücreti 3</label>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <div class="form-floating">
+                                    <input type="text" class="form-control form-control-sm" id="tbKargoDesi4" @bind-value="currentDTO.KargoDesi4">
+                                    <label for="tbKargoDesi4">Kargo Desi 4</label>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <div class="form-floating">
+                                    <input type="text" class="form-control form-control-sm" id="tbKargoDesiUcret4" @bind-value="currentDTO.KargoDesiUcret4">
+                                    <label for="tbKargoDesiUcret4">Kargo Desi Ücreti 4</label>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-floating">
+                                    <input type="text" class="form-control form-control-sm" id="tbKargoDesi5" @bind-value="currentDTO.KargoDesi5">
+                                    <label for="tbKargoDesi5">Kargo Desi 5</label>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-floating">
+                                    <input type="text" class="form-control form-control-sm" id="tbKargoDesiUcret5" @bind-value="currentDTO.KargoDesiUcret5">
+                                    <label for="tbKargoDesiUcret5">Kargo Desi Ücreti 5</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="tab-pane fade" id="ayar-RadyoaktifKaynakYuklemeMetni-tab-pane" role="tabpanel" aria-labelledby="ayar-RadyoaktifKaynakYuklemeMetni-tab" tabindex="0">
+        <div class="row">
+            <div class="col-md-12">
+                <RadzenHtmlEditor @bind-Value=@currentDTO.RadyoaktifKaynakYuklemeMetni style="height: 600px; margin-bottom: 1rem;" UploadUrl="upload/image">
+                </RadzenHtmlEditor>
+            </div>
+        </div>
+    </div>
+    <div class="tab-pane fade" id="ayar-GizlilikSozlesmesiMetni-tab-pane" role="tabpanel" aria-labelledby="ayar-GizlilikSozlesmesiMetni-tab" tabindex="0">
+        <div class="row">
+            <div class="col-md-12">
+                <RadzenHtmlEditor @bind-Value=@currentDTO.GizlilikSozlesmesiMetni style="height: 600px; margin-bottom: 1rem;" UploadUrl="upload/image">
+                </RadzenHtmlEditor>
+            </div>
+        </div>
+    </div>
+    <div class="tab-pane fade" id="ayar-OnBilgilendirmeFormuMetni-tab-pane" role="tabpanel" aria-labelledby="ayar-OnBilgilendirmeFormuMetni-tab" tabindex="0">
+        <div class="row">
+            <div class="col-md-12">
+                <RadzenHtmlEditor @bind-Value=@currentDTO.OnBilgilendirmeFormuMetni style="height: 600px; margin-bottom: 1rem;" UploadUrl="upload/image">
+                </RadzenHtmlEditor>
+            </div>
+        </div>
+    </div>
+    <div class="tab-pane fade" id="ayar-MesafeliSatisSozlesmesiMetni-tab-pane" role="tabpanel" aria-labelledby="ayar-MesafeliSatisSozlesmesiMetni-tab" tabindex="0">
+        <div class="row">
+            <div class="col-md-12">
+                <RadzenHtmlEditor @bind-Value=@currentDTO.MesafeliSatisSozlesmesiMetni style="height: 600px; margin-bottom: 1rem;" UploadUrl="upload/image">
+                </RadzenHtmlEditor>
+            </div>
+        </div>
+    </div>
+    <div class="tab-pane fade" id="ayar-IadeSozlesmesiMetni-tab-pane" role="tabpanel" aria-labelledby="ayar-IadeSozlesmesiMetni-tab" tabindex="0">
+        <div class="row">
+            <div class="col-md-12">
+                <RadzenHtmlEditor @bind-Value=@currentDTO.IadeSozlesmesiMetni style="height: 600px; margin-bottom: 1rem;" UploadUrl="upload/image">
+                </RadzenHtmlEditor>
+            </div>
+        </div>
+    </div>
+    <div class="tab-pane fade" id="ayar-MailSablonu-tab-pane" role="tabpanel" aria-labelledby="ayar-MailSablonu-tab" tabindex="0">
+        <div class="row">
+            <div class="col-md-12">
+                <RadzenHtmlEditor @bind-Value=@currentDTO.MailSablonu style="height: 600px; margin-bottom: 1rem;" UploadUrl="upload/image">
+                </RadzenHtmlEditor>
+            </div>
+        </div>
+    </div>
+    <div class="tab-pane fade" id="ayar-resim-tab-pane" role="tabpanel" aria-labelledby="ayar-resim-tab" tabindex="0">
+        <div class="row">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Raporlar İçin Üst Antet</h5>
+                        <RadzenFileInput @bind-Value=@currentDTO.ResimAntetUst TValue="string" ChooseText="Dosya Seçiniz..." ImageStyle="width:100%"/>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Raporlar İçin Alt Antet</h5>
+                        <RadzenFileInput @bind-Value=@currentDTO.ResimAntetAlt TValue="string" ChooseText="Dosya Seçiniz..." ImageStyle="width:100%"/>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Kurum Logosu</h5>
+                        <RadzenFileInput @bind-Value=@currentDTO.ResimLogo TValue="string" ChooseText="Dosya Seçiniz..." ImageStyle="width:100%"/>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Türkak Logosu</h5>
+                        <RadzenFileInput @bind-Value=@currentDTO.ResimTurkak TValue="string" ChooseText="Dosya Seçiniz..." ImageStyle="width:100%"/>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<button type="submit" class="btn btn-success btn-sm btn-block w-100" @onclick="Save"><i class="bi bi-check-circle"></i>&nbsp;Kaydet</button>
+
+@if (loading)
+{
+    <div class="progressBackground">
+        <div class="progressPopup">
+            <img alt="Bekleyiniz..." src="img/loading.gif" width="100" height="100" />
+        </div>
+    </div>
+}
+
+@code
+{
+    [Inject] protected IRolService rolService { get; set; }
+    [Inject] protected IAyarService ayarService { get; set; }
+    [Inject] protected ILookupService lookupService { get; set; }
+
+    List<LookupBasicDTO> DSKisi = new List<LookupBasicDTO>();
+    List<LookupBasicDTO> DSKargoFirmasi = new List<LookupBasicDTO>();
+
+    AyarDTO currentDTO = new AyarDTO();
+
+    bool loading = false;
+    bool YetkiYaz = false;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            YetkiYaz = await rolService.YetkiKontrolByYetki("Ayarlar - Genel Ayarlar - Yaz");
+
+            DSKisi = await lookupService.GetKullanici();
+            DSKargoFirmasi = await lookupService.GetLookupBasic("KargoFirmasi");
+
+            await GetData();
+
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    async Task GetData()
+    {
+        currentDTO = await ayarService.GetAyar();
+    }
+
+    async Task Save()
+    {
+        loading = true;
+
+        var result = await ayarService.InsertOrUpdateAyar(currentDTO);
+
+        if (result.Success == false)
+        {
+            loading = false;
+
+            await InvokeAsync(StateHasChanged);
+
+            await js.InvokeVoidAsync("SweetMessage", "Uyarı", result.Message, "error");
+
+            return;
+        }
+
+        await GetData();
+
+        loading = false;
+
+        await InvokeAsync(StateHasChanged);
+
+        await js.InvokeVoidAsync("SweetToast", "Kaydedildi", "success");
+    }
+}

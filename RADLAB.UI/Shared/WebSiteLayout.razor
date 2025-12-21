@@ -1,0 +1,260 @@
+﻿@using Newtonsoft.Json
+
+@inherits LayoutComponentBase
+
+@inject IJSRuntime js
+@inject NavigationManager navManager
+@inject ILocalStorageService localStorageService
+
+<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700&display=swap" rel="stylesheet">
+
+<link href="wallet/slick.css" rel="stylesheet">
+<link href="wallet/brands.css" rel="stylesheet">
+<link href="wallet/solid.css" rel="stylesheet">
+<link href="wallet/style.css" rel="stylesheet">
+<link href="css/custom.css" rel="stylesheet" />
+
+<style>
+    .form-floating > .form-select {
+        padding-left: 0.7rem;
+    }
+
+    .form-floating > label {
+        left: auto;
+    }
+
+    .form-check-input {
+        margin-left: 0rem !important;
+    }
+
+    /*.form-check-label {
+                    margin-left: 1.5rem !important;
+                }*/
+
+    .section-sm {
+        padding-top: 40px;
+        padding-bottom: 20px;
+    }
+</style>
+
+<header class="navigation bg-tertiary">
+    <nav class="navbar navbar-expand-xl navbar-light text-center py-3">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <img loading="prelaod" decoding="async" class="img-fluid" width="160" src="img/logo.png" alt="Radlab">
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarSupportedContent">
+                <ul class="navbar-nav mx-auto mb-2 mb-lg-0">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/">Ana Sayfa</a>
+                    </li>
+                    <li class="nav-item ">
+                        <a class="nav-link" href="/Hakkinda">Hakkımızda</a>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="javascript:void()" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">Ürünler ve Hizmetler</a>
+                        <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
+                            <li>
+                                <a class="dropdown-item" href="/KalibrasyonBasvurusu">Kalibrasyon Başvurusu</a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="/Egitim">Eğitimler</a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="/OnlineSatis">Cihazlar</a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="/RadyoaktifKaynakYukleme">Enerji Dolumu</a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="/IthalatIhracatTasima">İthalat, İhracat, Taşıma</a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="/Zirhlama">Radyolojik Zırhlama Hesaplamaları</a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="/Danismanlik">Danışmanlık</a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="/Teklif">Teklif İste</a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="https://uzaktanegitim.trkd.org.tr/">Uzaktan Eğitim Giriş</a>
+                            </li>
+                        </ul>
+                    </li>
+                    @if (DSDosya.Count > 0) {
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="javascript:void()" id="navbarDropdownDosya" role="button" data-bs-toggle="dropdown" aria-expanded="false">Formlar</a>
+                            <ul class="dropdown-menu" aria-labelledby="navbarDropdownDosya">
+                                @foreach (var data in DSDosya)
+                                {
+                                    <li>
+                                        <a href="javascript:void()" class="dropdown-item" @onclick=@(async () => { await Download(data.Id); })>
+                                            @data.GorunenAd
+                                        </a>
+                                    </li>
+                                }
+                            </ul>
+                        </li>
+                    }
+                    <li class="nav-item ">
+                        <a class="nav-link" href="/Iletisim">İletişim</a>
+                    </li>
+                </ul>
+                <a href="/Teklif" class="btn btn-outline-primary">Teklif İste</a>
+                <a href="/KalibrasyonBasvurusu" class="btn btn-outline-primary">Kalibrasyon Başvurusu</a>
+                @*<a href="javascript:void()" @onclick="MusteriTakipAc" class="btn btn-outline-primary ms-2 ms-lg-3">Müşteri Takip</a>*@
+                <a href="javascript:void()" @onclick="MusteriTakipAc" class="btn btn-primary ms-2 ms-lg-3" style="padding-left: 16px; padding-right: 16px;" title="Hesabım">
+                    <i class="fas fa-user"></i>
+                </a>
+                <a href="javascript:void()" @onclick="SepetiAc" class="btn btn-primary ms-2 ms-lg-3" style="padding-left: 16px; padding-right: 16px;" title="Alışveriş sepetiniz">
+                    <i class="fas fa-shopping-cart"></i>
+                    <div style="top: 0px; right: 8px; position: absolute;">
+                        @CihazSatisSayisi
+                    </div>
+                </a>
+            </div>
+        </div>
+    </nav>
+</header>
+
+@Body
+
+<footer class="section-sm bg-tertiary">
+    <div class="container">
+        <div class="row justify-content-between">
+            <div class="col-lg-10 col-md-10 col-10">
+                <div class="footer-widget">
+                    <h5 class="mb-4 text-primary font-secondary">
+                        RadLab İkincil Standart Dozimetri Laboratuvarı ve Radyasyon Ölçüm Sistemleri Sanayi ve Ticaret A.Ş.
+                    </h5>
+                    <ul class="list-unstyled">
+                        <li class="mb-2">
+                            <i class="fas fa-map-marker-alt"></i>&nbsp;&nbsp;Ahi Evran OSB Mah. Erkunt Cad. No:3/11 Sincan Ankara
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-phone"></i>&nbsp;&nbsp;+90 312 87 019 87
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-mobile-alt"></i>&nbsp;&nbsp;+90 507 033 88 24
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-envelope"></i>&nbsp;&nbsp;bilgi@radlab.com.tr
+                        </li>
+                        <li class="mb-0">
+                            <i class="fas fa-lira-sign"></i>&nbsp;&nbsp;TR350001500158007313907467
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            <div class="col-lg-2 col-md-2 col-2">
+                <ul class="list-unstyled list-inline mb-0 social-icons">
+                    <li class="list-inline-item me-3">
+                        <a title="Explorer Facebook Profile" class="text-black" href="https://facebook.com/"><i class="fab fa-facebook-f"></i></a>
+                    </li>
+                    <li class="list-inline-item me-3">
+                        <a title="Explorer Twitter Profile" class="text-black" href="https://twitter.com/"><i class="fab fa-twitter"></i></a>
+                    </li>
+                    <li class="list-inline-item me-3">
+                        <a title="Explorer Instagram Profile" class="text-black" href="https://instagram.com/"><i class="fab fa-instagram"></i></a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</footer>
+
+@code
+{
+    [Inject] protected IDosyaService dosyaService { get; set; }
+
+    List<DosyaDTO> DSDosya = new List<DosyaDTO>();
+
+    int CihazSatisSayisi = 0;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        //if (firstRender)
+        {
+            string RadlabCihazSatisList = await localStorageService.GetItemAsStringAsync("RadlabCihazSatisList");
+
+            if (string.IsNullOrEmpty(RadlabCihazSatisList) == false)
+            {
+                try
+                {
+                    RadlabCihazSatisList = RadlabCihazSatisList.Replace("\\u0022", "").Replace("\"", "");
+
+                    var CihazSatisList = new List<CihazSatisDTO>();
+
+                    CihazSatisList = JsonConvert.DeserializeObject<List<CihazSatisDTO>>(RadlabCihazSatisList);
+
+                    if (CihazSatisList != null)
+                    {
+                        CihazSatisSayisi = CihazSatisList.Sum(x => x.Miktar);
+                    }
+                }
+                catch
+                {
+                    CihazSatisSayisi = 0;
+                }
+
+                await InvokeAsync(StateHasChanged);
+            }
+        }
+
+        if (firstRender)
+        {
+            await GetDataDosya();
+
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    async Task GetDataDosya()
+    {
+        var result = await dosyaService.GetDosyaList();
+
+        if (result.Success)
+        {
+            DSDosya = result.Value;
+        }
+        else
+        {
+            await js.InvokeVoidAsync("SweetMessage", "Hata", result.Message, "error");
+        }
+    }
+
+    async Task Download(int Id)
+    {
+        var result = await dosyaService.GetDosya(Id);
+
+        if (result.Success)
+        {
+            var dosya = result.Value;
+
+            await js.InvokeVoidAsync("downloadFile", dosya.Tip, dosya.Dosya, dosya.DosyaAdi);
+        }
+        else
+        {
+            await js.InvokeVoidAsync("SweetMessage", "Hata", result.Message, "error");
+        }
+    }
+
+    async Task MusteriTakipAc()
+    {
+        navManager.NavigateTo("/MusteriTakip", true);
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task SepetiAc()
+    {
+        navManager.NavigateTo("/Sepet", true);
+
+        await InvokeAsync(StateHasChanged);
+    }
+}

@@ -1,0 +1,157 @@
+﻿@page "/Mesaj/MesajYaz"
+@page "/Mesaj/MesajYaz/{YanitlaIlet:int}/{GelenGiden:int}/{Id:int}"
+
+@inject IJSRuntime js
+
+@using System.Threading
+@using System.Threading.Tasks
+@using System.Net.Http
+@using System.Text.Json
+
+<div class="row">
+    <div class="col-md-12 mb-3">
+        <label>Kişiler</label>
+        <BlazoredTypeahead SearchMethod="GetKisiler" @bind-Values="@SelectedKisiler">
+            <SelectedTemplate>
+                @context.AdSoyad
+            </SelectedTemplate>
+            <ResultTemplate>
+                @context.AdSoyad (@context.Kurulus @context.Birim)
+            </ResultTemplate>
+        </BlazoredTypeahead>
+    </div>
+    <div class="col-md-12 mb-3">
+        <label for="tbKonu">Konu</label>
+        <input name="tbKonu" class="form-control" type="text" @bind-value="currentDTO.Mesaj.Konu">
+    </div>
+    <div class="col-md-12 mb-3">
+        <label>İçerik</label>
+        <RadzenHtmlEditor @bind-Value=@currentDTO.Mesaj.Icerik style="height: 320px;" UploadUrl="upload/image">
+        </RadzenHtmlEditor>
+    </div>
+    <div class="col-md-12">
+        <button type="submit" class="btn btn-success btn-sm w-100" @onclick="Save"><i class="bi bi-check-circle"></i>&nbsp;Gönder</button>
+    </div>
+</div>
+
+@code
+{
+    [Inject] protected IRolService rolService { get; set; }
+    [Inject] protected IMesajService mesajService { get; set; }
+
+    MesajYazDTO currentDTO = new MesajYazDTO() { Mesaj = new MesajDTO() };
+    MesajDTO referansDTO = new MesajDTO();
+
+    IList<MesajKisiDTO> SelectedKisiler = new List<MesajKisiDTO>();
+
+    [Parameter]
+    public int YanitlaIlet { get; set; } = 0;
+
+    [Parameter]
+    public int GelenGiden { get; set; } = 0;
+
+    [Parameter]
+    public int Id { get; set; } = 0;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (Id == 0)
+        {
+            currentDTO = new MesajYazDTO() { Mesaj = new MesajDTO() };
+        }
+        else
+        {
+            var result = await mesajService.GetMesaj(GelenGiden, Id);
+
+            if (result.Success)
+            {
+                if (result.Value != null)
+                {
+                    referansDTO = result.Value;
+
+                    if (YanitlaIlet == 1)
+                    {
+                        currentDTO.Mesaj.Konu = "Yanıt: " + referansDTO.Konu;
+                        currentDTO.Mesaj.Icerik = "<br/><hr/>" + referansDTO.Icerik;
+
+                        if (GelenGiden == 1)
+                        {
+                            SelectedKisiler.Add(new MesajKisiDTO()
+                                {
+                                    Id = referansDTO.GonderenKisiId,
+                                    AdSoyad = referansDTO.Kim
+                                });
+                        }
+                    }
+                    else if (YanitlaIlet == 2)
+                    {
+                        currentDTO.Mesaj.Konu = "İlet: " + referansDTO.Konu;
+                        currentDTO.Mesaj.Icerik = referansDTO.Icerik;
+                    }
+                }
+            }
+            else
+            {
+                await js.InvokeVoidAsync("SweetToast", result.Message, "error");
+            }
+        }
+    }
+
+    private async Task<IEnumerable<MesajKisiDTO>> GetKisiler(string SearchText)
+    {
+        var result = await mesajService.GetMesajKisiList(SearchText);
+
+        if (result.Success)
+        {
+            return result.Value;
+        }
+        else
+        {
+            await js.InvokeVoidAsync("SweetToast", result.Message, "error");
+
+            return new List<MesajKisiDTO>();
+        }
+    }
+
+    async Task Save()
+    {
+        if ((SelectedKisiler.Count == 0) || string.IsNullOrEmpty(currentDTO.Mesaj.Konu) || string.IsNullOrEmpty(currentDTO.Mesaj.Icerik))
+        {
+            await js.InvokeVoidAsync("SweetMessage", "Uyarı", "Tüm alanlar girilmelidir", "warning");
+            return;
+        }
+
+        currentDTO.MesajGonderilenKisiler = new List<MesajGonderilenKisiDTO>();
+
+        foreach(var kisi in SelectedKisiler)
+        {
+            var mesajGonderilenKisi = new MesajGonderilenKisiDTO() {
+                KisiId = kisi.Id,
+                Kurulus = kisi.Kurulus,
+                Birim = kisi.Birim,
+                AdSoyad = kisi.AdSoyad
+            };
+
+            currentDTO.MesajGonderilenKisiler.Add(mesajGonderilenKisi);
+        }
+
+        var result = await mesajService.InsertMesaj(currentDTO);
+
+        if (result.Success == false)
+        {            
+            await InvokeAsync(StateHasChanged);
+
+            await js.InvokeVoidAsync("SweetMessage", "Uyarı", result.Message, "error");
+            
+            return;
+        }
+
+        currentDTO = new MesajYazDTO() { Mesaj = new MesajDTO() };
+
+        SelectedKisiler = new List<MesajKisiDTO>();
+
+        await InvokeAsync(StateHasChanged);
+
+        await js.InvokeVoidAsync("SweetMessage", "Bilgi", "Mesaj başarıyla iletildi", "success"); ;
+    }
+}

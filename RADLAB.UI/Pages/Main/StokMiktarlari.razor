@@ -1,0 +1,232 @@
+﻿@page "/Main/StokMiktarlari"
+
+@inject IJSRuntime js
+@inject NavigationManager navManager
+
+@using System.Threading
+@using System.Threading.Tasks
+@using System.Net.Http
+@using System.Text.Json
+
+<div class="card info-card">
+    <div class="table-responsive">
+        <table class="table table-bordered table-hover">
+            <thead>
+                <tr>
+                    <td width="35%" align="center">Marka</td>
+                    <td width="35%" align="center">Model</td>
+                    <td width="30%" align="center">Miktar</td>
+                </tr>
+                <tr>
+                    <td width="35%">
+                        <select class="form-select form-select-sm" @onchange="async eventArgs => { await MarkaSec(eventArgs.Value); }">
+                            <option value="0"></option>
+                            @foreach (var item in DSMarka)
+                            {
+                                if (filterDTO.MarkaId == item.Id)
+                                {
+                                    <option selected value="@item.Id">@item.Ad</option>
+                                }
+                                else
+                                {
+                                    <option value="@item.Id">@item.Ad</option>
+                                }
+                            }
+                        </select>
+                    </td>
+                    <td width="35%">
+                        <select class="form-select form-select-sm" @onchange="async eventArgs => { await ModelSec(eventArgs.Value); }">
+                            <option value="0"></option>
+                            @foreach (var item in DSModel)
+                            {
+                                if (filterDTO.ModelId == item.Id)
+                                {
+                                    <option selected value="@item.Id">@item.Ad</option>
+                                }
+                                else
+                                {
+                                    <option value="@item.Id">@item.Ad</option>
+                                }
+                            }
+                        </select>
+                    </td>
+                    <td width="30%">
+                    </td>
+                </tr>
+            </thead>
+            @if (DSStokMiktarlari.ToList().Count == 0)
+            {
+                <tbody>
+                    <tr>
+                        <td colspan="3" align="center" valign="bottom" height="64px">
+                            <h6>Görüntülenecek Veri Yok</h6>
+                        </td>
+                    </tr>
+                </tbody>
+            }
+            else
+            {
+                <tbody>
+                    @foreach (var data in DSStokMiktarlari)
+                    {
+                        <tr>
+                            <td width="35%" align="center">@data.Marka</td>
+                            <td width="35%" align="center">@data.Model</td>
+                            <td width="30%" align="center">@data.Miktar</td>
+                        </tr>
+                    }
+                </tbody>
+            }
+            <thead>
+                <tr>
+                    <td colspan="3" align="center">
+                        <Pager RowCount="@RowCount"
+                               PageNoChanged="@((int pageNo) => PageNoChanged(pageNo))"
+                               PageSizeChanged="@((int pageSize) => PageSizeChanged(pageSize))"></Pager>
+                    </td>
+                </tr>
+            </thead>
+        </table>
+    </div>
+</div>
+
+@if (loading)
+{
+    <div class="progressBackground">
+        <div class="progressPopup">
+            <img alt="Bekleyiniz..." src="img/loading.gif" width="100" height="100" />
+        </div>
+    </div>
+}
+
+@code
+{
+    [Inject] protected ILookupService lookupService { get; set; }
+    [Inject] protected IRolService rolService { get; set; }
+    [Inject] protected IStokHareketService stokHareketService { get; set; }
+
+    List<StokMiktarlariDTO> DSStokMiktarlari = new List<StokMiktarlariDTO>();
+    List<LookupBasicDTO> DSMarka = new List<LookupBasicDTO>();
+    List<LookupBasicDTO> DSModel = new List<LookupBasicDTO>();
+
+    StokMiktarlariFilterDTO filterDTO = new StokMiktarlariFilterDTO() { PageNo = 1, PageSize = 10 };
+
+    bool loading = false;
+
+    bool YetkiGor = false;
+
+    int RowCount = 0;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            YetkiGor = await rolService.YetkiKontrolByYetki("Satış - Stok Miktarları - Gör");
+
+            DSMarka = await lookupService.GetLookupFromMasterDetail("Cihaz", 0);
+
+            await GetData();
+
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    async Task GetData()
+    {
+        try
+        {
+            var result = await stokHareketService.GetStokMiktarlariList(filterDTO);
+
+            if (result.Success)
+            {
+                DSStokMiktarlari = result.Value;
+                RowCount = result.RowCount;
+            }
+            else
+            {
+                await js.InvokeVoidAsync("SweetMessage", "Hata", result.Message, "error");
+            }
+        }
+        catch
+        {
+
+        }
+    }
+
+    async Task Sorgula()
+    {
+        await GetData();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task PageNoChanged(int pageNo)
+    {
+        filterDTO.PageNo = pageNo;
+        await GetData();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task PageSizeChanged(int pageSize)
+    {
+        filterDTO.PageSize = pageSize;
+        await GetData();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task MarkaSec(object value)
+    {
+        int MarkaId = Convert.ToInt32(value.ToString());
+
+        DSModel = await lookupService.GetLookupFromMasterDetail("Cihaz", (MarkaId == 0 ? -1 : MarkaId));
+
+        filterDTO.MarkaId = MarkaId;
+        filterDTO.ModelId = 0;
+
+        await GetData();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task ModelSec(object value)
+    {
+        filterDTO.ModelId = Convert.ToInt32(value.ToString());
+
+        await GetData();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    public async Task ExportToExcel()
+    {
+        using (var workbook = new XLWorkbook())
+        {
+            IXLWorksheet worksheet = workbook.Worksheets.Add("Sayfa1");
+
+            worksheet.Cell(1, 1).Value = "Marka";
+            worksheet.Cell(1, 2).Value = "Model";
+            worksheet.Cell(1, 3).Value = "Miktar";
+
+            for (int i = 1; i <= 3; i++)
+            {
+                worksheet.Cell(1, i).Style.Font.Bold = true;
+            }
+
+            int index = 1;
+
+            foreach (var data in DSStokMiktarlari)
+            {
+                worksheet.Cell(index + 1, 1).Value = data.Marka;
+                worksheet.Cell(index + 1, 2).Value = data.Model;
+                worksheet.Cell(index + 1, 3).Value = data.Miktar;
+
+                index++;
+            }
+
+            using (var stream = new MemoryStream())
+            {
+                workbook.SaveAs(stream);
+                var content = stream.ToArray();
+                var fileName = "StokMiktarlariListesi" + DateTime.Now.ToString("yyyyMMddss") + ".xlsx";
+                await js.InvokeAsync<object>("saveAsFile", fileName, Convert.ToBase64String(content));
+            }
+        }
+    }
+}

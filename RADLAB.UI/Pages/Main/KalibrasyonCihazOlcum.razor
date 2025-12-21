@@ -1,0 +1,1315 @@
+﻿@page "/Main/KalibrasyonCihazOlcum/{rol}/{Id}"
+
+@inject IJSRuntime js
+@inject NavigationManager navManager
+
+<style>
+    .customTable {
+
+    }
+
+    .customTable td{
+    border:1px solid silver;
+    }
+
+    .customTableCaption {
+    font-weight:bold;
+    background-color:ghostwhite;
+    }
+</style>
+
+<table class="customTable" width="100%" cellpadding="8" cellspacing="16">
+    <tr>
+        <td colspan="2" align="center" class="customTableCaption">
+            <b>CİHAZ ÖZELLİKLERİ</b>
+        </td>
+        <td colspan="2" align="center" class="customTableCaption">
+            <b>KALİBRASYON BİLGİLERİ</b>
+        </td>
+        <td colspan="2" align="center" class="customTableCaption">
+            <b>ÇEVRE ŞARTLARI</b>
+        </td>
+        <td colspan="2" align="center" class="customTableCaption">
+            <b>SONUÇ</b>
+        </td>
+    </tr>
+    <tr>
+        <td class="customTableCaption">
+            Başvuru Takip No
+        </td>
+        <td>
+            @currentDTO.BasvuruTakipNo
+        </td>
+        <td class="customTableCaption">
+            Referans Tarihi
+        </td>
+        <td>
+            <InputDate class="form-control form-control-sm" TValue="DateTime?" Value="currentDTO.ReferansTarihi" ValueExpression="() => currentDTO.ReferansTarihi" ValueChanged="async (value) => await ReferansTarihiChange(value)" />
+        </td>
+        <td class="customTableCaption">
+            Sıcaklık/<span style="font-weight:normal; font-style:italic">Temperature</span>
+        </td>
+        <td>
+            <div class="row">
+                <div class="col">
+                    <input class="form-control form-control-sm SpinButtonWithoutButtons" type="number" @bind-value="currentDTO.Sicaklik1" placeholder="Örn: 20 ℃">
+                </div>
+                <div class="col">
+                    <input class="form-control form-control-sm SpinButtonWithoutButtons" type="number" @bind-value="currentDTO.Sicaklik2" placeholder="Örn: ±3">
+                </div>
+            </div>
+        </td>
+        <td class="customTableCaption">
+            Sonuç
+        </td>
+        <td>
+            <div style="display:flex">
+                <select class="form-select form-select-sm" @bind="currentDTO.SonucTuruId">
+                    <option value="0"></option>
+                    @foreach (var item in DSSonucTuru)
+                    {
+                        <option value="@item.Id">@item.Ad</option>
+                    }
+                </select>
+                @if (currentDTO.SonucTuruId > 0 & currentDTO.KalibrasyonTarihi.HasValue)
+                {
+                    <i class=@(currentDTO.SonucTuruId == 1 ? "bi bi-patch-check text-success" : "bi bi-patch-check text-danger") style="font-size:1.2rem; padding-left:4px"></i>
+                }
+            </div>
+        </td>
+    </tr>
+    <tr>
+        <td class="customTableCaption">
+            Başvuru ID
+        </td>
+        <td>
+            @currentDTO.KalibrasyonId
+        </td>
+        <td class="customTableCaption">
+            Kalibrasyon Tarihi
+        </td>
+        <td>
+            <InputDate class="form-control form-control-sm" TValue="DateTime?" Value="currentDTO.KalibrasyonTarihi" ValueExpression="() => currentDTO.KalibrasyonTarihi" ValueChanged="async (value) => await KalibrasyonTarihiChange(value)" />
+        </td>
+        <td class="customTableCaption">
+            Basınç/<span style="font-weight:normal; font-style:italic">Pressure</span>
+        </td>
+        <td>
+            <div class="row">
+                <div class="col">
+                    <input class="form-control form-control-sm SpinButtonWithoutButtons" type="number" @bind-value="currentDTO.Basinc1" placeholder="Örn: 800 hPa">
+                </div>
+                <div class="col">
+                    <input class="form-control form-control-sm SpinButtonWithoutButtons" type="number" @bind-value="currentDTO.Basinc2" placeholder="Örn: ±50">
+                </div>
+            </div>
+        </td>
+        <td rowspan="3" class="customTableCaption">
+            Açıklamalar
+        </td>
+        <td rowspan="3">
+            <InputTextArea class="form-control form-control-sm" @bind-value="currentDTO.SonucAciklama" style="height:126px">
+            </InputTextArea>
+        </td>
+    </tr>
+    <tr>
+        <td class="customTableCaption">
+            Cihaz ID
+        </td>
+        <td>
+            @currentDTO.Id
+        </td>
+        <td class="customTableCaption">
+            Yayınlandığı Tarih
+        </td>
+        <td>
+            <InputDate class="form-control form-control-sm" TValue="DateTime?" Value="currentDTO.YayinlandigiTarih" ValueExpression="() => currentDTO.YayinlandigiTarih" ValueChanged="async (value) => await YayinlandigiTarihChange(value)" />
+        </td>
+        <td class="customTableCaption">
+            Nem/<span style="font-weight:normal; font-style:italic">Humidity</span>
+        </td>
+        <td>
+            <div class="row">
+                <div class="col">
+                    <input class="form-control form-control-sm SpinButtonWithoutButtons" type="number" @bind-value="currentDTO.Nem1" placeholder="Örn: %60,5">
+                </div>
+                <div class="col">
+                    <input class="form-control form-control-sm SpinButtonWithoutButtons" type="number" @bind-value="currentDTO.Nem2" placeholder="Örn: ±20">
+                </div>
+            </div>
+        </td>
+    </tr>
+    <tr>
+        <td class="customTableCaption">
+            Marka / Model
+        </td>
+        <td>
+            @(currentDTO.Marka + " " + currentDTO.Model)
+        </td>
+        <td class="customTableCaption">
+            Doz Hızı
+        </td>
+        <td>
+            <select class="form-select form-select-sm" @onchange="async eventArgs => { await DozHiziTuruChange(eventArgs.Value); }">
+                <option value="0"></option>
+                @foreach (var item in DSDozHiziTuru)
+                {
+                    if (currentDTO.DozHiziTuruId == item.Id)
+                    {
+                        <option selected value="@item.Id">@item.Ad</option>
+                    }
+                    else
+                    {
+                        <option value="@item.Id">@item.Ad</option>
+                    }
+                }
+            </select>
+        </td>
+        <td class="customTableCaption">
+            Referans Doz
+        </td>
+        <td>
+            <input class="form-control form-control-sm" type="text" value=@currentDTO.ReferansDoz @onchange="async eventArgs => { await ReferansDozChange(eventArgs.Value); }">
+        </td>
+    </tr>
+    <tr>
+        <td class="customTableCaption">
+            Seri No
+        </td>
+        <td>
+            @currentDTO.SeriNo
+        </td>
+        <td class="customTableCaption">
+            Toplam Doz
+        </td>
+        <td>
+            <select class="form-select form-select-sm" @onchange="async eventArgs => { await ToplamDozTuruChange(eventArgs.Value); }">
+                <option value="0"></option>
+                @foreach (var item in DSToplamDozTuru)
+                {
+                    if (currentDTO.ToplamDozTuruId == item.Id)
+                    {
+                        <option selected value="@item.Id">@item.Ad</option>
+                    }
+                    else
+                    {
+                        <option value="@item.Id">@item.Ad</option>
+                    }
+                }
+            </select>
+        </td>
+        <td class="customTableCaption">
+            Bozunma
+        </td>
+        <td>
+            <input class="form-control form-control-sm" type="text" @bind-value="currentDTO.Bozunma" readonly>
+        </td>
+        <td class="customTableCaption">
+            TÜRKAK TBDS No
+        </td>
+        <td>
+            <input class="form-control form-control-sm" type="text" @bind-value="currentDTO.TurkakTBDSNumber" readonly>
+        </td>
+    </tr>
+</table>
+
+<br />
+
+<table class="table table-bordered">
+    <thead>
+        <tr>
+            <td colspan="5" align="center">
+                DOZ HIZI ÇARPILAN DEĞERLER
+            </td>
+            <td colspan="5" align="center">
+                DOZ HIZI TOPLANAN DEĞERLER
+            </td>
+            <td colspan="2" align="center">
+                TOPLAM DOZ
+            </td>
+        </tr>
+        <tr>
+            <td align="center">1</td>
+            <td align="center">2</td>
+            <td align="center">3</td>
+            <td align="center">4</td>
+            <td align="center">5</td>
+            <td align="center">1</td>
+            <td align="center">2</td>
+            <td align="center">3</td>
+            <td align="center">4</td>
+            <td align="center">5</td>
+            <td align="center">Çarpılan</td>
+            <td align="center">Toplanan</td>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><input class="form-control form-control-sm text-center" type="text" value=@currentDTO.DDozCarpimDozHizi1 @onchange="async eventArgs => { await DDozCarpimDozHizi1Change(eventArgs.Value); }"></td>
+            <td><input class="form-control form-control-sm text-center" type="text" value=@currentDTO.DDozCarpimDozHizi2 @onchange="async eventArgs => { await DDozCarpimDozHizi2Change(eventArgs.Value); }"></td>
+            <td><input class="form-control form-control-sm text-center" type="text" value=@currentDTO.DDozCarpimDozHizi3 @onchange="async eventArgs => { await DDozCarpimDozHizi3Change(eventArgs.Value); }"></td>
+            <td><input class="form-control form-control-sm text-center" type="text" value=@currentDTO.DDozCarpimDozHizi4 @onchange="async eventArgs => { await DDozCarpimDozHizi4Change(eventArgs.Value); }"></td>
+            <td><input class="form-control form-control-sm text-center" type="text" value=@currentDTO.DDozCarpimDozHizi5 @onchange="async eventArgs => { await DDozCarpimDozHizi5Change(eventArgs.Value); }"></td>
+            <td><input class="form-control form-control-sm text-center" type="text" value=@currentDTO.DDozCikarilanDozHizi1 @onchange="async eventArgs => { await DDozCikarilanDozHizi1Change(eventArgs.Value); }"></td>
+            <td><input class="form-control form-control-sm text-center" type="text" value=@currentDTO.DDozCikarilanDozHizi2 @onchange="async eventArgs => { await DDozCikarilanDozHizi2Change(eventArgs.Value); }"></td>
+            <td><input class="form-control form-control-sm text-center" type="text" value=@currentDTO.DDozCikarilanDozHizi3 @onchange="async eventArgs => { await DDozCikarilanDozHizi3Change(eventArgs.Value); }"></td>
+            <td><input class="form-control form-control-sm text-center" type="text" value=@currentDTO.DDozCikarilanDozHizi4 @onchange="async eventArgs => { await DDozCikarilanDozHizi4Change(eventArgs.Value); }"></td>
+            <td><input class="form-control form-control-sm text-center" type="text" value=@currentDTO.DDozCikarilanDozHizi5 @onchange="async eventArgs => { await DDozCikarilanDozHizi5Change(eventArgs.Value); }"></td>
+            <td><input class="form-control form-control-sm text-center" type="text" value=@currentDTO.DDozCarpimToplamDoz @onchange="async eventArgs => { await DDozCarpimToplamDozChange(eventArgs.Value); }"></td>
+            <td><input class="form-control form-control-sm text-center" type="text" value=@currentDTO.DDozCikarilanToplamDoz @onchange="async eventArgs => { await DDozCikarilanToplamDozChange(eventArgs.Value); }"></td>
+        </tr>
+    </tbody>
+</table>
+
+<br />
+
+<table class="table table-bordered" style="margin-bottom:0 !important;">
+    @for (int i = 1; i <= 2; i++)
+    {
+        <thead>
+            <tr>
+                <td colspan="24" align="center" style="background-color:ghostwhite">
+                    <b>@(i == 1 ? "KALİBRASYON DEĞERLERİ (DOZ HIZI)" : "KALİBRASYON DEĞERLERİ (TOPLAM DOZ)")</b>
+                </td>
+            </tr>
+            <tr>
+                <td width="4%">Uzaklık</td>
+                <td width="4%">@(i == 2 ? "Süre" : "")</td>
+                <td width="4%">Disk Sayısı</td>
+                <td width="4%">d-doz</td>
+                <td width="4%">Boz. Düzel.</td>
+                <td width="4%">Ölçüm Nic.</td>
+                <td width="4%">Ref. Değer</td>
+                <td width="4%">Birim</td>
+                <td width="4%">Ref. Belir.</td>
+                <td width="4%">Ölçüm 1</td>
+                <td width="4%">Ölçüm 2</td>
+                <td width="4%">Ölçüm 3</td>
+                <td width="4%">Ölçüm 4</td>
+                <td width="4%">Ölçüm 5</td>
+                <td width="4%">Ölçüm 6</td>
+                <td width="4%">Ölçüm 7</td>
+                <td width="4%">Ölçüm 8</td>
+                <td width="4%">Ölçüm 9</td>
+                <td width="4%">Ölçüm 10</td>
+                <td width="4%">St. Sapma</td>
+                <td width="4%">Müş. Belrs.</td>
+                <td width="4%">Müş. Cihazı</td>
+                <td width="4%">Sapma</td>
+                <td width="4%">Belirsizlik</td>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var data in DSKalibrasyonCihazOlcum.Where(x => x.DozHiziToplamDoz == i))
+            {
+                <tr>
+                    <td width="4%">
+                        <input type="text" class="form-control form-control-sm" value=@data.Uzaklik @onchange="async eventArgs => { await UzaklikChange(eventArgs.Value, data); }" />
+                    </td>
+                    <td width="4%">
+                        @if (i == 2)
+                        {
+                            <input type="text" class="form-control form-control-sm" value=@data.Sure @onchange="async eventArgs => { await SureChange(eventArgs.Value, data); }" />
+                        }
+                    </td>
+                    <td width="4%">
+                        <input type="text" class="form-control form-control-sm" value=@data.DiskSayisi @onchange="async eventArgs => { await DiskSayisiChange(eventArgs.Value, data); }" />
+                        @* @if (i == 1)
+                        {
+                            <input type="text" class="form-control form-control-sm" value=@data.DiskSayisi @onchange="async eventArgs => { await DiskSayisiChange(eventArgs.Value, data); }" />
+                        }
+                        else
+                        {
+                            <input type="text" class="form-control form-control-sm" @bind-value="data.DiskSayisi" readonly/>
+                        } *@
+                    </td>
+                    <td width="4%"><input type="text" class="form-control form-control-sm" @bind-value="data.DDoz" readonly /></td>
+                    <td width="4%"><input type="text" class="form-control form-control-sm" @bind-value="data.BozulmaDuzelme" readonly /></td>
+                    <td width="4%"><input type="text" class="form-control form-control-sm" @bind-value="data.OlcumNicelik" readonly /></td>
+                    <td width="4%"><input type="text" class="form-control form-control-sm" @bind-value="data.ReferansDeger" readonly /></td>
+                    <td width="4%">
+                        <select class="form-select form-select-sm" @onchange="async eventArgs => { await OlcuBirimiChange(eventArgs.Value, data); }">
+                            <option value="0"></option>
+                            @foreach (var item in DSOlcuBirimi)
+                            {
+                                if (data.OlcuBirimiId == item.Id)
+                                {
+                                    <option selected value="@item.Id">@item.Ad</option>
+                                }
+                                else
+                                {
+                                    <option value="@item.Id">@item.Ad</option>
+                                }
+                            }
+                        </select>
+                    </td>
+                    <td width="4%"><input type="text" class="form-control form-control-sm" @bind-value="data.ReferansBelirsizlik" readonly/></td>
+                    <td width="4%"><input type="text" class="form-control form-control-sm" value=@data.Olcum1 @onchange="async eventArgs => { await Olcum1Change(eventArgs.Value, data); }"/></td>
+                    <td width="4%"><input type="text" class="form-control form-control-sm" value=@data.Olcum2 @onchange="async eventArgs => { await Olcum2Change(eventArgs.Value, data); }"/></td>
+                    <td width="4%"><input type="text" class="form-control form-control-sm" value=@data.Olcum3 @onchange="async eventArgs => { await Olcum3Change(eventArgs.Value, data); }"/></td>
+                    <td width="4%"><input type="text" class="form-control form-control-sm" value=@data.Olcum4 @onchange="async eventArgs => { await Olcum4Change(eventArgs.Value, data); }"/></td>
+                    <td width="4%"><input type="text" class="form-control form-control-sm" value=@data.Olcum5 @onchange="async eventArgs => { await Olcum5Change(eventArgs.Value, data); }"/></td>
+                    <td width="4%"><input type="text" class="form-control form-control-sm" value=@data.Olcum6 @onchange="async eventArgs => { await Olcum6Change(eventArgs.Value, data); }"/></td>
+                    <td width="4%"><input type="text" class="form-control form-control-sm" value=@data.Olcum7 @onchange="async eventArgs => { await Olcum7Change(eventArgs.Value, data); }"/></td>
+                    <td width="4%"><input type="text" class="form-control form-control-sm" value=@data.Olcum8 @onchange="async eventArgs => { await Olcum8Change(eventArgs.Value, data); }"/></td>
+                    <td width="4%"><input type="text" class="form-control form-control-sm" value=@data.Olcum9 @onchange="async eventArgs => { await Olcum9Change(eventArgs.Value, data); }"/></td>
+                    <td width="4%"><input type="text" class="form-control form-control-sm" value=@data.Olcum10 @onchange="async eventArgs => { await Olcum10Change(eventArgs.Value, data); }"/></td>
+                    <td width="4%"><input type="text" class="form-control form-control-sm" @bind-value="data.StandartSapma" readonly/></td>
+                    <td width="4%"><input type="text" class="form-control form-control-sm" @bind-value="data.MusteriBelirsizligi" readonly/></td>
+                    <td width="4%"><input type="text" class="form-control form-control-sm" @bind-value="data.MusteriCihazi" readonly/></td>
+                    <td width="4%"><input type="text" class="form-control form-control-sm" @bind-value="data.Sapma" readonly/></td>
+                    <td width="4%"><input type="text" class="form-control form-control-sm" @bind-value="data.ToplamBelirsizlik" readonly/></td>
+                </tr>
+            }
+        </tbody>
+    }
+</table>
+
+@{
+    bool RolunVeCihazinDurumuKayitIcinUygun = false;
+
+    if (rol == "LaboratuvarGorevlisi" & (currentDTO.CihazDurumu == "Laboratuvar Görevlisi Kalibrasyon Listesine Aldı" || currentDTO.CihazDurumu == "Laboratuvar Görevlisi Kalibrasyon Kaydını Yaptı"))
+    {
+        RolunVeCihazinDurumuKayitIcinUygun = true;
+    }
+    else if (rol == "LaboratuvarSorumlusu" & (currentDTO.CihazDurumu == "Laboratuvar Görevlisi Kalibrasyon Kaydını Yaptı" || currentDTO.CihazDurumu.StartsWith("Laboratuvar Sorumlusu Sonuçlandırdı")))
+    {
+        RolunVeCihazinDurumuKayitIcinUygun = true;
+    }
+
+    if (YetkiYaz & RolunVeCihazinDurumuKayitIcinUygun)
+    {
+        <br />
+        <br />
+
+        <center>
+            <button class="btn btn-sm btn-success" style="margin-right:8px" @onclick="Kaydet"><i class="bi bi-check"></i>&nbsp;Kaydet</button>
+            <button class="btn btn-sm btn-danger" style="margin-right:8px" @onclick="Vazgec"><i class="bi bi-x"></i>&nbsp;Vazgeç</button>
+            @if (Kayitli)
+            {
+                if (currentDTO.CihazDurumu == "Laboratuvar Sorumlusu Sonuçlandırdı (Olumlu)")
+                {
+                    if (string.IsNullOrEmpty(currentDTO.TurkakCertificateGuid))
+                    {
+                        <button class="btn btn-sm btn-success" style="margin-right:8px" @onclick="TurkakaGonder"><i class="bi bi-check"></i>&nbsp;Türkaka Gönder</button>
+                    }
+                    else if (string.IsNullOrEmpty(currentDTO.TurkakTBDSNumber))
+                    {
+                        <button class="btn btn-sm btn-success" style="margin-right:8px" @onclick="QRKodAl"><i class="bi bi-check"></i>&nbsp;QRKod Al</button>
+                    }
+                }
+
+                <button class="btn btn-sm btn-info" @onclick="OnizleKalibrasyonCihaz"><i class="bi bi-printer"></i>&nbsp;Yazdır</button>
+            }
+        </center>
+    }
+}
+
+<button id="popupOnizleAc" type="button" data-bs-toggle="modal" data-bs-target="#popupOnizle" style="visibility:hidden;">
+</button>
+
+<div class="modal fade" id="popupOnizle" tabindex="-1" aria-labelledby="popupOnizleLabel" aria-hidden="true">
+    <div class="modal-dialog modal-fullscreen">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="popupOnizleLabel">Belge Önizleme</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <embed src="@pdf" type="application/pdf" style="width:100%; height:calc(100vh - 10.4rem);" />
+            </div>
+            <div class="modal-footer">
+                <button id="popupOnizleKapat" type="button" class="btn btn-primary btn-sm" data-bs-dismiss="modal">Kapat</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (loading)
+{
+    <div class="progressBackground">
+        <div class="progressPopup">
+            <img alt="Bekleyiniz..." src="img/loading.gif" width="100" height="100" />
+        </div>
+    </div>
+}
+
+
+@code
+{
+    [Parameter]
+    public string rol { get; set; }
+
+    [Parameter]
+    public string Id { get; set; }
+
+    [Inject] protected ILookupService lookupService { get; set; }
+    [Inject] protected IRolService rolService { get; set; }
+    [Inject] protected IAyarService ayarService { get; set; }
+    [Inject] protected IKalibrasyonService kalibrasyonService { get; set; }
+    [Inject] protected IFRService frService { get; set; }
+
+    List<LookupBasicDTO> DSDozHiziTuru = new List<LookupBasicDTO>();
+    List<LookupBasicDTO> DSToplamDozTuru = new List<LookupBasicDTO>();
+    List<LookupBasicDTO> DSOlcuBirimi = new List<LookupBasicDTO>();
+    List<LookupBasicDTO> DSSonucTuru = new List<LookupBasicDTO>();
+    List<KalibrasyonCihazOlcumDTO> DSKalibrasyonCihazOlcum = new List<KalibrasyonCihazOlcumDTO>();
+
+    KalibrasyonCihazDTO currentDTO = new KalibrasyonCihazDTO();
+
+    bool YetkiGor = false;
+    bool YetkiYaz = false;
+
+    bool Kayitli = false;
+
+    bool loading = false;
+
+    string pdf = "";
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            YetkiGor = await rolService.YetkiKontrolByYetki("Kalibrasyon - Cihazlar - Gör");
+
+            if (rol == "LaboratuvarGorevlisi")
+            {
+                YetkiYaz = await rolService.YetkiKontrolByYetki("Kalibrasyon - Cihazlar - Laboratuvar Görevlisi");
+            }
+            else if (rol == "LaboratuvarSorumlusu")
+            {
+                YetkiYaz = await rolService.YetkiKontrolByYetki("Kalibrasyon - Cihazlar - Laboratuvar Sorumlusu");
+            }
+
+            DSDozHiziTuru = await lookupService.GetLookupBasic("DozHiziTuru");
+            DSToplamDozTuru = await lookupService.GetLookupBasic("ToplamDozTuru");
+            DSOlcuBirimi = await lookupService.GetLookupBasic("OlcuBirimi");
+            DSSonucTuru = await lookupService.GetLookupBasic("SonucTuru", "Id");
+
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await GetData();
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task GetData()
+    {
+        try
+        {
+            var result = await kalibrasyonService.GetKalibrasyonCihaz(Convert.ToInt32(Id));
+
+            if (result.Success)
+            {
+                currentDTO = result.Value;
+
+                Kayitli = currentDTO.SonucTuruId != 0;
+
+                var resultOlcum = await kalibrasyonService.GetKalibrasyonCihazOlcumList(Convert.ToInt32(Id));
+
+                if (resultOlcum.Success)
+                {
+                    DSKalibrasyonCihazOlcum = resultOlcum.Value;
+
+                    if (currentDTO.KalibrasyonTarihi.HasValue == false)
+                    {
+                        var resultAyar = await ayarService.GetAyarForOlcum();
+
+                        currentDTO.YayinlandigiTarih = DateTime.Now.Date;
+                        currentDTO.ReferansTarihi = resultAyar.ReferansTarihi;
+                        currentDTO.Sicaklik1 = Convert.ToDecimal(Convert.ToDouble(resultAyar.Sicaklik1));
+                        currentDTO.Sicaklik2 = Convert.ToDecimal(Convert.ToDouble(resultAyar.Sicaklik2));
+                        currentDTO.Basinc1 = Convert.ToDecimal(Convert.ToDouble(resultAyar.Basinc1));
+                        currentDTO.Basinc2 = Convert.ToDecimal(Convert.ToDouble(resultAyar.Basinc2));
+                        currentDTO.Nem1 = Convert.ToDecimal(Convert.ToDouble(resultAyar.Nem1));
+                        currentDTO.Nem2 = Convert.ToDecimal(Convert.ToDouble(resultAyar.Nem2));
+                        currentDTO.DDozCarpimDozHizi1 = Convert.ToDecimal(Convert.ToDouble(resultAyar.DDozCarpimDozHizi1));
+                        currentDTO.DDozCarpimDozHizi2 = Convert.ToDecimal(Convert.ToDouble(resultAyar.DDozCarpimDozHizi2));
+                        currentDTO.DDozCarpimDozHizi3 = Convert.ToDecimal(Convert.ToDouble(resultAyar.DDozCarpimDozHizi3));
+                        currentDTO.DDozCarpimDozHizi4 = Convert.ToDecimal(Convert.ToDouble(resultAyar.DDozCarpimDozHizi4));
+                        currentDTO.DDozCarpimDozHizi5 = Convert.ToDecimal(Convert.ToDouble(resultAyar.DDozCarpimDozHizi5));
+                        currentDTO.DDozCarpimToplamDoz = Convert.ToDecimal(Convert.ToDouble(resultAyar.DDozCarpimToplamDoz));
+                        currentDTO.DDozCikarilanDozHizi1 = Convert.ToDecimal(Convert.ToDouble(resultAyar.DDozCikarilanDozHizi1));
+                        currentDTO.DDozCikarilanDozHizi2 = Convert.ToDecimal(Convert.ToDouble(resultAyar.DDozCikarilanDozHizi2));
+                        currentDTO.DDozCikarilanDozHizi3 = Convert.ToDecimal(Convert.ToDouble(resultAyar.DDozCikarilanDozHizi3));
+                        currentDTO.DDozCikarilanDozHizi4 = Convert.ToDecimal(Convert.ToDouble(resultAyar.DDozCikarilanDozHizi4));
+                        currentDTO.DDozCikarilanDozHizi5 = Convert.ToDecimal(Convert.ToDouble(resultAyar.DDozCikarilanDozHizi5));
+                        currentDTO.DDozCikarilanToplamDoz = Convert.ToDecimal(Convert.ToDouble(resultAyar.DDozCikarilanToplamDoz));
+                    }
+                }
+                else
+                {
+                    await js.InvokeVoidAsync("SweetMessage", "Hata", result.Message, "error");
+                }
+            }
+            else
+            {
+                await js.InvokeVoidAsync("SweetMessage", "Hata", result.Message, "error");
+            }
+        }
+        catch
+        {
+
+        }
+    }
+
+    async Task Hesapla()
+    {
+        for (int i = 1; i <= 2; i++)
+        {
+            foreach (var data in DSKalibrasyonCihazOlcum.Where(x => x.DozHiziToplamDoz == i))
+            {
+                currentDTO.Bozunma = 0;
+                data.DDoz = 0;
+                data.BozulmaDuzelme = 0;
+                data.OlcumNicelik = 0;
+                data.ReferansDeger = 0;
+                data.ReferansBelirsizlik = 0;
+                data.StandartSapma = 0;
+                data.MusteriBelirsizligi = 0;
+                data.MusteriCihazi = 0;
+                data.Sapma = 0;
+                data.ToplamBelirsizlik = 0;
+
+                if (currentDTO.KalibrasyonTarihi.HasValue & currentDTO.ReferansTarihi.HasValue)
+                {
+                    double carpan = (-0.693 * (currentDTO.KalibrasyonTarihi.Value - currentDTO.ReferansTarihi.Value).TotalDays / (30.05 * 365.25));
+                    currentDTO.Bozunma = currentDTO.ReferansDoz * Math.Round((decimal)Math.Exp(carpan), 6);
+                }
+
+                if (i == 1)
+                {
+                    if (data.Uzaklik > 0)
+                    {
+                        data.ReferansBelirsizlik = (decimal)(currentDTO.DozHiziTuruId == 1 ? 5.4 : (currentDTO.DozHiziTuruId == 2 ? 6.7 : (currentDTO.DozHiziTuruId == 3 ? 5.4 : 0)));
+
+                        decimal sabit1 = (data.DiskSayisi == 0 ? currentDTO.DDozCarpimDozHizi1 : (data.DiskSayisi == 1 ? currentDTO.DDozCarpimDozHizi2 : (data.DiskSayisi == 2 ? currentDTO.DDozCarpimDozHizi3 : (data.DiskSayisi == 3 ? currentDTO.DDozCarpimDozHizi4 : (data.DiskSayisi == 4 ? currentDTO.DDozCarpimDozHizi5 : 0)))));
+                        decimal sabit2 = (data.DiskSayisi == 0 ? currentDTO.DDozCikarilanDozHizi1 : (data.DiskSayisi == 1 ? currentDTO.DDozCikarilanDozHizi2 : (data.DiskSayisi == 2 ? currentDTO.DDozCikarilanDozHizi3 : (data.DiskSayisi == 3 ? currentDTO.DDozCikarilanDozHizi4 : (data.DiskSayisi == 4 ? currentDTO.DDozCikarilanDozHizi5 : 0)))));
+
+                        data.DDoz = Math.Round((sabit1 * (1 / (data.Uzaklik * data.Uzaklik))) + sabit2, 6);
+                    }
+
+                    data.BozulmaDuzelme = Math.Round(data.DDoz * currentDTO.Bozunma, 6);
+                }
+                else
+                {
+                    if (data.Uzaklik > 0)
+                    {
+                        data.ReferansBelirsizlik = (decimal)(currentDTO.ToplamDozTuruId == 1 ? 5.4 : (currentDTO.ToplamDozTuruId == 2 ? 6.7 : (currentDTO.ToplamDozTuruId == 3 ? 5.4 : 0)));
+
+                        //data.DDoz = Math.Round((decimal)((currentDTO.DDozCarpimToplamDoz * 1 / (100 * 100)) + currentDTO.DDozCikarilanToplamDoz) / 3600 * data.Sure, 6);
+
+                        int bolunen = data.DiskSayisi == 0 ? 1 : 13;
+
+                        data.DDoz = Math.Round((decimal)((currentDTO.DDozCarpimToplamDoz * (1 / (data.Uzaklik * data.Uzaklik))) + currentDTO.DDozCikarilanToplamDoz) / bolunen * data.Sure, 6);
+                    }
+
+                    data.BozulmaDuzelme = Math.Round(data.DDoz * currentDTO.Bozunma, 6);
+                }
+
+                if ((i == 1 & currentDTO.DozHiziTuruId > 0) || (i != 1 & currentDTO.ToplamDozTuruId > 0))
+                {
+                    if (currentDTO.DozHiziTuruId == 1)
+                    {
+                        data.OlcumNicelik = Math.Round(data.BozulmaDuzelme / (decimal)0.00878, 6);
+                    }
+                    else if (currentDTO.DozHiziTuruId == 2)
+                    {
+                        data.OlcumNicelik = Math.Round(data.BozulmaDuzelme * (decimal)1.2, 6);
+                    }
+                    else if (currentDTO.DozHiziTuruId == 3)
+                    {
+                        data.OlcumNicelik = Math.Round(data.BozulmaDuzelme, 6);
+                    }
+                }
+
+                decimal RD = data.OlcumNicelik / (data.OlcuBirimiId == 1 ? 1000 : (data.OlcuBirimiId == 2 ? 1 : 1000000));
+
+                data.ReferansDeger = Math.Round(RD, (RD <= 10 ? 2: 1));
+
+                decimal MC = (data.Olcum1 + data.Olcum2 + data.Olcum3 + data.Olcum4 + data.Olcum5 + data.Olcum6 + data.Olcum7 + data.Olcum8 + data.Olcum9 + data.Olcum10) / 10;
+
+                data.MusteriCihazi = Math.Round(MC, (MC <= 10 ? 2 : 1));
+
+                double fark =   (double)((data.Olcum1 - data.MusteriCihazi) * (data.Olcum1 - data.MusteriCihazi)) +
+                                (double)((data.Olcum2 - data.MusteriCihazi) * (data.Olcum2 - data.MusteriCihazi)) +
+                                (double)((data.Olcum3 - data.MusteriCihazi) * (data.Olcum3 - data.MusteriCihazi)) +
+                                (double)((data.Olcum4 - data.MusteriCihazi) * (data.Olcum4 - data.MusteriCihazi)) +
+                                (double)((data.Olcum5 - data.MusteriCihazi) * (data.Olcum5 - data.MusteriCihazi)) +
+                                (double)((data.Olcum6 - data.MusteriCihazi) * (data.Olcum6 - data.MusteriCihazi)) +
+                                (double)((data.Olcum7 - data.MusteriCihazi) * (data.Olcum7 - data.MusteriCihazi)) +
+                                (double)((data.Olcum8 - data.MusteriCihazi) * (data.Olcum8 - data.MusteriCihazi)) +
+                                (double)((data.Olcum9 - data.MusteriCihazi) * (data.Olcum9 - data.MusteriCihazi)) +
+                                (double)((data.Olcum10 - data.MusteriCihazi) * (data.Olcum10 - data.MusteriCihazi));
+
+                data.StandartSapma = Math.Round((decimal)(Math.Sqrt(fark / 9) / Math.Sqrt(10)), 6) * 100;
+
+                if (data.MusteriCihazi > 0)
+                {
+                    data.MusteriBelirsizligi = Math.Round(data.StandartSapma / data.MusteriCihazi, 1);
+                }
+
+                if (data.ReferansDeger > 0 & data.MusteriCihazi > 0)
+                {
+                    data.Sapma = Math.Round((data.MusteriCihazi - data.ReferansDeger) / data.ReferansDeger * 100, 1);
+                }
+
+                if (data.Uzaklik > 0 || data.Sure > 0)
+                {
+                    data.ToplamBelirsizlik = Math.Round((decimal)Math.Sqrt((double)((data.MusteriBelirsizligi * data.MusteriBelirsizligi) + (data.ReferansBelirsizlik * data.ReferansBelirsizlik))), 1);
+                }
+            }
+        }
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task ReferansTarihiChange(DateTime? value)
+    {
+        DateTime? val = value;
+        currentDTO.ReferansTarihi = val;
+        await Hesapla();
+    }
+
+    async Task KalibrasyonTarihiChange(DateTime? value)
+    {
+        DateTime? val = value;
+        currentDTO.KalibrasyonTarihi = val;
+        await Hesapla();
+    }
+
+    async Task YayinlandigiTarihChange(DateTime? value)
+    {
+        DateTime? val = value;
+        currentDTO.YayinlandigiTarih = val;
+        await Hesapla();
+    }
+
+    async Task DozHiziTuruChange(object value)
+    {
+        int val = Convert.ToInt32(value);
+        currentDTO.DozHiziTuruId = val;
+        await Hesapla();
+    }
+
+    async Task ToplamDozTuruChange(object value)
+    {
+        int val = Convert.ToInt32(value);
+        currentDTO.ToplamDozTuruId = val;
+        await Hesapla();
+    }
+
+    async Task DDozCarpimDozHizi1Change(object value)
+    {
+        decimal val = 0;
+
+        try
+        {
+            val = Convert.ToDecimal(value);
+        }
+        catch
+        {
+        }
+
+        currentDTO.DDozCarpimDozHizi1 = val;
+
+        await Hesapla();
+    }
+
+    async Task DDozCarpimDozHizi2Change(object value)
+    {
+        decimal val = 0;
+
+        try
+        {
+            val = Convert.ToDecimal(value);
+        }
+        catch
+        {
+        }
+
+        currentDTO.DDozCarpimDozHizi2 = val;
+
+        await Hesapla();
+    }
+
+    async Task DDozCarpimDozHizi3Change(object value)
+    {
+        decimal val = 0;
+
+        try
+        {
+            val = Convert.ToDecimal(value);
+        }
+        catch
+        {
+        }
+
+        currentDTO.DDozCarpimDozHizi3 = val;
+
+        await Hesapla();
+    }
+
+    async Task DDozCarpimDozHizi4Change(object value)
+    {
+        decimal val = 0;
+
+        try
+        {
+            val = Convert.ToDecimal(value);
+        }
+        catch
+        {
+        }
+
+        currentDTO.DDozCarpimDozHizi4 = val;
+
+        await Hesapla();
+    }
+
+    async Task DDozCarpimDozHizi5Change(object value)
+    {
+        decimal val = 0;
+
+        try
+        {
+            val = Convert.ToDecimal(value);
+        }
+        catch
+        {
+        }
+
+        currentDTO.DDozCarpimDozHizi5 = val;
+
+        await Hesapla();
+    }
+
+    async Task DDozCikarilanDozHizi1Change(object value)
+    {
+        decimal val = 0;
+
+        try
+        {
+            val = Convert.ToDecimal(value);
+        }
+        catch
+        {
+        }
+
+        currentDTO.DDozCikarilanDozHizi1 = val;
+
+        await Hesapla();
+    }
+
+    async Task DDozCikarilanDozHizi2Change(object value)
+    {
+        decimal val = 0;
+
+        try
+        {
+            val = Convert.ToDecimal(value);
+        }
+        catch
+        {
+        }
+
+        currentDTO.DDozCikarilanDozHizi2 = val;
+
+        await Hesapla();
+    }
+
+    async Task DDozCikarilanDozHizi3Change(object value)
+    {
+        decimal val = 0;
+
+        try
+        {
+            val = Convert.ToDecimal(value);
+        }
+        catch
+        {
+        }
+
+        currentDTO.DDozCikarilanDozHizi3 = val;
+
+        await Hesapla();
+    }
+
+    async Task DDozCikarilanDozHizi4Change(object value)
+    {
+        decimal val = 0;
+
+        try
+        {
+            val = Convert.ToDecimal(value);
+        }
+        catch
+        {
+        }
+
+        currentDTO.DDozCikarilanDozHizi4 = val;
+
+        await Hesapla();
+    }
+
+    async Task DDozCikarilanDozHizi5Change(object value)
+    {
+        decimal val = 0;
+
+        try
+        {
+            val = Convert.ToDecimal(value);
+        }
+        catch
+        {
+        }
+
+        currentDTO.DDozCikarilanDozHizi5 = Convert.ToDecimal(val);
+
+        await Hesapla();
+    }
+
+    async Task DDozCarpimToplamDozChange(object value)
+    {
+        decimal val = 0;
+
+        try
+        {
+            val = Convert.ToDecimal(value);
+        }
+        catch
+        {
+        }
+
+        currentDTO.DDozCarpimToplamDoz = val;
+
+        await Hesapla();
+    }
+
+    async Task DDozCikarilanToplamDozChange(object value)
+    {
+        decimal val = 0;
+
+        try
+        {
+            val = Convert.ToDecimal(value);
+        }
+        catch
+        {
+        }
+
+        currentDTO.DDozCikarilanToplamDoz = val;
+
+        await Hesapla();
+    }
+
+    async Task ReferansDozChange(object value)
+    {
+        decimal val = 0;
+
+        try
+        {
+            val = Convert.ToDecimal(value);
+        }
+        catch
+        {
+        }
+
+        currentDTO.ReferansDoz = val;
+
+        await Hesapla();
+    }
+
+    async Task UzaklikChange(object value, KalibrasyonCihazOlcumDTO dto)
+    {
+        decimal val = 0;
+
+        try
+        {
+            val = Convert.ToDecimal(value);
+        }
+        catch
+        {
+        }
+
+        dto.Uzaklik = val;
+
+        await Hesapla();
+    }
+
+    async Task SureChange(object value, KalibrasyonCihazOlcumDTO dto)
+    {
+        decimal val = 0;
+
+        try
+        {
+            val = Convert.ToDecimal(value);
+        }
+        catch
+        {
+        }
+
+        dto.Sure = val;
+
+        await Hesapla();
+    }
+
+    async Task DiskSayisiChange(object value, KalibrasyonCihazOlcumDTO dto)
+    {
+        decimal val = 0;
+
+        try
+        {
+            val = Convert.ToDecimal(value);
+        }
+        catch
+        {
+        }
+
+        dto.DiskSayisi = val;
+
+        await Hesapla();
+    }
+
+    async Task OlcuBirimiChange(object value, KalibrasyonCihazOlcumDTO dto)
+    {
+        int val = Convert.ToInt32(value);
+
+        dto.OlcuBirimiId = val;
+
+        await Hesapla();
+    }
+
+    async Task Olcum1Change(object value, KalibrasyonCihazOlcumDTO dto)
+    {
+        decimal val = 0;
+
+        try
+        {
+            val = Convert.ToDecimal(value);
+        }
+        catch
+        {
+        }
+
+        dto.Olcum1 = val;
+
+        await Hesapla();
+    }
+
+    async Task Olcum2Change(object value, KalibrasyonCihazOlcumDTO dto)
+    {
+        decimal val = 0;
+
+        try
+        {
+            val = Convert.ToDecimal(value);
+        }
+        catch
+        {
+        }
+
+        dto.Olcum2 = val;
+
+        await Hesapla();
+    }
+
+    async Task Olcum3Change(object value, KalibrasyonCihazOlcumDTO dto)
+    {
+        decimal val = 0;
+
+        try
+        {
+            val = Convert.ToDecimal(value);
+        }
+        catch
+        {
+        }
+
+        dto.Olcum3 = val;
+
+        await Hesapla();
+    }
+
+    async Task Olcum4Change(object value, KalibrasyonCihazOlcumDTO dto)
+    {
+        decimal val = 0;
+
+        try
+        {
+            val = Convert.ToDecimal(value);
+        }
+        catch
+        {
+        }
+
+        dto.Olcum4 = val;
+
+        await Hesapla();
+    }
+
+    async Task Olcum5Change(object value, KalibrasyonCihazOlcumDTO dto)
+    {
+        decimal val = 0;
+
+        try
+        {
+            val = Convert.ToDecimal(value);
+        }
+        catch
+        {
+        }
+
+        dto.Olcum5 = val;
+
+        await Hesapla();
+    }
+
+    async Task Olcum6Change(object value, KalibrasyonCihazOlcumDTO dto)
+    {
+        decimal val = 0;
+
+        try
+        {
+            val = Convert.ToDecimal(value);
+        }
+        catch
+        {
+        }
+
+        dto.Olcum6 = val;
+
+        await Hesapla();
+    }
+
+    async Task Olcum7Change(object value, KalibrasyonCihazOlcumDTO dto)
+    {
+        decimal val = 0;
+
+        try
+        {
+            val = Convert.ToDecimal(value);
+        }
+        catch
+        {
+        }
+
+        dto.Olcum7 = val;
+
+        await Hesapla();
+    }
+
+    async Task Olcum8Change(object value, KalibrasyonCihazOlcumDTO dto)
+    {
+        decimal val = 0;
+
+        try
+        {
+            val = Convert.ToDecimal(value);
+        }
+        catch
+        {
+        }
+
+        dto.Olcum8 = val;
+
+        await Hesapla();
+    }
+
+    async Task Olcum9Change(object value, KalibrasyonCihazOlcumDTO dto)
+    {
+        decimal val = 0;
+
+        try
+        {
+            val = Convert.ToDecimal(value);
+        }
+        catch
+        {
+        }
+
+        dto.Olcum9 = val;
+
+        await Hesapla();
+    }
+
+    async Task Olcum10Change(object value, KalibrasyonCihazOlcumDTO dto)
+    {
+        decimal val = 0;
+
+        try
+        {
+            val = Convert.ToDecimal(value);
+        }
+        catch
+        {
+        }
+
+        dto.Olcum10 = val;
+
+        await Hesapla();
+    }
+
+    async Task Kaydet()
+    {
+        if (currentDTO.ReferansTarihi.HasValue == false || currentDTO.KalibrasyonTarihi.HasValue == false || currentDTO.YayinlandigiTarih.HasValue == false
+            || currentDTO.Sicaklik1 == 0 || currentDTO.Sicaklik2 == 0
+            || currentDTO.Basinc1 == 0 || currentDTO.Basinc2 == 0 
+            || currentDTO.Nem1 == 0 || currentDTO.Nem2 == 0
+            || currentDTO.SonucTuruId == 0)
+        {
+            await js.InvokeVoidAsync("SweetMessage", "Hata", "Kalibrasyon Sonucu, Referans Tarihi, Kalibrasyon Tarihi, Yayınlandığı Tarih, Sıcaklık, Basınç ve Nem değerleri girilmelidir", "error");
+            return;
+        }
+
+        var confirm = await js.InvokeAsync<bool>("SweetConfirm", "Uyarı", "Cihazın kalibrasyon bilgileri kaydedilecek, devam edilsin mi?", "question", "Evet", "Hayır");
+
+        if (confirm)
+        {
+            currentDTO.DataSourceModel = new List<LookupBasicDTO>();
+
+            var dto = new KalibrasyonCihazOlcumForKayitDTO();
+
+            dto.KalibrasyonCihaz = currentDTO;
+
+            dto.KalibrasyonCihazOlcumList = new List<KalibrasyonCihazOlcumDTO>();
+            dto.KalibrasyonCihazOlcumList.AddRange(DSKalibrasyonCihazOlcum);
+
+            //dto.KalibrasyonCihaz.KalibrasyondanGecti = DSKalibrasyonCihazOlcum.Where(x => x.ToplamBelirsizlik > currentDTO.ToplamBelirsizlikSiniri).Count() == 0;
+
+            dto.HareketTuru = new HareketTuruDTO()
+                {
+                    Id = (rol == "LaboratuvarGorevlisi" ? 203 : (dto.KalibrasyonCihaz.SonucTuruId == 1 ? 301 : 302)),
+                    HareketTuru = (rol == "LaboratuvarGorevlisi" ? "Laboratuvar Görevlisi Kalibrasyon Kaydını Yaptı" : (dto.KalibrasyonCihaz.SonucTuruId == 1 ? "Laboratuvar Sorumlusu Sonuçlandırdı (Olumlu)" : "Laboratuvar Sorumlusu Sonuçlandırdı (Olumsuz)"))
+                };
+
+            var result = await kalibrasyonService.UpdateKalibrasyonCihazOlcum(dto);
+
+            if (result.Success == false)
+            {
+                await js.InvokeVoidAsync("SweetMessage", "Hata", result.Message, "error");
+                return;
+            }
+
+            await GetData();
+
+            Kayitli = true;
+
+            await InvokeAsync(StateHasChanged);
+
+            await js.InvokeVoidAsync("SweetToast", "Cihazın kalibrasyon bilgileri kaydedildi", "success");
+
+            navManager.NavigateTo("/Main/KalibrasyonCihaz", false);
+        }
+    }
+
+    async Task Vazgec()
+    {
+        await GetData();
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task TurkakaGonder()
+    {
+        var confirm = await js.InvokeAsync<bool>("SweetConfirm", "Uyarı", $"{currentDTO.Id.ToString()} IDli cihaza ait bilgiler Türkak'a gönderilecek, devam edilsin mi?", "question", "Evet", "Hayır");
+
+        if (confirm)
+        {
+            var tempDTO = currentDTO;
+
+            tempDTO.DataSourceModel = new List<LookupBasicDTO>();
+
+            var result = await kalibrasyonService.TurkakaGonder(tempDTO);
+
+            if (result.Success == false)
+            {
+                await js.InvokeVoidAsync("SweetMessage", "Hata", result.Message, "error");
+                return;
+            }
+
+            await GetData();
+
+            await InvokeAsync(StateHasChanged);
+
+            await js.InvokeVoidAsync("SweetToast", "Cihaz bilgileri Türkak'a gönderildi", "success");
+        }
+    }
+
+    async Task QRKodAl()
+    {
+        var confirm = await js.InvokeAsync<bool>("SweetConfirm", "Uyarı", $"{currentDTO.Id.ToString()} IDli cihazın QR Kod bilgileri Türkak'tan alınacak, devam edilsin mi?", "question", "Evet", "Hayır");
+
+        if (confirm)
+        {
+            var tempDTO = currentDTO;
+
+            tempDTO.DataSourceModel = new List<LookupBasicDTO>();
+
+            var result = await kalibrasyonService.TurkakQRKoduAl(tempDTO);
+
+            if (result.Success == false)
+            {
+                await js.InvokeVoidAsync("SweetMessage", "Hata", result.Message, "error");
+                return;
+            }
+
+            await GetData();
+
+            await InvokeAsync(StateHasChanged);
+
+            await js.InvokeVoidAsync("SweetToast", "QRKod bilgileri Türkak'tan alındı", "success");
+        }
+    }
+
+    async Task OnizleKalibrasyonCihaz()
+    {
+        try
+        {
+            loading = true;
+
+            var bytes = File.ReadAllBytes("FR/KalibrasyonOlcum.frx");
+
+            string base64Rapor = Convert.ToBase64String(bytes);
+
+            var frDTO = new FRDTO()
+                {
+                    ReportNameOrBase64 = base64Rapor,
+                    Uzanti = "pdf",
+                    Id = currentDTO.Id
+                };
+
+            var result = await frService.GetReport(frDTO);
+
+            if (result.Success == false)
+            {
+                loading = false;
+
+                await InvokeAsync(StateHasChanged);
+
+                await js.InvokeVoidAsync("SweetMessage", "Hata", result.Message, "error");
+                return;
+            }
+
+            string base64String = Convert.ToBase64String(result.Value);
+
+            pdf = "data:application/pdf;base64," + base64String; /*+ "#view=FitH";*/
+
+            loading = false;
+
+            await InvokeAsync(StateHasChanged);
+
+            await js.InvokeVoidAsync("bsPopupAc", "popupOnizle");
+        }
+        catch
+        {
+            loading = false;
+
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+}

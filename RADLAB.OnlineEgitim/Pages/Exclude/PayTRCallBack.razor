@@ -1,0 +1,84 @@
+﻿@page "/PayTRCallBack"
+@    using System.Security.Cryptography
+@    using System.Text
+
+<input type="text" id="merchant_oid" @bind-value="merchant_oid" />
+<input type="text" id="status" @bind-value="status" />
+<input type="text" id="total_amount" @bind-value="total_amount" />
+<input type="text" id="hash" @bind-value="hash" />
+
+@result
+
+@code
+{
+    [Inject] protected IPayTRService paytrService { get; set; }
+
+    string result = "";
+
+    string merchant_oid = "";
+    string status = "";
+    string total_amount = "";
+    string hash = "";
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            string merchant_key = "j48kS5zuYFHQXqwX";
+            string merchant_salt = "rA5Qxax8KtTUf5t8";
+
+            string Birlestir = string.Concat(merchant_oid, merchant_salt, status, total_amount);
+            HMACSHA256 hmac = new HMACSHA256(Encoding.UTF8.GetBytes(merchant_key));
+            byte[] b = hmac.ComputeHash(Encoding.UTF8.GetBytes(Birlestir));
+            string token = Convert.ToBase64String(b);
+
+            //
+            // Oluşturulan hash'i, paytr'dan gelen post içindeki hash ile karşılaştır (isteğin paytr'dan geldiğine ve değişmediğine emin olmak için)
+            // Bu işlemi yapmazsanız maddi zarara uğramanız olasıdır.
+            if (hash.ToString() != token)
+            {
+                result = "PAYTR notification failed: bad hash";
+                return;
+            }
+
+            //###########################################################################
+
+            // BURADA YAPILMASI GEREKENLER
+            // 1) Siparişin durumunu $post['merchant_oid'] değerini kullanarak veri tabanınızdan sorgulayın.
+            // 2) Eğer sipariş zaten daha önceden onaylandıysa veya iptal edildiyse  echo "OK"; exit; yaparak sonlandırın.
+
+            if (status == "success")
+            { //Ödeme Onaylandı
+
+                // Bildirimin alındığını PayTR sistemine bildir.
+                result = "OK";
+
+                var resultPayTROdemeTamam = await paytrService.UpdateSiparisPayTROdemeTamam(merchant_oid);
+
+
+
+                // BURADA YAPILMASI GEREKENLER ONAY İŞLEMLERİDİR.
+                // 1) Siparişi onaylayın.
+                // 2) iframe çağırma adımında merchant_oid ve diğer bilgileri veri tabanınıza kayıp edip bu aşamada karşılaştırarak eğer var ise bilgieri çekebilir ve otomatik sipariş tamamlama işlemleri yaptırabilirsiniz.
+                // 2) Eğer müşterinize mesaj / SMS / e-posta gibi bilgilendirme yapacaksanız bu aşamada yapabilirsiniz. Bu işlemide yine iframe çağırma adımında merchant_oid bilgisini kayıt edip bu aşamada sorgulayarak verilere ulaşabilirsiniz.
+                // 3) 1. ADIM'da gönderilen payment_amount sipariş tutarı taksitli alışveriş yapılması durumunda
+                // değişebilir. Güncel tutarı Request.Form['total_amount'] değerinden alarak muhasebe işlemlerinizde kullanabilirsiniz.
+
+            }
+            else
+            { //Ödemeye Onay Verilmedi
+
+                // Bildirimin alındığını PayTR sistemine bildir.
+                result = "OK";
+
+                // BURADA YAPILMASI GEREKENLER
+                // 1) Siparişi iptal edin.
+                // 2) Eğer ödemenin onaylanmama sebebini kayıt edecekseniz aşağıdaki değerleri kullanabilirsiniz.
+                // $post['failed_reason_code'] - başarısız hata kodu
+                // $post['failed_reason_msg'] - başarısız hata mesajı
+            }
+
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+}

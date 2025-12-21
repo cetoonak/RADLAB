@@ -1,0 +1,1432 @@
+﻿@page "/Egitim/Kurs"
+
+@inject IJSRuntime js
+
+@using System.Threading
+@using System.Threading.Tasks
+@using System.Net.Http
+@using System.Text.Json
+@*@using BlazorInputFile;*@
+
+<style>
+    .form-floating > .form-select {
+        padding-left: 0.8rem;
+    }
+
+    .input-group-text {
+        font-size:0.8rem !important;
+    }
+</style>
+
+<div class="card info-card">
+    <table class="table table-bordered table-hover">
+        <thead>
+            <tr>
+                <td width="5%"></td>
+                <td width="5%" align="center">Sıra</td>
+                <td width="5%" align="center">Eğitim</td>
+                <td width="5%" align="center">Kurs Ortamı</td>
+                <td width="8%" align="center">Başvuru Dönemi</td>
+                <td width="8%" align="center">Eğitim Dönemi</td>
+                <td width="5%" align="center">Yayından Kalkış</td>
+                <td width="5%" align="center">Süre</td>
+                <td width="5%" align="center">Fiyat</td>
+                <td width="5%" align="center">Kdv Oranı</td>
+                <td width="5%" align="center">Bekleyen</td>
+                <td width="5%" align="center">Asıl</td>
+                <td width="5%" align="center">Yedek</td>
+                <td width="5%" align="center">İptal</td>
+                <td width="5%" align="center">Toplam</td>
+                <td width="10%" align="center">Durum</td>
+                <td width="9%" align="center">
+                    @if (YetkiEkle)
+                    {
+                        <button class="btn text-success grid-command" @onclick="AddKurs"><i class="bi bi-plus-circle"></i></button>
+                    }
+                </td>
+            </tr>
+            <tr>
+                <td width="5%"></td>
+                <td width="5%"></td>
+                <td width="5%">
+                    <select class="form-select form-select-sm" @onchange="eventArgs => { EgitimSecSorgu(eventArgs.Value); }">
+                        <option value="0"></option>
+                        @foreach (var item in DSEgitimSorgu)
+                        {
+                            if (filterDTO.EgitimId == item.Id)
+                            {
+                                <option selected value="@item.Id">@item.Ad</option>
+                            }
+                            else
+                            {
+                                <option value="@item.Id">@item.Ad</option>
+                            }
+                        }
+                    </select>
+                </td>
+                <td width="5%">
+                    <select class="form-select form-select-sm" @onchange="eventArgs => { KursOrtamiSecSorgu(eventArgs.Value); }">
+                        <option value="0"></option>
+                        @foreach (var item in DSKursOrtamiSorgu)
+                        {
+                            if (filterDTO.KursOrtamiId == item.Id)
+                            {
+                                <option selected value="@item.Id">@item.Ad</option>
+                            }
+                            else
+                            {
+                                <option value="@item.Id">@item.Ad</option>
+                            }
+                        }
+                    </select>
+                </td>
+                <td width="8%">
+                    <select class="form-select form-select-sm" @onchange="eventArgs => { YilSecSorgu(eventArgs.Value); }">
+                        <option value="0"></option>
+                        @foreach (var item in DSYilSorgu)
+                        {
+                            if (filterDTO.Yil == item.Id)
+                            {
+                                <option selected value="@item.Id">@item.Ad</option>
+                            }
+                            else
+                            {
+                                <option value="@item.Id">@item.Ad</option>
+                            }
+                        }
+                    </select>
+                </td>
+                <td width="8%"></td>
+                <td width="5%"></td>
+                <td width="5%"></td>
+                <td width="5%"></td>
+                <td width="5%"></td>
+                <td width="5%"></td>
+                <td width="5%"></td>
+                <td width="5%"></td>
+                <td width="5%"></td>
+                <td width="5%"></td>
+                <td width="10%">
+                    <select class="form-select form-select-sm" @onchange="eventArgs => { DurumSecSorgu(eventArgs.Value); }">
+                        <option value="0"></option>
+                        @foreach (var item in DSDurumSorgu)
+                        {
+                            if (filterDTO.Durum == item.Id)
+                            {
+                                <option selected value="@item.Id">@item.Ad</option>
+                            }
+                            else
+                            {
+                                <option value="@item.Id">@item.Ad</option>
+                            }
+                        }
+                    </select>
+                </td>
+                <td width="9%" align="center">
+                    <div class="btn-group">
+                        <button class="btn text-success grid-command" @onclick="Sorgula"><i class="bi bi-search"></i></button>
+                        <button class="btn text-success grid-command" @onclick="ExportToExcel"><i class="bi bi-file-earmark-excel"></i></button>
+                    </div>
+                </td>
+            </tr>
+        </thead>
+        <tbody>
+            @if (DSKurs.ToList().Count == 0)
+            {
+                <tr>
+                    <td colspan="17" align="center" valign="bottom" height="64px">
+                        <h6>Görüntülenecek Veri Yok</h6>
+                    </td>
+                </tr>
+            }
+            else
+            {
+                @foreach (var data in DSKurs)
+                {
+                    <tr>
+                        <td width="5%" align="center">
+                            @{
+                                string checkBoxId = "ExpandCollapseCheckBox" + data.Id.ToString();
+                            }
+                            <div class="ExpandCollapseDiv">
+                                <input id="@checkBoxId" type="checkbox" name="@checkBoxId" @bind="@data.Expanded" />
+                                <label for="@checkBoxId"></label>
+                            </div>
+                        </td>
+                        <td width="5%" align="center">@data.Sira</td>
+                        <td width="5%" align="center">@data.Egitim</td>
+                        <td width="5%" align="center">@data.KursOrtami</td>
+                        <td width="8%" align="center">@(data.BasvuruBaslangici.Value.ToString("dd.MM.yyyy") + "-" + data.BasvuruBitisi.Value.ToString("dd.MM.yyyy"))</td>
+                        <td width="8%" align="center">@(data.EgitimBaslangici.Value.ToString("dd.MM.yyyy") + "-" + data.EgitimBitisi.Value.ToString("dd.MM.yyyy"))</td>
+                        <td width="5%" align="center">@data.YayindanKalkis.Value.ToString("dd.MM.yyyy")</td>
+                        <td width="5%" align="center">@data.Sure</td>
+                        <td width="5%" align="center">@data.Fiyat.ToString("###,##0.#0")</td>
+                        <td width="5%" align="center">@data.KdvOrani</td>
+                        <td width="5%" align="center">@data.Beklemede</td>
+                        <td width="5%" align="center">@(data.Asil.ToString() + "/" + data.KontenjanAsil.ToString())</td>
+                        <td width="5%" align="center">@(data.Yedek.ToString() + "/" + data.KontenjanYedek.ToString())</td>
+                        <td width="5%" align="center">@data.Iptal</td>
+                        <td width="5%" align="center">@data.Toplam</td>
+                        <td width="10%" align="center"><span class=@data.Badge>@data.Durum</span></td>
+                        <td width="9%" align="center">
+                            <div class="btn-group">
+                                @if (YetkiDegistir)
+                                {
+                                    <button class="btn text-info grid-command" @onclick="@(() => { EditKurs(data.Id); })" data-bs-toggle="tooltip" data-bs-placement="top" title="Düzenle"><i class="bi bi-pencil"></i></button>
+                                }
+                                @if (YetkiSil)
+                                {
+                                    <button class="btn text-danger grid-command" @onclick="@(() => { DeleteKurs(data); })" data-bs-toggle="tooltip" data-bs-placement="top" title="Sil"><i class="bi bi-trash3"></i></button>
+                                }
+                            </div>
+                        </td>
+                    </tr>
+                    @if (data.Expanded)
+                    {
+                        <tr>
+                            <td colspan="17">
+                                <table class="table table-bordered table-hover" style="font-size:0.75rem;">
+                                    <thead>
+                                        <tr>
+                                            <td width="8%" align="center">Sıra</td>
+                                            <td width="10%" align="center">TC Kimlik No</td>
+                                            <td width="20%" align="center">Ad Soyad</td>
+                                            <td width="8%" align="center">Doğum Tarihi</td>
+                                            <td width="8%" align="center">Cinsiyet</td>
+                                            <td width="16%" align="center">Mail</td>
+                                            <td width="10%" align="center">Telefon</td>
+                                            <td width="10%" align="center">Durumu</td>
+                                            <td width="10%" align="center">
+                                                @if (YetkiEkle)
+                                                {
+                                                    <button class="btn text-success grid-command" @onclick="@(() => { AddKursiyer(data); })" data-bs-toggle="tooltip" data-bs-placement="top" title="Kursiyer Ekle"><i class="bi bi-plus-circle"></i></button>
+                                                    <button class="btn text-success grid-command" @onclick="@(() => { ExportToExcelKursiyer(data); })"><i class="bi bi-file-earmark-excel"></i></button>
+                                                }
+                                            </td>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @if (data.KursiyerList.ToList().Count == 0)
+                                        {
+                                            <tr>
+                                                <td colspan="9" align="center" valign="bottom" height="64px">
+                                                    <h6>Görüntülenecek Veri Yok</h6>
+                                                </td>
+                                            </tr>
+                                        }
+                                        else
+                                        {
+                                            @foreach (var kursiyer in data.KursiyerList)
+                                            {
+                                                <tr>
+                                                    <td width="8%" align="center">@kursiyer.Sira</td>
+                                                    <td width="10%" align="center">@kursiyer.TCKimlikNo</td>
+                                                    <td width="20%" align="center">@(kursiyer.Ad + " " + kursiyer.Soyad)</td>
+                                                    <td width="8%" align="center">@kursiyer.DogumTarihi.Value.ToString("dd.MM.yyyy")</td>
+                                                    <td width="8%" align="center">@kursiyer.CinsiyetString</td>
+                                                    <td width="16%" align="center">@kursiyer.Mail</td>
+                                                    <td width="10%" align="center">@kursiyer.TelefonCep</td>
+                                                    <td width="10%" align="center">
+                                                        <span class=@(kursiyer.BeklemedeAsilYedekIptal == 2 ? "badge bg-success" : (kursiyer.BeklemedeAsilYedekIptal == 3 ? "badge bg-info" : (kursiyer.BeklemedeAsilYedekIptal == 4 ? "badge bg-danger" : "badge bg-warning")))>@kursiyer.BeklemedeAsilYedekIptalString</span>
+                                                    </td>
+                                                    <td width="10%" align="center">
+                                                        <div class="btn-group">
+                                                            @if (YetkiDegistir)
+                                                            {
+                                                                <button class="btn text-info grid-command" @onclick="@(() => { EditKursiyer(kursiyer.Id); })" data-bs-toggle="tooltip" data-bs-placement="top" title="Düzenle"><i class="bi bi-pencil"></i></button>
+                                                            }
+                                                            @if (YetkiSil)
+                                                            {
+                                                                <button class="btn text-danger grid-command" @onclick="@(() => { DeleteKursiyer(kursiyer.Id); })" data-bs-toggle="tooltip" data-bs-placement="top" title="Sil"><i class="bi bi-trash3"></i></button>
+                                                            }
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            }
+                                        }
+                                    </tbody>
+                                </table>
+                            </td>
+                        </tr>
+                    }
+                }
+            }
+        </tbody>
+        <thead>
+            <tr>
+                <td colspan="17" align="center">
+                    <Pager RowCount="@RowCount"
+                           PageNoChanged="@((int pageNo) => PageNoChanged(pageNo))"
+                           PageSizeChanged="@((int pageSize) => PageSizeChanged(pageSize))"></Pager>
+                </td>
+            </tr>
+        </thead>
+    </table>
+</div>
+
+<button id="popupKayitKursAc" type="button" data-bs-toggle="modal" data-bs-target="#popupKayitKurs" style="visibility:hidden;">
+</button>
+
+<div class="modal fade" id="popupKayitKurs" tabindex="-1" aria-labelledby="popupKayitKursLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-xl">
+        <div class="modal-content">
+            <EditForm Model="@currentDTO">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="popupKayitKursLabel">Kurs Kaydı</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" style="padding-bottom:0">
+                    <div class="row">
+                        <div class="col-md-12 mb-3">
+                            <div class="form-floating">
+                                <select class="form-select form-select-sm" @bind="currentDTO.EgitimId" id="tbEgitim">
+                                    <option value="0"></option>
+                                    @foreach (var item in DSEgitimData)
+                                    {
+                                        <option value="@item.Id">@item.Ad</option>
+                                    }
+                                </select>
+                                <label for="tbEgitim">Eğitim</label>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="form-floating">
+                                <input class="form-control form-control-sm SpinButtonWithoutButtons" type="number" @bind-value="currentDTO.Sira" id="tbSira">
+                                <label for="tbSira">Sıra</label>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="form-floating">
+                                <select class="form-select form-select-sm" @bind="currentDTO.KursOrtamiId" id="tbKursOrtami">
+                                    <option value="0"></option>
+                                    @foreach (var item in DSKursOrtamiData)
+                                    {
+                                        <option value="@item.Id">@item.Ad</option>
+                                    }
+                                </select>
+                                <label for="tbKursOrtami">Kurs Ortamı</label>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="form-floating">
+                                <input class="form-control form-control-sm SpinButtonWithoutButtons" type="number" @bind-value="currentDTO.KontenjanAsil" id="tbKontenjanAsil">
+                                <label for="tbKontenjanAsil">Asıl Kontenjan</label>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="form-floating">
+                                <input class="form-control form-control-sm SpinButtonWithoutButtons" type="number" @bind-value="currentDTO.KontenjanYedek" id="tbKontenjanYedek">
+                                <label for="tbKontenjanYedek">Yedek Kontenjan</label>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="form-floating">
+                                <input class="form-control form-control-sm" type="date" @bind-value="currentDTO.BasvuruBaslangici" id="tbBasvuruBaslangici">
+                                <label for="tbBasvuruBaslangici">Başvuru Başlangıcı</label>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="form-floating">
+                                <input class="form-control form-control-sm" type="date" @bind-value="currentDTO.BasvuruBitisi" id="tbBasvuruBitisi">
+                                <label for="tbBasvuruBitisi">Başvuru Bitişi</label>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="form-floating">
+                                <input class="form-control form-control-sm" type="date" @bind-value="currentDTO.EgitimBaslangici" id="tbEgitimBaslangici">
+                                <label for="tbEgitimBaslangici">Eğitim Başlangıcı</label>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="form-floating">
+                                <input class="form-control form-control-sm" type="date" @bind-value="currentDTO.EgitimBitisi" id="tbEgitimBitisi">
+                                <label for="tbEgitimBitisi">Eğitim Bitişi</label>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="form-floating">
+                                <input class="form-control form-control-sm" type="date" @bind-value="currentDTO.YayindanKalkis" id="tbYayindanKalkis">
+                                <label for="tbYayindanKalkis">Yayından Kalkış Tarihi</label>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="form-floating">
+                                <input class="form-control form-control-sm" type="text" @bind-value="currentDTO.Sure" id="tbSure">
+                                <label for="tbSure">Süre</label>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="form-floating">
+                                <input class="form-control form-control-sm SpinButtonWithoutButtons" type="number" @bind-value="currentDTO.Fiyat" id="tbFiyat">
+                                <label for="tbFiyat">Fiyat</label>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="form-floating">
+                                <select class="form-select form-select-sm" @bind="currentDTO.KdvOraniId" id="tbKdvOrani">
+                                    <option value="0"></option>
+                                    @foreach (var item in DSKdvOraniData)
+                                    {
+                                        <option value="@item.Id">@item.Ad</option>
+                                    }
+                                </select>
+                                <label for="tbKdvOrani">Kdv Oranı</label>
+                            </div>
+                        </div>
+                        <div class="col-md-12 mb-3">
+                            <div class="form-floating">
+                                <textarea class="form-control form-control-sm" type="text" style="height:64px" @bind="currentDTO.Aciklama" id="tbAciklama">
+                                </textarea>
+                                <label for="tbAciklama">Notlar</label>
+                            </div>
+                        </div>
+                        <div class="col-md-12">
+                            <label>Kurs Yeri</label>
+                            <div class="form-floating">
+                                <RadzenHtmlEditor @bind-Value=currentDTO.KursYeri style="height: 200px; margin-bottom: 1rem;" UploadUrl="upload/image">
+                                </RadzenHtmlEditor>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-success btn-sm" @onclick="KaydetKayitKurs"><i class="bi bi-check-circle"></i>&nbsp;Kaydet</button>
+                    <button id="popupKayitKursKapat" type="button" class="btn btn-danger btn-sm" data-bs-dismiss="modal"><i class="bi bi-x-circle"></i>&nbsp;Vazgeç</button>
+                </div>
+            </EditForm>
+        </div>
+    </div>
+</div>
+
+<button id="popupKayitKursiyerAc" type="button" data-bs-toggle="modal" data-bs-target="#popupKayitKursiyer" style="visibility:hidden;">
+</button>
+
+<div class="modal fade" id="popupKayitKursiyer" tabindex="-1" aria-labelledby="popupKayitKursiyerLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-xl">
+        <div class="modal-content">
+            <EditForm Model="@currentKursiyerDTO">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="popupKayitKursiyerLabel">Kursiyer Kaydı</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" style="padding-bottom:0">
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="card mb-3">
+                                <div class="card-header">
+                                    <h4 class="card-title" style="padding:0; margin:0">Başvuru Bilgileri</h4>
+                                </div>
+                                <div class="card-body mt-3">
+                                    <div class="row">
+                                        <div class="col-md-3">
+                                            <div class="form-floating mb-3">
+                                                <input class="form-control form-control-sm" type="text" @bind-value="currentKursiyerDTO.Ad" id="tbAd">
+                                                <label for="tbAd">Adı</label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="form-floating mb-3">
+                                                <input class="form-control form-control-sm" type="text" @bind-value="currentKursiyerDTO.Soyad" id="tbSoyad">
+                                                <label for="tbSoyad">Soyadı</label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="form-floating mb-3">
+                                                <input class="form-control form-control-sm" type="date" @bind-value="currentKursiyerDTO.DogumTarihi" id="tbDogumTarihi">
+                                                <label for="tbDogumTarihi">Doğum Tarihi</label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="form-floating mb-3">
+                                                <select class="form-select form-select-sm" @bind="currentKursiyerDTO.Cinsiyet" id="tbCinsiyet">
+                                                    <option value="0"></option>
+                                                    <option value="1">Erkek</option>
+                                                    <option value="2">Kadın</option>
+                                                </select>
+                                                <label for="tbCinsiyet">Cinsiyet</label>
+                                            </div>
+                                        </div>
+
+                                        <div class="col-md-3">
+                                            <div class="form-floating mb-3">
+                                                <input class="form-control form-control-sm" type="text" @bind-value="currentKursiyerDTO.Mail" id="tbMail">
+                                                <label for="tbMail">E-Posta</label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="form-floating mb-3">
+                                                <input class="form-control form-control-sm" type="text" @bind-value="currentKursiyerDTO.TelefonCep" id="tbTelefonCep">
+                                                <label for="tbTelefonCep">GSM</label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="form-floating mb-3">
+                                                <input class="form-control form-control-sm" type="text" @bind-value="currentKursiyerDTO.Okul" id="tbOkul">
+                                                <label for="tbOkul">Okul</label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="form-floating mb-3">
+                                                <input class="form-control form-control-sm" type="text" @bind-value="currentKursiyerDTO.Meslek" id="tbMeslek">
+                                                <label for="tbMeslek">Meslek</label>
+                                            </div>
+                                        </div>
+
+                                        <div class="col-md-3">
+                                            <div class="form-floating mb-3">
+                                                <input class="form-control form-control-sm" type="text" @bind-value="currentKursiyerDTO.TCKimlikNo" id="tbTCKimlikNo">
+                                                <label for="tbTCKimlikNo">TC Kimlik No</label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="form-floating mb-3">
+                                                <textarea class="form-control form-control-sm" type="text" @bind="currentKursiyerDTO.Adres" rows="3" id="tbAdres"></textarea>
+                                                <label for="tbAdres">Başvuru Adresi</label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="form-floating mb-3">
+                                                <select class="form-select form-select-sm" @onchange="eventArgs => { IlSecAdres(eventArgs.Value); }" id="tbIl">
+                                                    <option value="0"></option>
+                                                    @foreach (var item in DSIlAdres)
+                                                    {
+                                                        if (currentKursiyerDTO.IlIdAdres == item.Id)
+                                                        {
+                                                            <option selected value="@item.Id">@item.Ad</option>
+                                                        }
+                                                        else
+                                                        {
+                                                            <option value="@item.Id">@item.Ad</option>
+                                                        }
+                                                    }
+                                                </select>
+                                                <label for="tbIl">Başvuru Adresi İl</label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="form-floating mb-3">
+                                                <select class="form-select form-select-sm" @bind="currentKursiyerDTO.IlIlceIdAdres" id="tbIlce">
+                                                    <option value="0"></option>
+                                                    @foreach (var item in DSIlceAdres)
+                                                    {
+                                                        <option value="@item.Id">@item.Ad</option>
+                                                    }
+                                                </select>
+                                                <label for="tbIlce">Başvuru Adresi İlçe</label>
+                                            </div>
+                                        </div>
+
+                                        <div class="col-md-3">
+                                            <div class="form-floating">
+                                                <select class="form-select form-select-sm" @bind="currentKursiyerDTO.BeklemedeAsilYedekIptal" id="tbBeklemedeAsilYedekIptal">
+                                                    <option value="0"></option>
+                                                    <option value="1">Beklemede</option>
+                                                    <option value="2">Asıl</option>
+                                                    <option value="3">Yedek</option>
+                                                    <option value="4">İptal</option>
+                                                </select>
+                                                <label for="tbBeklemedeAsilYedekIptal">Durumu</label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="form-floating">
+                                                <InputFile id="fuDiploma" class="form-control form-control-sm" style="padding-left: 1.2rem;" OnChange="HandleFileUploadDiploma"></InputFile>
+                                                <label for="fuDiploma">Diploma</label>
+                                            </div>
+                                            @if (string.IsNullOrEmpty(currentKursiyerDTO.DiplomaUzanti) == false)
+                                            {
+                                                <div style="border:1px dashed silver; text-align:center; margin-top:1rem;">
+                                                    @if (currentKursiyerDTO.DiplomaUzanti == "png" || currentKursiyerDTO.DiplomaUzanti == "jpg" || currentKursiyerDTO.DiplomaUzanti == "jpeg" || currentKursiyerDTO.DiplomaUzanti == "bmp" || currentKursiyerDTO.DiplomaUzanti == "gif" || currentKursiyerDTO.DiplomaUzanti == "ico")
+                                                    {
+                                                        <a href="javascript:void()" @onclick=@(() => { ShowImageOpen("Diploma"); })>
+                                                            <img src=@("data:image/" + currentKursiyerDTO.DiplomaUzanti + ";base64," + currentKursiyerDTO.Diploma) type=@("image/" + currentKursiyerDTO.DiplomaUzanti) style="width:100px;">
+                                                        </a>
+                                                    }
+                                                    <button class="btn btn-sm" @onclick=@(() => { DeleteImage("Diploma"); })><i class="bi bi-trash"></i></button>
+                                                </div>
+                                            }
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="form-floating">
+                                                <InputFile id="fuKimlikOn" class="form-control form-control-sm" style="padding-left: 1.2rem;" OnChange="HandleFileUploadKimlikOn"></InputFile>
+                                                <label for="fuKimlikOn">Kimlik Ön Yüzü</label>
+                                            </div>
+                                            @if (string.IsNullOrEmpty(currentKursiyerDTO.KimlikOnUzanti) == false)
+                                            {
+                                                <div style="border:1px dashed silver; text-align:center; margin-top:1rem;">
+                                                    @if (currentKursiyerDTO.KimlikOnUzanti == "png" || currentKursiyerDTO.KimlikOnUzanti == "jpg" || currentKursiyerDTO.KimlikOnUzanti == "jpeg" || currentKursiyerDTO.KimlikOnUzanti == "bmp" || currentKursiyerDTO.KimlikOnUzanti == "gif" || currentKursiyerDTO.KimlikOnUzanti == "ico")
+                                                    {
+                                                        <a href="javascript:void()" @onclick=@(() => { ShowImageOpen("KimlikOn"); })>
+                                                            <img src=@("data:image/" + currentKursiyerDTO.KimlikOnUzanti + ";base64," + currentKursiyerDTO.KimlikOn) type=@("image/" + currentKursiyerDTO.KimlikOnUzanti) style="width:100px;">
+                                                        </a>
+                                                    }
+                                                    <button class="btn btn-sm" @onclick=@(() => { DeleteImage("KimlikOn"); })><i class="bi bi-trash"></i></button>
+                                                </div>
+                                            }
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="form-floating">
+                                                <InputFile id="fuKimlikArka" class="form-control form-control-sm" style="padding-left: 1.2rem;" OnChange="HandleFileUploadKimlikArka"></InputFile>
+                                                <label for="fuKimlikArka">Kimlik Arka Yüzü</label>
+                                            </div>
+                                            @if (string.IsNullOrEmpty(currentKursiyerDTO.KimlikArkaUzanti) == false)
+                                            {
+                                                <div style="border:1px dashed silver; text-align:center; margin-top:1rem;">
+                                                    @if (currentKursiyerDTO.KimlikArkaUzanti == "png" || currentKursiyerDTO.KimlikArkaUzanti == "jpg" || currentKursiyerDTO.KimlikArkaUzanti == "jpeg" || currentKursiyerDTO.KimlikArkaUzanti == "bmp" || currentKursiyerDTO.KimlikArkaUzanti == "gif" || currentKursiyerDTO.KimlikArkaUzanti == "ico")
+                                                    {
+                                                        <a href="javascript:void()" @onclick=@(() => { ShowImageOpen("KimlikArka"); })>
+                                                            <img src=@("data:image/" + currentKursiyerDTO.KimlikArkaUzanti + ";base64," + currentKursiyerDTO.KimlikArka) type=@("image/" + currentKursiyerDTO.KimlikArkaUzanti) style="width:100px;">
+                                                        </a>
+                                                    }
+                                                    <button class="btn btn-sm" @onclick=@(() => { DeleteImage("KimlikArka"); })><i class="bi bi-trash"></i></button>
+                                                </div>
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-12">
+                            <div class="card mb-3">
+                                <div class="card-header">
+                                    <h4 class="card-title" style="padding:0; margin:0">Fatura Bilgileri</h4>
+                                </div>
+                                <div class="card-body mt-3">
+                                    <div class="row">
+                                        <div class="col-md-3">
+                                            <div class="form-floating mb-3">
+                                                <input class="form-control form-control-sm" type="text" @bind-value="currentKursiyerDTO.Firma" id="tbFirma">
+                                                <label for="tbFirma">Fatura Unvanı</label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="form-floating mb-3">
+                                                <input class="form-control form-control-sm" type="text" @bind-value="currentKursiyerDTO.VergiDairesi" id="tbVergiDairesi">
+                                                <label for="tbVergiDairesi">Vergi Dairesi</label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="form-floating mb-3">
+                                                <input class="form-control form-control-sm" type="text" @bind-value="currentKursiyerDTO.VergiNo" id="tbVergiNo">
+                                                <label for="tbVergiNo">Vergi No</label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="form-floating mb-3">
+                                                <input class="form-control form-control-sm SpinButtonWithoutButtons" type="number" @bind-value="currentKursiyerDTO.Fiyat" id="tbFiyat">
+                                                <label for="tbFiyat">Fiyat</label>
+                                            </div>
+                                        </div>
+
+                                        <div class="col-md-3">
+                                            <div class="form-floating">
+                                                <textarea class="form-control form-control-sm" type="text" @bind="currentKursiyerDTO.AdresFirma" rows="3" id="tbAdresFirma"></textarea>
+                                                <label for="tbAdresFirma">Fatura Adresi</label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="form-floating">
+                                                <select class="form-select form-select-sm" @onchange="eventArgs => { IlSecFirma(eventArgs.Value); }" id="tbIl">
+                                                    <option value="0"></option>
+                                                    @foreach (var item in DSIlFirma)
+                                                    {
+                                                        if (currentKursiyerDTO.IlIdFirma == item.Id)
+                                                        {
+                                                            <option selected value="@item.Id">@item.Ad</option>
+                                                        }
+                                                        else
+                                                        {
+                                                            <option value="@item.Id">@item.Ad</option>
+                                                        }
+                                                    }
+                                                </select>
+                                                <label for="tbIl">Fatura Adresi İl</label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="form-floating">
+                                                <select class="form-select form-select-sm" @bind="currentKursiyerDTO.IlIlceIdFirma" id="tbIlce">
+                                                    <option value="0"></option>
+                                                    @foreach (var item in DSIlceFirma)
+                                                    {
+                                                        <option value="@item.Id">@item.Ad</option>
+                                                    }
+                                                </select>
+                                                <label for="tbIlce">Fatura Adresi İlçe</label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card mb-3">
+                                <div class="card-header">
+                                    <h4 class="card-title" style="padding:0; margin:0">Dekont Bilgisi</h4>
+                                </div>
+                                <div class="card-body mt-3">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="form-floating">
+                                                <input class="form-control form-control-sm" type="text" @bind-value="currentKursiyerDTO.DekontNo" id="tbDekontNo">
+                                                <label for="tbDekontNo">Dekont Tarihi ve No</label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-floating">
+                                                <InputFile id="fuDekont" class="form-control form-control-sm" style="padding-left: 1.2rem;" OnChange="HandleFileUploadDekont"></InputFile>
+                                                <label for="fuDekont">Dekont</label>
+                                            </div>
+                                            @if (string.IsNullOrEmpty(currentKursiyerDTO.DekontUzanti) == false)
+                                            {
+                                                <div style="border:1px dashed silver; text-align:center; margin-top:1rem;">
+                                                    @if (currentKursiyerDTO.DekontUzanti == "png" || currentKursiyerDTO.DekontUzanti == "jpg" || currentKursiyerDTO.DekontUzanti == "jpeg" || currentKursiyerDTO.DekontUzanti == "bmp" || currentKursiyerDTO.DekontUzanti == "gif" || currentKursiyerDTO.DekontUzanti == "ico")
+                                                    {
+                                                        <a href="javascript:void()" @onclick=@(() => { ShowImageOpen("Dekont"); })>
+                                                            <img src=@("data:image/" + currentKursiyerDTO.DekontUzanti + ";base64," + currentKursiyerDTO.Dekont) type=@("image/" + currentKursiyerDTO.DekontUzanti) style="width:100px;">
+                                                        </a>
+                                                    }
+                                                    <button class="btn btn-sm" @onclick=@(() => { DeleteImage("Dekont"); })><i class="bi bi-trash"></i></button>
+                                                </div>
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card mb-3">
+                                <div class="card-header">
+                                    <h4 class="card-title" style="padding:0; margin:0">Eğitim İçin Tercih Edilen İl</h4>
+                                </div>
+                                <div class="card-body mt-3">
+                                    <div class="form-floating">
+                                        <select class="form-select form-select-sm" @bind="currentKursiyerDTO.IlIdTercih" id="tbIlce">
+                                            <option value="0"></option>
+                                            @foreach (var item in DSIlTercih)
+                                            {
+                                                <option value="@item.Id">@item.Ad</option>
+                                            }
+                                        </select>
+                                        <label for="tbIlce">Eğitim İçin Tercih Edilen İl</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card mb-3">
+                                <div class="card-header">
+                                    <h4 class="card-title" style="padding:0; margin:0">Açıklama</h4>
+                                </div>
+                                <div class="card-body mt-3">
+                                    <textarea class="form-control form-control-sm" type="text" @bind="currentKursiyerDTO.Aciklama" style="height:58px" id="tbAciklama"></textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-success btn-sm" @onclick="KaydetKayitKursiyer"><i class="bi bi-check-circle"></i>&nbsp;Kaydet</button>
+                    <button id="popupKayitKursiyerKapat" type="button" class="btn btn-danger btn-sm" data-bs-dismiss="modal"><i class="bi bi-x-circle"></i>&nbsp;Vazgeç</button>
+                </div>
+            </EditForm>
+        </div>
+    </div>
+</div>
+
+@if (loading)
+{
+    <div class="progressBackground">
+        <div class="progressPopup">
+            <img alt="Bekleyiniz..." src="img/loading.gif" width="100" height="100" />
+        </div>
+    </div>
+}
+
+@if (currentUzanti != "")
+{
+    <div class="showImageBackground">
+        <div class="showImagePopup">
+            <div class="showImageClose">
+                <i class="bi bi-x-circle-fill" @onclick="ShowImageClose"></i>
+            </div>
+            <img src=@("data:image/" + currentUzanti + ";base64," + currentDosya) type=@("image/" + currentUzanti) style="max-width:100%; max-height: calc(100vh - 3.5rem);">
+        </div>
+    </div>
+}
+
+@code
+{
+    [Inject] protected ILookupService lookupService { get; set; }
+    [Inject] protected IRolService rolService { get; set; }
+    [Inject] protected IIlIlceService ililceService { get; set; }
+    [Inject] protected IKursService kursService { get; set; }
+
+    List<KursDTO> DSKurs = new List<KursDTO>();
+    List<LookupBasicDTO> DSIlAdres = new List<LookupBasicDTO>();
+    List<LookupBasicDTO> DSIlFirma = new List<LookupBasicDTO>();
+    List<LookupBasicDTO> DSIlTercih = new List<LookupBasicDTO>();
+    List<LookupBasicDTO> DSIlceAdres = new List<LookupBasicDTO>();
+    List<LookupBasicDTO> DSIlceFirma = new List<LookupBasicDTO>();
+    List<LookupBasicDTO> DSEgitimSorgu = new List<LookupBasicDTO>();
+    List<LookupBasicDTO> DSEgitimData = new List<LookupBasicDTO>();
+    List<LookupBasicDTO> DSKursOrtamiSorgu = new List<LookupBasicDTO>();
+    List<LookupBasicDTO> DSKursOrtamiData = new List<LookupBasicDTO>();
+    List<LookupBasicDTO> DSYilSorgu = new List<LookupBasicDTO>();
+    List<LookupBasicDTO> DSKdvOraniData = new List<LookupBasicDTO>();
+    List<LookupBasicDTO> DSDurumSorgu = new List<LookupBasicDTO>()
+    {
+        new LookupBasicDTO() { Id = 1, Ad = "Eğitim Süresi İçinde" },
+        new LookupBasicDTO() { Id = 2, Ad = "Başvuru Dönemi İçinde" },
+        new LookupBasicDTO() { Id = 3, Ad = "Yayında Değil" },
+        new LookupBasicDTO() { Id = 4, Ad = "Başvuru Dönemi Başlamadı" },
+        new LookupBasicDTO() { Id = 5, Ad = "Başvuru Dönemi Bitti, Kurs Başlamadı" },
+        new LookupBasicDTO() { Id = 6, Ad = "Eğitim Süresi Bitti" },
+    };
+
+    KursDTO currentDTO = new KursDTO();
+    KursiyerDTO currentKursiyerDTO = new KursiyerDTO();
+    KursFilterDTO filterDTO = new KursFilterDTO() { PageNo = 1, PageSize = 10 };
+
+    bool loading = false;
+
+    bool YetkiGor = false;
+    bool YetkiEkle = false;
+    bool YetkiDegistir = false;
+    bool YetkiSil = false;
+
+    string currentUzanti = "";
+    string currentDosya = "";
+
+    int RowCount = 0;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            YetkiGor = await rolService.YetkiKontrolByYetki("Eğitim - Kurslar - Gör");
+            YetkiEkle = await rolService.YetkiKontrolByYetki("Eğitim - Kurslar - Ekle");
+            YetkiDegistir = await rolService.YetkiKontrolByYetki("Eğitim - Kurslar - Değiştir");
+            YetkiSil = await rolService.YetkiKontrolByYetki("Eğitim - Kurslar - Sil");
+
+            DSIlAdres = await lookupService.GetLookupFromMasterDetail("IlIlce", 0);
+            DSIlFirma = await lookupService.GetLookupFromMasterDetail("IlIlce", 0);
+            DSIlTercih = await lookupService.GetEgitimYapilanIl();
+            DSEgitimSorgu = await lookupService.GetLookupBasic("Egitim");
+            DSEgitimData = await lookupService.GetLookupBasic("Egitim");
+            DSKursOrtamiSorgu = await lookupService.GetLookupBasic("KursOrtami");
+            DSKursOrtamiData = await lookupService.GetLookupBasic("KursOrtami");
+            DSYilSorgu = await lookupService.GetEgitimYili();
+            DSKdvOraniData = await lookupService.GetLookupBasic("KdvOrani");
+
+            await GetData();
+
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    bool IsValidEmail(string email)
+    {
+        var trimmedEmail = email.Trim();
+
+        if (trimmedEmail.EndsWith("."))
+        {
+            return false;
+        }
+
+        try
+        {
+            var addr = new System.Net.Mail.MailAddress(email);
+            return addr.Address == trimmedEmail;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    async Task GetData()
+    {
+        var result = await kursService.GetKursList(filterDTO);
+
+        if (result.Success)
+        {
+            DSKurs = result.Value;
+            RowCount = result.RowCount;
+        }
+        else
+        {
+            await js.InvokeVoidAsync("SweetMessage", "Hata", result.Message, "error");
+        }
+    }
+
+    ////////////////////////////////////////// Kurs //////////////////////////////////////////
+
+    async Task Sorgula()
+    {
+        await GetData();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task PageNoChanged(int pageNo)
+    {
+        filterDTO.PageNo = pageNo;
+        await GetData();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task PageSizeChanged(int pageSize)
+    {
+        filterDTO.PageSize = pageSize;
+        await GetData();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task EgitimSecSorgu(object value)
+    {
+        filterDTO.EgitimId = Convert.ToInt32(value.ToString());
+
+        await GetData();
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task KursOrtamiSecSorgu(object value)
+    {
+        filterDTO.KursOrtamiId = Convert.ToInt32(value.ToString());
+
+        await GetData();
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task YilSecSorgu(object value)
+    {
+        filterDTO.Yil = Convert.ToInt32(value.ToString());
+
+        await GetData();
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task DurumSecSorgu(object value)
+    {
+        filterDTO.Durum = Convert.ToInt32(value.ToString());
+
+        await GetData();
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task AddKurs()
+    {
+        currentDTO = new KursDTO();
+
+        currentDTO.KursiyerList = new List<KursiyerDTO>();
+
+        await InvokeAsync(StateHasChanged);
+
+        await js.InvokeVoidAsync("bsPopupAc", "popupKayitKurs");
+    }
+
+    async Task EditKurs(int Id)
+    {
+        var fDTO = new KursFilterDTO() { Id = Id, PageNo = 1, PageSize = 1, DonusTipi = 0 };
+
+        var result = await kursService.GetKursList(fDTO);
+
+        if (result.Success == false)
+        {
+            loading = false;
+
+            await InvokeAsync(StateHasChanged);
+
+            await js.InvokeVoidAsync("SweetMessage", "Hata", result.Message, "error");
+
+            return;
+        }
+
+        currentDTO = result.Value[0];
+
+        await InvokeAsync(StateHasChanged);
+
+        await js.InvokeVoidAsync("bsPopupAc", "popupKayitKurs");
+    }
+
+    async Task KaydetKayitKurs()
+    {
+        if (currentDTO.EgitimId == 0
+            || currentDTO.Sira == 0
+            || currentDTO.KursOrtamiId == 0
+            || currentDTO.BasvuruBaslangici.HasValue == false
+            || currentDTO.BasvuruBitisi.HasValue == false
+            || currentDTO.EgitimBaslangici.HasValue == false
+            || currentDTO.EgitimBitisi.HasValue == false
+            || currentDTO.YayindanKalkis.HasValue == false
+            || string.IsNullOrEmpty(currentDTO.Sure)
+            || currentDTO.Fiyat == 0
+            || currentDTO.KdvOraniId == 0
+            || currentDTO.KontenjanAsil == 0
+            || currentDTO.KontenjanYedek == 0
+            || string.IsNullOrEmpty(currentDTO.KursYeri))
+        {
+            await js.InvokeVoidAsync("SweetToast", "Kayıt yapılamadı. Notlar bölümü hariç tüm alanlar girilmelidir", "error");
+            return;
+        }
+
+        var result = await kursService.InsertOrUpdateKurs(currentDTO);
+
+        if (result.Success == false)
+        {
+            loading = false;
+
+            await InvokeAsync(StateHasChanged);
+
+            await js.InvokeVoidAsync("SweetMessage", "Hata", result.Message, "error");
+
+            return;
+        }
+
+        loading = false;
+
+        await GetData();
+
+        await InvokeAsync(StateHasChanged);
+
+        await js.InvokeVoidAsync("bsPopupKapat", "popupKayitKurs");
+
+        await js.InvokeVoidAsync("SweetToast", "Kaydedildi", "success");
+    }
+
+    async Task DeleteKurs(KursDTO dto)
+    {
+        var dtos = new List<KursDTO>();
+
+        dtos.Add(dto);
+
+        var confirm = await js.InvokeAsync<bool>("SweetConfirm", "Uyarı", "Kayıt silinecek, emin misiniz?", "question", "Evet", "Hayır");
+
+        if (confirm)
+        {
+            var resultDelete = await kursService.DeleteKurs(dtos);
+
+            if (resultDelete.Success == false)
+            {
+                await js.InvokeVoidAsync("SweetMessage", "Hata", resultDelete.Message, "error");
+                return;
+            }
+
+            await GetData();
+
+            await InvokeAsync(StateHasChanged);
+
+            await js.InvokeVoidAsync("SweetToast", "Kayıt silindi", "success");
+        }
+    }
+
+    public async Task ExportToExcel()
+    {
+        using (var workbook = new XLWorkbook())
+        {
+            IXLWorksheet worksheet = workbook.Worksheets.Add("Sayfa1");
+
+            worksheet.Cell(1, 1).Value = "Sıra";
+            worksheet.Cell(1, 2).Value = "Eğitim";
+            worksheet.Cell(1, 3).Value = "Kurs Ortamı";
+            worksheet.Cell(1, 4).Value = "Başvuru Başlangıcı";
+            worksheet.Cell(1, 5).Value = "Başvuru Bitişi";
+            worksheet.Cell(1, 6).Value = "Eğitim Başlangıcı";
+            worksheet.Cell(1, 7).Value = "Eğitim Bitişi";
+            worksheet.Cell(1, 8).Value = "Yayından Kalkış";
+            worksheet.Cell(1, 9).Value = "Süre";
+            worksheet.Cell(1, 10).Value = "Fiyat";
+            worksheet.Cell(1, 11).Value = "Kdv Oranı";
+            worksheet.Cell(1, 12).Value = "Bekleyen";
+            worksheet.Cell(1, 13).Value = "Asıl";
+            worksheet.Cell(1, 14).Value = "Yedek";
+            worksheet.Cell(1, 15).Value = "İptal";
+            worksheet.Cell(1, 16).Value = "Toplam";
+            worksheet.Cell(1, 17).Value = "Durum";
+
+            for (int i = 1; i <= 17; i++)
+            {
+                worksheet.Cell(1, i).Style.Font.Bold = true;
+            }
+
+            int index = 1;
+
+            foreach (var data in DSKurs)
+            {
+                worksheet.Cell(index + 1, 1).Value = data.Sira;
+                worksheet.Cell(index + 1, 2).Value = data.Egitim;
+                worksheet.Cell(index + 1, 3).Value = data.KursOrtami;
+                worksheet.Cell(index + 1, 4).Value = data.BasvuruBaslangici.Value.ToString("dd.MM.yyyy");
+                worksheet.Cell(index + 1, 5).Value = data.BasvuruBitisi.Value.ToString("dd.MM.yyyy");
+                worksheet.Cell(index + 1, 6).Value = data.EgitimBaslangici.Value.ToString("dd.MM.yyyy");
+                worksheet.Cell(index + 1, 7).Value = data.EgitimBitisi.Value.ToString("dd.MM.yyyy");
+                worksheet.Cell(index + 1, 8).Value = data.YayindanKalkis.Value.ToString("dd.MM.yyyy");
+                worksheet.Cell(index + 1, 9).Value = data.Sure;
+                worksheet.Cell(index + 1, 10).Value = data.Fiyat.ToString("###,##0.#0");
+                worksheet.Cell(index + 1, 11).Value = data.KdvOrani;
+                worksheet.Cell(index + 1, 12).Value = data.Beklemede;
+                worksheet.Cell(index + 1, 13).Value = data.Asil;
+                worksheet.Cell(index + 1, 14).Value = data.Yedek;
+                worksheet.Cell(index + 1, 15).Value = data.Iptal;
+                worksheet.Cell(index + 1, 16).Value = data.Toplam;
+                worksheet.Cell(index + 1, 17).Value = data.Durum;
+
+                index++;
+            }
+
+            using (var stream = new MemoryStream())
+            {
+                workbook.SaveAs(stream);
+                var content = stream.ToArray();
+                var fileName = "KursListesi" + DateTime.Now.ToString("yyyyMMddss") + ".xlsx";
+                await js.InvokeAsync<object>("saveAsFile", fileName, Convert.ToBase64String(content));
+            }
+        }
+    }
+
+    ////////////////////////////////////////// Kursiyer //////////////////////////////////////////
+
+    async Task IlSecAdres(object value)
+    {
+        int IlId = Convert.ToInt32(value.ToString());
+
+        DSIlceAdres = await lookupService.GetLookupFromMasterDetail("IlIlce", (IlId == 0 ? -1 : IlId));
+
+        currentKursiyerDTO.IlIdAdres = IlId;
+        currentKursiyerDTO.IlIlceIdAdres = 0;
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task IlSecFirma(object value)
+    {
+        int IlId = Convert.ToInt32(value.ToString());
+
+        DSIlceFirma = await lookupService.GetLookupFromMasterDetail("IlIlce", (IlId == 0 ? -1 : IlId));
+
+        currentKursiyerDTO.IlIdFirma = IlId;
+        currentKursiyerDTO.IlIlceIdFirma = 0;
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task AddKursiyer(KursDTO dto)
+    {
+        currentKursiyerDTO = new KursiyerDTO() { KursId = dto.Id };
+
+        await InvokeAsync(StateHasChanged);
+
+        await js.InvokeVoidAsync("bsPopupAc", "popupKayitKursiyer");
+    }
+
+    async Task EditKursiyer(int Id)
+    {
+        var result = await kursService.GetKursiyer(Id);
+
+        if (result.Success == false)
+        {
+            await js.InvokeVoidAsync("SweetMessage", "Hata", result.Message, "error");
+            return;
+        }
+
+        currentKursiyerDTO = result.Value;
+
+        DSIlceAdres = await lookupService.GetLookupFromMasterDetail("IlIlce", (currentKursiyerDTO.IlIdAdres == 0 ? -1 : currentKursiyerDTO.IlIdAdres));
+        DSIlceFirma = await lookupService.GetLookupFromMasterDetail("IlIlce", (currentKursiyerDTO.IlIdFirma == 0 ? -1 : currentKursiyerDTO.IlIdFirma));
+
+        await InvokeAsync(StateHasChanged);
+
+        await js.InvokeVoidAsync("bsPopupAc", "popupKayitKursiyer");
+    }
+
+    async Task KaydetKayitKursiyer()
+    {
+        if (string.IsNullOrEmpty(currentKursiyerDTO.TCKimlikNo)
+        || string.IsNullOrEmpty(currentKursiyerDTO.Ad)
+        || string.IsNullOrEmpty(currentKursiyerDTO.Soyad)
+        || currentKursiyerDTO.DogumTarihi.HasValue == false
+        || currentKursiyerDTO.Cinsiyet == 0
+        || string.IsNullOrEmpty(currentKursiyerDTO.Mail)
+        || string.IsNullOrEmpty(currentKursiyerDTO.TelefonCep)
+        || string.IsNullOrEmpty(currentKursiyerDTO.Adres)
+        || currentKursiyerDTO.IlIlceIdAdres == 0
+        || string.IsNullOrEmpty(currentKursiyerDTO.Meslek)
+        || string.IsNullOrEmpty(currentKursiyerDTO.Okul)
+        || string.IsNullOrEmpty(currentKursiyerDTO.KimlikOn)
+        || string.IsNullOrEmpty(currentKursiyerDTO.KimlikArka)
+        || string.IsNullOrEmpty(currentKursiyerDTO.Diploma)
+        || string.IsNullOrEmpty(currentKursiyerDTO.Dekont)
+        || string.IsNullOrEmpty(currentKursiyerDTO.DekontNo))
+        {
+            await js.InvokeVoidAsync("SweetToast", "TC Kimlik No, Ad, Soyad, Doğum Tarihi, Cinsiyet, E-Posta, GSM, Adres, Meslek, Okul, Kimlik, Diploma ve Dekont bilgileri girilmelidir", "error");
+
+            return;
+        }
+
+        loading = true;
+
+        var result = await kursService.InsertOrUpdateKursiyer(currentKursiyerDTO);
+
+        if (result.Success == false)
+        {
+            loading = false;
+
+            await InvokeAsync(StateHasChanged);
+
+            await js.InvokeVoidAsync("SweetMessage", "Uyarı", result.Message, "error");
+
+            return;
+        }
+
+        await GetData();
+
+        currentDTO.Expanded = true;
+
+        loading = false;
+
+        await InvokeAsync(StateHasChanged);
+
+        await js.InvokeVoidAsync("bsPopupKapat", "popupKayitKursiyer");
+
+        await js.InvokeVoidAsync("SweetToast", "Kaydedildi", "success");
+    }
+
+    async Task VazgecKursiyer(KursDTO dto)
+    {
+        await js.InvokeVoidAsync("bsPopupKapat", "popupKayitKursiyer");
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task DeleteKursiyer(int Id)
+    {
+        var result = await kursService.GetKursiyer(Id);
+
+        if (result.Success == false)
+        {
+            await js.InvokeVoidAsync("SweetMessage", "Hata", result.Message, "error");
+            return;
+        }
+
+        var dtos = new List<KursiyerDTO>();
+
+        dtos.Add(result.Value);
+
+        var confirm = await js.InvokeAsync<bool>("SweetConfirm", "Uyarı", "Kayıt silinecek, emin misiniz?", "question", "Evet", "Hayır");
+
+        if (confirm)
+        {
+            var resultDelete = await kursService.DeleteKursiyer(dtos);
+
+            if (resultDelete.Success == false)
+            {
+                await js.InvokeVoidAsync("SweetMessage", "Hata", resultDelete.Message, "error");
+                return;
+            }
+
+            await GetData();
+
+            await InvokeAsync(StateHasChanged);
+
+            await js.InvokeVoidAsync("SweetToast", "Kayıt silindi", "success");
+        }
+    }
+
+    async Task HandleFileUploadKimlikOn(InputFileChangeEventArgs e)
+    {
+        var stream = e.File.OpenReadStream();
+
+        MemoryStream ms = new MemoryStream();
+
+        await stream.CopyToAsync(ms);
+
+        stream.Close();
+
+        var streamArray = ms.ToArray();
+
+        ms.Close();
+
+        currentKursiyerDTO.KimlikOn = Convert.ToBase64String(streamArray);
+        currentKursiyerDTO.KimlikOnDosyaAdi = e.File.Name;
+        currentKursiyerDTO.KimlikOnUzanti = Path.GetExtension(e.File.Name).Replace(".", "").ToLower();
+
+        stream.Close();
+    }
+
+    async Task HandleFileUploadKimlikArka(InputFileChangeEventArgs e)
+    {
+        var stream = e.File.OpenReadStream();
+
+        MemoryStream ms = new MemoryStream();
+
+        await stream.CopyToAsync(ms);
+
+        stream.Close();
+
+        var streamArray = ms.ToArray();
+
+        ms.Close();
+
+        currentKursiyerDTO.KimlikArka = Convert.ToBase64String(streamArray);
+        currentKursiyerDTO.KimlikArkaDosyaAdi = e.File.Name;
+        currentKursiyerDTO.KimlikArkaUzanti = Path.GetExtension(e.File.Name).Replace(".", "").ToLower();
+
+        stream.Close();
+    }
+
+    async Task HandleFileUploadDiploma(InputFileChangeEventArgs e)
+    {
+        var stream = e.File.OpenReadStream();
+
+        MemoryStream ms = new MemoryStream();
+
+        await stream.CopyToAsync(ms);
+
+        stream.Close();
+
+        var streamArray = ms.ToArray();
+
+        ms.Close();
+
+        currentKursiyerDTO.Diploma = Convert.ToBase64String(streamArray);
+        currentKursiyerDTO.DiplomaDosyaAdi = e.File.Name;
+        currentKursiyerDTO.DiplomaUzanti = Path.GetExtension(e.File.Name).Replace(".", "").ToLower();
+
+        stream.Close();
+    }
+
+    async Task HandleFileUploadDekont(InputFileChangeEventArgs e)
+    {
+        var stream = e.File.OpenReadStream();
+
+        MemoryStream ms = new MemoryStream();
+
+        await stream.CopyToAsync(ms);
+
+        stream.Close();
+
+        var streamArray = ms.ToArray();
+
+        ms.Close();
+
+        currentKursiyerDTO.Dekont = Convert.ToBase64String(streamArray);
+        currentKursiyerDTO.DekontDosyaAdi = e.File.Name;
+        currentKursiyerDTO.DekontUzanti = Path.GetExtension(e.File.Name).Replace(".", "").ToLower();
+
+        stream.Close();
+    }
+
+    async Task ShowImageOpen(string dosyaTipi)
+    {
+        if (dosyaTipi == "KimlikOn")
+        {
+            currentUzanti = currentKursiyerDTO.KimlikOnUzanti;
+            currentDosya = currentKursiyerDTO.KimlikOn;
+        }
+        else if (dosyaTipi == "KimlikArka")
+        {
+            currentUzanti = currentKursiyerDTO.KimlikArkaUzanti;
+            currentDosya = currentKursiyerDTO.KimlikArka;
+        }
+        else if (dosyaTipi == "Diploma")
+        {
+            currentUzanti = currentKursiyerDTO.DiplomaUzanti;
+            currentDosya = currentKursiyerDTO.Diploma;
+        }
+        else if (dosyaTipi == "Dekont")
+        {
+            currentUzanti = currentKursiyerDTO.DekontUzanti;
+            currentDosya = currentKursiyerDTO.Dekont;
+        }
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task ShowImageClose()
+    {
+        currentUzanti = "";
+        currentDosya = "";
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task DeleteImage(string dosyaTipi)
+    {
+        if (dosyaTipi == "KimlikOn")
+        {
+            currentKursiyerDTO.KimlikOn = "";
+            currentKursiyerDTO.KimlikOnDosyaAdi = "";
+            currentKursiyerDTO.KimlikOnUzanti = "";
+        }
+        else if (dosyaTipi == "KimlikArka")
+        {
+            currentKursiyerDTO.KimlikArka = "";
+            currentKursiyerDTO.KimlikArkaDosyaAdi = "";
+            currentKursiyerDTO.KimlikArkaUzanti = "";
+        }
+        else if (dosyaTipi == "Diploma")
+        {
+            currentKursiyerDTO.Diploma = "";
+            currentKursiyerDTO.DiplomaDosyaAdi = "";
+            currentKursiyerDTO.DiplomaUzanti = "";
+        }
+        else if (dosyaTipi == "Dekont")
+        {
+            currentKursiyerDTO.Dekont = "";
+            currentKursiyerDTO.DekontDosyaAdi = "";
+            currentKursiyerDTO.DekontUzanti = "";
+        }
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task ExportToExcelKursiyer(KursDTO dto)
+    {
+        using (var workbook = new XLWorkbook())
+        {
+            IXLWorksheet worksheet = workbook.Worksheets.Add("Sayfa1");
+
+            worksheet.Cell(1, 1).Value = "Sıra";
+            worksheet.Cell(1, 2).Value = "TC Kimlik No";
+            worksheet.Cell(1, 3).Value = "Ad Soyad";
+            worksheet.Cell(1, 4).Value = "Doğum Tarihi";
+            worksheet.Cell(1, 5).Value = "Cinsiyet";
+            worksheet.Cell(1, 6).Value = "Mail";
+            worksheet.Cell(1, 7).Value = "GSM";
+            worksheet.Cell(1, 8).Value = "Durumu";
+
+            for (int i = 1; i <= 8; i++)
+            {
+                worksheet.Cell(1, i).Style.Font.Bold = true;
+            }
+
+            int index = 1;
+
+            foreach (var data in dto.KursiyerList)
+            {
+                worksheet.Cell(index + 1, 1).Value = data.Sira;
+                worksheet.Cell(index + 1, 2).Value = data.TCKimlikNo;
+                worksheet.Cell(index + 1, 3).Value = data.Ad + " " + data.Soyad;
+                worksheet.Cell(index + 1, 4).Value = data.DogumTarihi.Value.ToString("dd.MM.yyyy");
+                worksheet.Cell(index + 1, 5).Value = data.CinsiyetString;
+                worksheet.Cell(index + 1, 6).Value = data.Mail;
+                worksheet.Cell(index + 1, 7).Value = data.TelefonCep;
+                worksheet.Cell(index + 1, 8).Value = data.BeklemedeAsilYedekIptalString;
+
+                index++;
+            }
+
+            using (var stream = new MemoryStream())
+            {
+                workbook.SaveAs(stream);
+                var content = stream.ToArray();
+                var fileName = "KursiyerListesi" + DateTime.Now.ToString("yyyyMMddss") + ".xlsx";
+                await js.InvokeAsync<object>("saveAsFile", fileName, Convert.ToBase64String(content));
+            }
+        }
+    }
+}

@@ -1,0 +1,1348 @@
+﻿@page "/Main/Siparis"
+
+@inject IJSRuntime js
+
+@using System.Threading
+@using System.Threading.Tasks
+@using System.Net.Http
+@using System.Text.Json
+
+<style>
+    .badge {
+        font-size:0.9em;
+    }
+
+    .form-floating > .form-select {
+        padding-left: 0.8rem;
+    }
+
+    .input-group-text {
+        font-size:0.8rem !important;
+    }
+
+    .DivKaydederkenBilgilendir {
+        top: 24px;
+        position: fixed;
+        z-index: 10000;
+        left: calc(50% - 200px);
+        background-color: cornflowerblue;
+        padding: 24px;
+        font-size: large;
+        color: white;
+        font-weight: 600;
+        border-radius: 16px;
+    }
+</style>
+
+<div class="card info-card">
+    <div class="table-responsive">
+        <table class="table table-bordered table-hover">
+            <thead>
+                <tr>
+                    <td width="8%"></td>
+                    <td width="8%" align="center">Sipariş ID</td>
+                    <td width="10%" align="center">Ad Soyad</td>
+                    <td width="10%" align="center">GSM</td>
+                    <td width="10%" align="center">Mail</td>
+                    <td width="10%" align="center">TC Kimlik No</td>
+                    <td width="8%" align="center">İl</td>
+                    <td width="10%" align="center">Sipariş Zamanı</td>
+                    <td width="10%" align="center">Sipariş Durumu</td>
+                    <td width="8%" align="center">Ürün Sayısı</td>
+                    <td width="8%" align="center">
+                        @if (YetkiEkle)
+                        {
+                            <button class="btn text-success grid-command" @onclick="AddSiparis"><i class="bi bi-plus-circle"></i></button>
+                        }
+                    </td>
+                </tr>
+                <tr>
+                    <td width="8%"></td>
+                    <td width="8%">
+                        <input class="form-control form-control-sm SpinButtonWithoutButtons text-center" type="number" @bind-value="filterDTO.Id">
+                    </td>
+                    <td width="10%">
+                        <input class="form-control form-control-sm" type="text" @bind-value="filterDTO.AdSoyadSiparis">
+                    </td>
+                    <td width="10%">
+                        <input class="form-control form-control-sm" type="text" @bind-value="filterDTO.GSM">
+                    </td>
+                    <td width="10%">
+                        <input class="form-control form-control-sm" type="text" @bind-value="filterDTO.Mail">
+                    </td>
+                    <td width="10%">
+                        <input class="form-control form-control-sm" type="text" @bind-value="filterDTO.TCKimlikNoSiparis">
+                    </td>
+                    <td width="8%">
+                        <select class="form-select form-select-sm" @onchange="async eventArgs => { await IlSecSorgu(eventArgs.Value); }">
+                            <option value="0"></option>
+                            @foreach (var item in DSIlSorgu)
+                            {
+                                if (filterDTO.IlId == item.Id)
+                                {
+                                    <option selected value="@item.Id">@item.Ad</option>
+                                }
+                                else
+                                {
+                                    <option value="@item.Id">@item.Ad</option>
+                                }
+                            }
+                        </select>
+                    </td>
+                    <td width="10%">
+                        <input id="tbTarihAraligi" class="form-control form-control-sm" type="text" @bind-value="filterDTO.SiparisTarihiAraligi" autocomplete="off" />
+                    </td>
+                    <td width="10%">
+                        <select class="form-select form-select-sm" @onchange="async eventArgs => { await SiparisDurumuSecSorgu(eventArgs.Value); }">
+                            <option value="0"></option>
+                            @foreach (var item in DSSiparisDurumuSorgu)
+                            {
+                                if (filterDTO.SiparisDurumu == item.Id)
+                                {
+                                    <option selected value="@item.Id">@item.Ad</option>
+                                }
+                                else
+                                {
+                                    <option value="@item.Id">@item.Ad</option>
+                                }
+                            }
+                        </select>
+                    </td>
+                    <td width="8%">
+                    </td>
+                    <td width="8%" align="center">
+                        <div class="btn-group">
+                            <button class="btn text-success grid-command" @onclick="Sorgula"><i class="bi bi-search"></i></button>
+                            <button class="btn text-success grid-command" @onclick="ExportToExcel"><i class="bi bi-file-earmark-excel"></i></button>
+                        </div>
+                    </td>
+                </tr>
+            </thead>
+            <tbody>
+                @if (DSSiparis.ToList().Count == 0)
+                {
+                    <tr>
+                        <td colspan="11" align="center" valign="bottom" height="64px">
+                            <h6>Görüntülenecek Veri Yok</h6>
+                        </td>
+                    </tr>
+                }
+                else
+                {
+                    @foreach (var data in DSSiparis)
+                    {
+                        string checkBoxId = "ExpandCollapseCheckBox" + data.Id.ToString();
+                        string tdCenterStyle = data.Expanded ? "border-top: 2px solid orange" : "";
+                        string tdLeftStyle = data.Expanded ? "border-top: 2px solid orange; border-left: 2px solid orange" : "";
+                        string tdRightStyle = data.Expanded ? "border-top: 2px solid orange; border-right: 2px solid orange" : "";
+                        <tr>
+                            <td width="8%" align="center" style="@tdLeftStyle">
+                                <div class="ExpandCollapseDiv">
+                                    <input id="@checkBoxId" type="checkbox" name="@checkBoxId" @bind="data.Expanded" />
+                                    <label for="@checkBoxId"></label>
+                                </div>
+                            </td>
+                            <td width="8%" align="center" style="@tdCenterStyle">@data.Id</td>
+                            <td width="10%" align="center" style="@tdCenterStyle">@data.AdSoyadSiparis</td>
+                            <td width="10%" align="center" style="@tdCenterStyle">@data.GSM</td>
+                            <td width="10%" align="center" style="@tdCenterStyle">@data.Mail</td>
+                            <td width="10%" align="center" style="@tdCenterStyle">@data.TCKimlikNoSiparis</td>
+                            <td width="8%" align="center" style="@tdCenterStyle">@data.IlSiparis</td>
+                            <td width="10%" align="center" style="@tdCenterStyle">@data.SiparisZamani.Value.ToString("dd.MM.yyyy HH:mm")</td>
+                            <td width="10%" align="center" style="@tdCenterStyle"><span class=@(data.SiparisDurumuString == "Yeni Sipariş" ? "badge bg-primary" : (data.SiparisDurumuString == "Devam Ediyor" ? "badge bg-secondary" : (data.SiparisDurumuString == "Kargolandı" ? "badge bg-success" : (data.SiparisDurumuString == "Teslim edildi" ? "badge bg-success" : (data.SiparisDurumuString == "Faturalandı" ? "badge bg-success" : (data.SiparisDurumuString.StartsWith("İade") ? "badge bg-danger" : (data.SiparisDurumuString == "İptal edildi" ? "badge bg-warning" : (data.SiparisDurumuString == "Diğer" ? "badge bg-secondary" : ""))))))))>@data.SiparisDurumuString</span></td>
+                            <td width="8%" align="center" style="@tdCenterStyle">@data.DetailCount</td>
+                            <td width="8%" align="center" style="@tdRightStyle">
+                                <div class="btn-group">
+                                    @if (YetkiDegistir)
+                                    {
+                                        <button class="btn text-info grid-command" @onclick="@(async () => { await EditSiparis(data.Id); })" data-bs-toggle="tooltip" data-bs-placement="top" title="Düzenle"><i class="bi bi-pencil"></i></button>
+                                    }
+                                    @if (YetkiSil)
+                                    {
+                                        <button class="btn text-danger grid-command" @onclick="@(async () => { await DeleteSiparis(data); })" data-bs-toggle="tooltip" data-bs-placement="top" title="Sil"><i class="bi bi-trash3"></i></button>
+                                    }
+                                </div>
+                            </td>
+                        </tr>
+                        @if (data.Expanded)
+                        {
+                            <tr>
+                                <td colspan="11" style="border: 2px solid orange; border-top:none;">
+                                    <table class="table table-bordered table-hover" style="font-size:0.75rem;">
+                                        <thead>
+                                            <tr>
+                                                <td width="10%" align="center">
+                                                    <input type="checkbox" class="form-check-input" @onchange="async eventArgs => { await SelectAllSiparisCihazClicked(data, eventArgs.Value); }" />
+                                                </td>
+                                                <td width="10%" align="center">Cihaz ID</td>
+                                                <td width="10%" align="center">Marka</td>
+                                                <td width="10%" align="center">Model</td>
+                                                <td width="10%" align="center">Seri No</td>
+                                                <td width="10%" align="center">Fiyat</td>
+                                                <td width="20%" align="center">Durumu</td>
+                                                <td width="10%" align="center">Son İşlem Zamanı</td>
+                                                <td width="10%" align="center">
+                                                    @if (YetkiEkle)
+                                                    {
+                                                        <button class="btn text-success grid-command" @onclick="@(async () => { await AddSiparisCihaz(data); })" data-bs-toggle="tooltip" data-bs-placement="top" title="SiparisCihaz Ekle"><i class="bi bi-plus-circle"></i></button>
+                                                    }
+                                                    @if (YetkiDegistir)
+                                                    {
+                                                        <button class="btn text-primary grid-command" @onclick=@(async () => { await IslemSiparis(data); }) data-bs-toggle="tooltip" data-bs-placement="top" title="Cihaz hareketi ekle"><i class="bi bi-recycle"></i></button>
+                                                    }
+                                                </td>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @if (data.SiparisCihazList.ToList().Count == 0)
+                                            {
+                                                <tr>
+                                                    <td colspan="9" align="center" valign="bottom" height="64px">
+                                                        <h6>Görüntülenecek Veri Yok</h6>
+                                                    </td>
+                                                </tr>
+                                            }
+                                            else
+                                            {
+                                                @foreach (var siparisCihaz in data.SiparisCihazList)
+                                                {
+                                                    <tr>
+                                                        <td width="10%" align="center">
+                                                            <input type="checkbox" class="form-check-input" @bind="@siparisCihaz.Checked" />
+                                                        </td>
+                                                        <td width="10%" align="center">@siparisCihaz.Id</td>
+                                                        @if (currentSiparisCihazDTO.Id == siparisCihaz.Id)
+                                                        {
+                                                            <td width="10%" align="center">
+                                                                <select class="form-select form-select-sm" @onchange="async eventArgs => { await MarkaSec(eventArgs.Value, siparisCihaz); }">
+                                                                    <option value="0"></option>
+                                                                    @foreach (var item in DSMarka)
+                                                                    {
+                                                                        if (siparisCihaz.MarkaId == item.Id)
+                                                                        {
+                                                                            <option selected value="@item.Id">@item.Ad</option>
+                                                                        }
+                                                                        else
+                                                                        {
+                                                                            <option value="@item.Id">@item.Ad</option>
+                                                                        }
+                                                                    }
+                                                                </select>
+                                                            </td>
+                                                            <td width="10%" align="center">
+                                                                <select class="form-select form-select-sm" @bind="siparisCihaz.ModelId">
+                                                                    <option value="0"></option>
+                                                                    @foreach (var item in siparisCihaz.DataSourceModel)
+                                                                    {
+                                                                        <option value="@item.Id">@item.Ad</option>
+                                                                    }
+                                                                </select>
+                                                            </td>
+                                                            <td width="10%">
+                                                                <input class="form-control form-control-sm" type="text" @bind-value="siparisCihaz.SeriNo">
+                                                            </td>
+                                                            <td width="10%" align="center">
+                                                                <input type="number" class="form-control form-control-sm SpinButtonWithoutButtons" style="text-align:end;" @bind-value="siparisCihaz.Fiyat" />
+                                                            </td>
+                                                        }
+                                                        else
+                                                        {
+                                                            <td width="10%" align="center">@siparisCihaz.Marka</td>
+                                                            <td width="10%" align="center">@siparisCihaz.Model</td>
+                                                            <td width="10%" align="center">@siparisCihaz.SeriNo</td>
+                                                            <td width="10%" align="center">@siparisCihaz.Fiyat.ToString("###,##0.#0₺")</td>
+                                                        }
+                                                        <td width="20%" align="center">
+                                                            <span class=@(siparisCihaz.Badge)>@siparisCihaz.Durum</span>
+                                                        </td>
+                                                        <td width="10%" align="center">@(siparisCihaz.SonIslemZamani.HasValue ? siparisCihaz.SonIslemZamani.Value.ToString("dd.MM.yyyy HH:mm") : "")</td>
+                                                        @if (currentSiparisCihazDTO.Id == siparisCihaz.Id)
+                                                        {
+                                                            <td width="10%" align="center">
+                                                                <div class="btn-group">
+                                                                    <button class="btn text-success grid-command" @onclick="@(async () => { await KaydetSiparisCihaz(currentSiparisCihazDTO); })"><i class="bi bi-check-circle"></i></button>
+                                                                    <button class="btn text-primary grid-command" @onclick="@(async () => { await VazgecSiparisCihaz(data); })"><i class="bi bi-x-circle"></i></button>
+                                                                </div>
+                                                            </td>
+                                                        }
+                                                        else
+                                                        {
+                                                            <td width="10%" align="center">
+                                                                <div class="btn-group">
+                                                                    @if (YetkiDegistir)
+                                                                    {
+                                                                        <button class="btn text-info grid-command" @onclick=@(async () => { await EditSiparisCihaz(siparisCihaz); }) data-bs-toggle="tooltip" data-bs-placement="top" title="Düzenle"><i class="bi bi-pencil"></i></button>
+                                                                    }
+                                                                    @if (YetkiSil)
+                                                                    {
+                                                                        <button class="btn text-danger grid-command" @onclick="@(async () => { await DeleteSiparisCihaz(siparisCihaz); })" data-bs-toggle="tooltip" data-bs-placement="top" title="Sil"><i class="bi bi-trash3"></i></button>
+                                                                    }
+                                                                    <button class="btn text-primary grid-command" @onclick=@(async () => { await SiparisCihazHareketGoster(siparisCihaz); }) data-bs-toggle="tooltip" data-bs-placement="top" title="Hareketler"><i class="bi bi-bar-chart-steps"></i></button>
+                                                                </div>
+                                                            </td>
+                                                        }
+                                                    </tr>
+                                                }
+                                            }
+                                        </tbody>
+                                    </table>
+                                </td>
+                            </tr>
+                        }
+                    }
+                }
+            </tbody>
+            <thead>
+                <tr>
+                    <td colspan="11" align="center">
+                        <Pager RowCount="@RowCount"
+                               PageNoChanged="@((int pageNo) => PageNoChanged(pageNo))"
+                               PageSizeChanged="@((int pageSize) => PageSizeChanged(pageSize))"></Pager>
+                    </td>
+                </tr>
+            </thead>
+        </table>
+    </div>
+</div>
+
+<button id="popupKayitSiparisAc" type="button" data-bs-toggle="modal" data-bs-target="#popupKayitSiparis" style="visibility:hidden;">
+</button>
+
+<div class="modal fade" id="popupKayitSiparis" tabindex="-1" aria-labelledby="popupKayitSiparisLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-xl">
+        <div class="modal-content">
+            <EditForm Model="@currentDTO">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="popupKayitSiparisLabel">Sipariş Kaydı</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" style="padding-bottom:0">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text" id="spnAdSoyadSiparis" style="width: 160px;">Ad Soyad</span>
+                                <input id="tbAdSoyadSiparis" class="form-control form-control-sm" type="text" @bind-value="currentDTO.AdSoyadSiparis" aria-describedby="spnAdSoyadSiparis">
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text" id="spnTCKimlikNoSiparis" style="width: 160px;">TC Kimlik No</span>
+                                <input id="tbTCKimlikNoSiparis" class="form-control form-control-sm" type="text" @bind-value="currentDTO.TCKimlikNoSiparis" aria-describedby="spnTCKimlikNoSiparis">
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text" id="spnMail" style="width: 160px;">E-Posta Adresiniz</span>
+                                <input id="tbMail" class="form-control form-control-sm" type="text" @bind-value="currentDTO.Mail" aria-describedby="spnMail">
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text" id="spnTelefonCep" style="width: 160px;">GSM Numaranız</span>
+                                <input id="tbTelefonCep" class="form-control form-control-sm" type="text" @bind-value="currentDTO.GSM" aria-describedby="spnTelefonCep"
+                                        placeholder="Başında 0 olmadan 10 karakter giriniz">
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text" id="spnIlSiparis" style="width: 160px;">İl</span>
+                                <select class="form-select form-select-sm" id="ddlIlSiparis" @onchange="async eventArgs => { await IlSecSiparis(eventArgs.Value); }" aria-describedby="spnIlSiparis">
+                                    <option value="0"></option>
+                                    @foreach (var item in DSIlSiparis)
+                                    {
+                                        if (currentDTO.IlIdSiparis == item.Id)
+                                        {
+                                            <option selected value="@item.Id">@item.Ad</option>
+                                        }
+                                        else
+                                        {
+                                            <option value="@item.Id">@item.Ad</option>
+                                        }
+                                    }
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text" id="spnIlceSiparis" style="width: 160px;">İlçe</span>
+                                <select class="form-select form-select-sm" id="ddlIlceSiparis" @bind="currentDTO.IlceIdSiparis" aria-describedby="spnIlceSiparis">
+                                    <option value="0"></option>
+                                    @foreach (var item in DSIlceSiparis)
+                                    {
+                                        <option value="@item.Id">@item.Ad</option>
+                                    }
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-12 mb-3">
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text" id="spnAdresSiparis" style="width: 160px;">Adres</span>
+                                <input id="tbAdresSiparis" class="form-control form-control-sm" type="text" @bind-value="currentDTO.AdresSiparis" aria-describedby="spnAdresSiparis"
+                                        placeholder="Mahalle, cadde, sokak, bina no, daire no, posta kodu..">
+                            </div>
+                        </div>
+                        <div class="col-md-12 mb-3">
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text" id="spnFaturaTipi" style="width: 160px;">Fatura Adresi</span>
+                                <select class="form-select form-select-sm" id="ddlFaturaTipi" @bind="currentDTO.FaturaTipi" aria-describedby="spnFaturaTipi">
+                                    <option value="0"></option>
+                                    <option value="1">Sipariş adresi ile aynı</option>
+                                    <option value="2">Sipariş adresinden farklı bireysel fatura</option>
+                                    <option value="3">Sipariş adresinden farklı kurumsal fatura</option>
+                                </select>
+                            </div>
+                        </div>
+                        @if (currentDTO.FaturaTipi > 1)
+                        {
+                            @if (currentDTO.FaturaTipi == 2)
+                            {
+                                <div class="col-md-6 mb-3">
+                                    <div class="input-group input-group-sm">
+                                        <span class="input-group-text" id="spnAdSoyadFatura" style="width: 160px;">Ad Soyad</span>
+                                        <input id="tbAdSoyadFatura" class="form-control form-control-sm" type="text" @bind-value="currentDTO.AdSoyadFatura" aria-describedby="spnAdSoyadFatura">
+                                    </div>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <div class="input-group input-group-sm">
+                                        <span class="input-group-text" id="spnTCKimlikNoFatura" style="width: 160px;">TC Kimlik No</span>
+                                        <input id="tbTCKimlikNoFatura" class="form-control form-control-sm" type="text" @bind-value="currentDTO.TCKimlikNoFatura" aria-describedby="spnTCKimlikNoFatura">
+                                    </div>
+                                </div>
+                            }
+                            else @if (currentDTO.FaturaTipi == 3)
+                            {
+                                <div class="col-md-12 mb-3">
+                                    <div class="input-group input-group-sm">
+                                        <span class="input-group-text" id="spnUnvanFatura" style="width: 160px;">Şirket Unvanı</span>
+                                        <input id="tbUnvanFatura" class="form-control form-control-sm" type="text" @bind-value="currentDTO.UnvanFatura" aria-describedby="spnUnvanFatura">
+                                    </div>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <div class="input-group input-group-sm">
+                                        <span class="input-group-text" id="spnVergiDairesiFatura" style="width: 160px;">Vergi Dairesi</span>
+                                        <input id="tbVergiDairesiFatura" class="form-control form-control-sm" type="text" @bind-value="currentDTO.VergiDairesiFatura" aria-describedby="spnVergiDairesiFatura">
+                                    </div>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <div class="input-group input-group-sm">
+                                        <span class="input-group-text" id="spnVergiNoFatura" style="width: 160px;">Vergi No</span>
+                                        <input id="tbVergiNoFatura" class="form-control form-control-sm" type="text" @bind-value="currentDTO.VergiNoFatura" aria-describedby="spnVergiNoFatura">
+                                    </div>
+                                </div>
+                            }
+                            <div class="col-md-6 mb-3">
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text" id="spnIlFatura" style="width: 160px;">İl</span>
+                                    <select class="form-select form-select-sm" id="ddlIlFatura" @onchange="async eventArgs => { await IlSecFatura(eventArgs.Value); }" aria-describedby="spnIlFatura">
+                                        <option value="0"></option>
+                                        @foreach (var item in DSIlFatura)
+                                        {
+                                            if (currentDTO.IlIdFatura == item.Id)
+                                            {
+                                                <option selected value="@item.Id">@item.Ad</option>
+                                            }
+                                            else
+                                            {
+                                                <option value="@item.Id">@item.Ad</option>
+                                            }
+                                        }
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text" id="spnIlceFatura" style="width: 160px;">İlçe</span>
+                                    <select class="form-select form-select-sm" id="ddlIlceFatura" @bind="currentDTO.IlceIdFatura" aria-describedby="spnIlceFatura">
+                                        <option value="0"></option>
+                                        @foreach (var item in DSIlceFatura)
+                                        {
+                                            <option value="@item.Id">@item.Ad</option>
+                                        }
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-12 mb-3">
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text" id="spnAdresFatura" style="width: 160px;">Adres</span>
+                                    <input id="tbAdresFatura" class="form-control form-control-sm" type="text" @bind-value="currentDTO.AdresFatura" aria-describedby="spnAdresFatura"
+                                        placeholder="Mahalle, cadde, sokak, bina no, daire no, posta kodu..">
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-success btn-sm" @onclick="KaydetKayitSiparis"><i class="bi bi-check-circle"></i>&nbsp;Kaydet</button>
+                    <button id="popupKayitSiparisKapat" type="button" class="btn btn-danger btn-sm" data-bs-dismiss="modal"><i class="bi bi-x-circle"></i>&nbsp;Vazgeç</button>
+                </div>
+            </EditForm>
+        </div>
+    </div>
+</div>
+
+@if (loading)
+{
+    <div class="progressBackground">
+        <div class="progressPopup">
+            <img alt="Bekleyiniz..." src="img/loading.gif" width="100" height="100" />
+        </div>
+    </div>
+}
+
+<button id="popupKayitIslemAc" type="button" data-bs-toggle="modal" data-bs-target="#popupKayitIslem" style="visibility:hidden;">
+</button>
+
+<div class="modal fade" id="popupKayitIslem" tabindex="-1" aria-labelledby="popupKayitIslemLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="popupKayitIslemLabel">Sipariş İşlem Kaydı</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" style="padding-bottom:0">
+                <div class="row">
+                    <div class="col-md-12 mb-3">
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text" id="spnIslemZamani" style="width: 160px;">İşlem Zamanı</span>
+                            <input class="form-control form-control-sm" type="datetime-local" @bind-value="currentSiparisCihazHareketDTO.IslemZamani" aria-describedby="spnIslemZamani">
+                        </div>
+                    </div>
+                    <div class="col-md-12 mb-3">
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text" id="spnSiparisCihazHareketTuru" style="width: 160px;">İşlem Türü</span>
+                            <select class="form-select form-select-sm" @onchange="async eventArgs => { await currentSiparisCihazHareketDTOSiparisCihazHareketTuruSec(eventArgs.Value); }" aria-describedby="spnSiparisCihazHareketTuru">
+                                <option value="0"></option>
+                                @foreach (var item in DSSiparisCihazHareketTuru)
+                                {
+                                    if (currentSiparisCihazHareketDTO.SiparisCihazHareketTuruId == item.Id)
+                                    {
+                                        <option selected value="@item.Id">@item.Ad</option>
+                                    }
+                                    else
+                                    {
+                                        <option value="@item.Id">@item.Ad</option>
+                                    }
+                                }
+                            </select>
+                        </div>
+                    </div>
+                    @if (currentSiparisCihazHareketDTO.SiparisCihazHareketTuru == "Kargolandı")
+                    {
+                        <div class="col-md-12 mb-3">
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text" id="spnKargoFirmasi" style="width: 160px;">Kargo Firması</span>
+                                <select class="form-select form-select-sm" @bind="currentSiparisCihazHareketDTO.KargoFirmasiId" aria-describedby="spnKargoFirmasi">
+                                    <option value="0"></option>
+                                    @foreach (var item in DSKargoFirmasi)
+                                    {
+                                        <option value="@item.Id">@item.Ad</option>
+                                    }
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-12 mb-3">
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text" id="spnKargoTakipNo" style="width: 160px;">Kargo Takip No</span>
+                                <input class="form-control form-control-sm" type="text" @bind-value="currentSiparisCihazHareketDTO.KargoTakipNo" aria-describedby="spnKargoTakipNo">
+                            </div>
+                        </div>
+                    }
+                    else if (currentSiparisCihazHareketDTO.SiparisCihazHareketTuru == "Faturalandı")
+                    {
+                        <div class="col-md-12 mb-3">
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text" id="spnFaturaNo" style="width: 160px;">Fatura No</span>
+                                <input class="form-control form-control-sm" type="text" @bind-value="currentSiparisCihazHareketDTO.FaturaNo" aria-describedby="spnFaturaNo">
+                            </div>
+                        </div>
+                    }
+                    <div class="col-md-12 mb-3">
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text" id="spnAciklama" style="width: 160px;">Açıklama</span>
+                            <InputTextArea class="form-control form-control-sm" type="text" @bind-Value="currentSiparisCihazHareketDTO.Aciklama" rows="3" aria-describedby="spnAciklama">
+                            </InputTextArea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer" style="justify-content: space-between;">
+                <div>
+                    <input id="cbKaydederkenBilgilendir" type="checkbox" class="form-check-input" @bind="@KaydederkenBilgilendir" />
+                    <label for="cbKaydederkenBilgilendir" class="form-check-label">Kaydettikten Sonra Müşteri Bilgilendirilsin</label>
+                </div>
+                <div>
+                    <button type="submit" class="btn btn-success btn-sm" @onclick="KaydetKayitIslem"><i class="bi bi-check-circle"></i>&nbsp;Kaydet</button>
+                    <button id="popupKayitIslemKapat" type="button" class="btn btn-danger btn-sm" data-bs-dismiss="modal"><i class="bi bi-x-circle"></i>&nbsp;Vazgeç</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<button id="popupSiparisCihazHareketAc" type="button" data-bs-toggle="modal" data-bs-target="#popupSiparisCihazHareket" style="visibility:hidden;">
+</button>
+
+<div class="modal fade" id="popupSiparisCihazHareket" tabindex="-1" aria-labelledby="popupSiparisCihazHareketLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                @if (DSSiparisCihazHareket.Count > 0)
+                {
+                    <h5 class="modal-title" id="popupSiparisCihazHareketLabel">@(DSSiparisCihazHareket[0].SiparisCihazId.ToString() + " Idli Cihazın Hareketleri")</h5>
+                }
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" style="padding-bottom:0">
+                <div class="row">
+                    <div class="col-md-12 mb-3">
+                        <table class="table table-bordered table-hover">
+                            <thead>
+                                <tr>
+                                    <td width="20%" align="center">İşlem Zamanı</td>
+                                    <td width="20%" align="center">İşlem Türü</td>
+                                    <td width="60%" align="center">Açıklama</td>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var siparisCihazHareket in DSSiparisCihazHareket)
+                                {
+                                    <tr>
+                                        <td width="20%" align="center">@siparisCihazHareket.IslemZamani.Value.ToString("dd.MM.yyyy HH:mm")</td>
+                                        <td width="20%" align="center">@siparisCihazHareket.SiparisCihazHareketTuru</td>
+                                        <td width="60%" align="center">@siparisCihazHareket.Aciklama</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code
+{
+    [Inject] protected ILookupService lookupService { get; set; }
+    [Inject] protected IRolService rolService { get; set; }
+    [Inject] protected ISMSMailService smsMailService { get; set; }
+    [Inject] protected IIlIlceService ililceService { get; set; }
+    [Inject] protected ISiparisService siparisService { get; set; }
+
+    List<SiparisDTO> DSSiparis = new List<SiparisDTO>();
+    List<SiparisCihazHareketDTO> DSSiparisCihazHareket = new List<SiparisCihazHareketDTO>();
+    List<LookupBasicDTO> DSIlSorgu = new List<LookupBasicDTO>();
+    List<LookupBasicDTO> DSIlSiparis = new List<LookupBasicDTO>();
+    List<LookupBasicDTO> DSIlFatura = new List<LookupBasicDTO>();
+    List<LookupBasicDTO> DSIlceSiparis = new List<LookupBasicDTO>();
+    List<LookupBasicDTO> DSIlceFatura = new List<LookupBasicDTO>();
+    List<LookupBasicDTO> DSMarka = new List<LookupBasicDTO>();
+    List<LookupBasicDTO> DSKargoFirmasi = new List<LookupBasicDTO>();
+    List<LookupBasicDTO> DSSiparisDurumuSorgu = new List<LookupBasicDTO>();
+    List<LookupBasicDTO> DSSiparisCihazHareketTuru = new List<LookupBasicDTO>();
+
+    SiparisDTO currentDTO = new SiparisDTO();
+    SiparisCihazDTO currentSiparisCihazDTO = new SiparisCihazDTO();
+    SiparisCihazHareketDTO currentSiparisCihazHareketDTO = new SiparisCihazHareketDTO();
+    SiparisFilterDTO filterDTO = new SiparisFilterDTO() { PageNo = 1, PageSize = 10 };
+
+    bool loading = false;
+
+    bool YetkiGor = false;
+    bool YetkiEkle = false;
+    bool YetkiDegistir = false;
+    bool YetkiSil = false;
+
+    bool KaydederkenBilgilendir = false;
+
+    int RowCount = 0;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            YetkiGor = await rolService.YetkiKontrolByYetki("Satış - Siparişler - Gör");
+            YetkiEkle = await rolService.YetkiKontrolByYetki("Satış - Siparişler - Ekle");
+            YetkiDegistir = await rolService.YetkiKontrolByYetki("Satış - Siparişler - Değiştir");
+            YetkiSil = await rolService.YetkiKontrolByYetki("Satış - Siparişler - Sil");
+
+            DSIlSorgu = await lookupService.GetLookupFromMasterDetail("IlIlce", 0);
+            DSIlSiparis = await lookupService.GetLookupFromMasterDetail("IlIlce", 0);
+            DSIlFatura = await lookupService.GetLookupFromMasterDetail("IlIlce", 0);
+            DSMarka = await lookupService.GetLookupFromMasterDetail("Cihaz", 0);
+            DSKargoFirmasi = await lookupService.GetLookupBasic("KargoFirmasi");
+            DSSiparisDurumuSorgu = await lookupService.GetLookupBasic("SiparisCihazHareketTuru");
+            DSSiparisCihazHareketTuru = await lookupService.GetLookupBasic("SiparisCihazHareketTuru");
+
+            DSSiparisDurumuSorgu.Add(new LookupBasicDTO() { Id = 10, Ad = "Sipariş Alındı" });
+            DSSiparisDurumuSorgu.Add(new LookupBasicDTO() { Id = 20, Ad = "Devam Ediyor" });
+
+            await js.InvokeVoidAsync("dateRangePick", "tbTarihAraligi", true);
+
+            await GetData();
+
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    bool IsValidEmail(string email)
+    {
+        var trimmedEmail = email.Trim();
+
+        if (trimmedEmail.EndsWith("."))
+        {
+            return false;
+        }
+
+        try
+        {
+            var addr = new System.Net.Mail.MailAddress(email);
+            return addr.Address == trimmedEmail;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    public string TurkceKaraktersiz(string text)
+    {
+        text = text.Replace("İ", "I");
+        text = text.Replace("ı", "i");
+        text = text.Replace("Ğ", "G");
+        text = text.Replace("ğ", "g");
+        text = text.Replace("Ö", "O");
+        text = text.Replace("ö", "o");
+        text = text.Replace("Ü", "U");
+        text = text.Replace("ü", "u");
+        text = text.Replace("Ş", "S");
+        text = text.Replace("ş", "s");
+        text = text.Replace("Ç", "C");
+        text = text.Replace("ç", "c");
+
+        return text;
+    }
+
+    async Task GetData()
+    {
+        filterDTO.SiparisTarihiAraligi = await js.InvokeAsync<string>("getValue", "tbTarihAraligi");
+
+        var result = await siparisService.GetSiparisList(filterDTO);
+
+        if (result.Success)
+        {
+            DSSiparis = result.Value;
+            RowCount = result.RowCount;
+        }
+        else
+        {
+            await js.InvokeVoidAsync("SweetMessage", "Hata", result.Message, "error");
+        }
+    }
+
+    ////////////////////////////////////////// Siparis //////////////////////////////////////////
+
+    async Task Sorgula()
+    {
+        await GetData();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task PageNoChanged(int pageNo)
+    {
+        filterDTO.PageNo = pageNo;
+        await GetData();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task PageSizeChanged(int pageSize)
+    {
+        filterDTO.PageSize = pageSize;
+        await GetData();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task IlSecSorgu(object value)
+    {
+        filterDTO.IlId = Convert.ToInt32(value.ToString());
+        await GetData();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task SiparisDurumuSecSorgu(object value)
+    {
+        filterDTO.SiparisDurumu = Convert.ToInt32(value.ToString());
+        await GetData();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task IlSecSiparis(object value)
+    {
+        int IlId = Convert.ToInt32(value.ToString());
+
+        DSIlceSiparis = await lookupService.GetLookupFromMasterDetail("IlIlce", (IlId == 0 ? -1 : IlId));
+
+        currentDTO.IlIdSiparis = IlId;
+        currentDTO.IlceIdSiparis = 0;
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task IlSecFatura(object value)
+    {
+        int IlId = Convert.ToInt32(value.ToString());
+
+        DSIlceFatura = await lookupService.GetLookupFromMasterDetail("IlIlce", (IlId == 0 ? -1 : IlId));
+
+        currentDTO.IlIdFatura = IlId;
+        currentDTO.IlceIdFatura = 0;
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task AddSiparis()
+    {
+        currentDTO = new SiparisDTO();
+
+        currentDTO.SiparisCihazList = new List<SiparisCihazDTO>();
+
+        await InvokeAsync(StateHasChanged);
+
+        await js.InvokeVoidAsync("bsPopupAc", "popupKayitSiparis");
+    }
+
+    async Task EditSiparis(int Id)
+    {
+        var fDTO = new SiparisFilterDTO() { Id = Id, PageNo = 1, PageSize = 1, DonusTipi = 0 };
+
+        var result = await siparisService.GetSiparisList(fDTO);
+
+        if (result.Success == false)
+        {
+            loading = false;
+
+            await InvokeAsync(StateHasChanged);
+
+            await js.InvokeVoidAsync("SweetMessage", "Hata", result.Message, "error");
+
+            return;
+        }
+
+        currentDTO = result.Value[0];
+
+        DSIlceSiparis = await lookupService.GetLookupFromMasterDetail("IlIlce", (currentDTO.IlIdSiparis == 0 ? -1 : currentDTO.IlIdSiparis));
+        DSIlceFatura = await lookupService.GetLookupFromMasterDetail("IlIlce", (currentDTO.IlIdFatura == 0 ? -1 : currentDTO.IlIdFatura));
+
+        await InvokeAsync(StateHasChanged);
+
+        await js.InvokeVoidAsync("bsPopupAc", "popupKayitSiparis");
+    }
+
+    async Task KaydetKayitSiparis()
+    {
+        bool validateFarkliFaturaAdresi = false;
+
+        bool validateOrtak =
+            !string.IsNullOrEmpty(currentDTO.Mail)
+            & IsValidEmail(currentDTO.Mail)
+            & !string.IsNullOrEmpty(currentDTO.GSM)
+            & currentDTO.GSM.Length == 10
+            & !string.IsNullOrEmpty(currentDTO.TCKimlikNoSiparis)
+            & currentDTO.TCKimlikNoSiparis.Length == 11
+            & !string.IsNullOrEmpty(currentDTO.AdSoyadSiparis)
+            & currentDTO.IlIdSiparis > 0
+            & currentDTO.IlceIdSiparis > 0
+            & !string.IsNullOrEmpty(currentDTO.AdresSiparis)
+            & currentDTO.FaturaTipi > 0;
+
+        bool validateFarkliFaturaAdresiOrtak =
+            currentDTO.IlIdFatura > 0
+            & currentDTO.IlceIdFatura > 0
+            & !string.IsNullOrEmpty(currentDTO.AdresFatura);
+
+        if (currentDTO.FaturaTipi == 1)
+        {
+            validateFarkliFaturaAdresi = true;
+        }
+        else if (currentDTO.FaturaTipi == 2)
+        {
+            validateFarkliFaturaAdresi =
+                validateFarkliFaturaAdresiOrtak
+                & !string.IsNullOrEmpty(currentDTO.TCKimlikNoFatura)
+                & currentDTO.TCKimlikNoFatura.Length == 11
+                & !string.IsNullOrEmpty(currentDTO.AdSoyadFatura);
+        }
+        else if (currentDTO.FaturaTipi == 3)
+        {
+            validateFarkliFaturaAdresi =
+                validateFarkliFaturaAdresiOrtak
+                & !string.IsNullOrEmpty(currentDTO.UnvanFatura)
+                & !string.IsNullOrEmpty(currentDTO.VergiDairesiFatura)
+                & !string.IsNullOrEmpty(currentDTO.VergiNoFatura)
+                & currentDTO.VergiNoFatura.Length == 10;
+        }
+
+        if (validateOrtak == false || validateFarkliFaturaAdresi == false)
+        {
+            await js.InvokeVoidAsync("SweetToast", "lütfen tüm alanları doldurunuz.<br/>TC kimlik numarasının 11, GSM numarasının 10, kurumsal faturalar için vergi numarasının 10 karakter olmasına dikkat ediniz.", "error");
+            return;
+        }
+
+        foreach (var item in currentDTO.SiparisCihazList)
+        {
+            item.DataSourceModel = new List<LookupBasicDTO>();
+        }
+
+        var result = await siparisService.InsertOrUpdateSiparis(currentDTO);
+
+        if (result.Success == false)
+        {
+            loading = false;
+
+            await InvokeAsync(StateHasChanged);
+
+            await js.InvokeVoidAsync("SweetMessage", "Hata", result.Message, "error");
+
+            return;
+        }
+
+        loading = false;
+
+        await GetData();
+
+        await InvokeAsync(StateHasChanged);
+
+        await js.InvokeVoidAsync("bsPopupKapat", "popupKayitSiparis");
+
+        await js.InvokeVoidAsync("SweetToast", "Kaydedildi", "success");
+    }
+
+    async Task DeleteSiparis(SiparisDTO dto)
+    {
+        var dtos = new List<SiparisDTO>();
+
+        foreach (var item in dto.SiparisCihazList)
+        {
+            item.DataSourceModel = new List<LookupBasicDTO>();
+        }
+
+        dtos.Add(dto);
+
+        var confirm = await js.InvokeAsync<bool>("SweetConfirm", "Uyarı", "Kayıt silinecek, emin misiniz?", "question", "Evet", "Hayır");
+
+        if (confirm)
+        {
+            var resultDelete = await siparisService.DeleteSiparis(dtos);
+
+            if (resultDelete.Success == false)
+            {
+                await js.InvokeVoidAsync("SweetMessage", "Hata", resultDelete.Message, "error");
+                return;
+            }
+
+            await GetData();
+
+            await InvokeAsync(StateHasChanged);
+
+            await js.InvokeVoidAsync("SweetToast", "Kayıt silindi", "success");
+        }
+    }
+
+    public async Task ExportToExcel()
+    {
+        using (var workbook = new XLWorkbook())
+        {
+            IXLWorksheet worksheet = workbook.Worksheets.Add("Sayfa1");
+
+            worksheet.Cell(1, 1).Value = "Ad Soyad";
+            worksheet.Cell(1, 2).Value = "GSM";
+            worksheet.Cell(1, 3).Value = "E-Posta";
+            worksheet.Cell(1, 4).Value = "TC Kimlik No";
+            worksheet.Cell(1, 5).Value = "İl";
+            worksheet.Cell(1, 6).Value = "Sipariş Zamanı";
+            worksheet.Cell(1, 7).Value = "Sipariş Durumu";
+
+            for (int i = 1; i <= 7; i++)
+            {
+                worksheet.Cell(1, i).Style.Font.Bold = true;
+            }
+
+            int index = 1;
+
+            foreach (var data in DSSiparis)
+            {
+                worksheet.Cell(index + 1, 1).Value = data.AdSoyadSiparis;
+                worksheet.Cell(index + 1, 2).Value = data.GSM;
+                worksheet.Cell(index + 1, 3).Value = data.Mail;
+                worksheet.Cell(index + 1, 4).Value = data.TCKimlikNoSiparis;
+                worksheet.Cell(index + 1, 5).Value = data.IlSiparis;
+                worksheet.Cell(index + 1, 6).Value = data.SiparisZamani.Value.ToString("dd.MM.yyyy");
+                worksheet.Cell(index + 1, 7).Value = data.SiparisDurumuString;
+
+                index++;
+            }
+
+            using (var stream = new MemoryStream())
+            {
+                workbook.SaveAs(stream);
+                var content = stream.ToArray();
+                var fileName = "SiparisListesi" + DateTime.Now.ToString("yyyyMMddss") + ".xlsx";
+                await js.InvokeAsync<object>("saveAsFile", fileName, Convert.ToBase64String(content));
+            }
+        }
+    }
+
+    ////////////////////////////////////////// SiparisCihaz //////////////////////////////////////////
+
+    async Task MarkaSec(object value, SiparisCihazDTO dto)
+    {
+        int MarkaId = Convert.ToInt32(value.ToString());
+
+        dto.DataSourceModel = await lookupService.GetLookupFromMasterDetail("Cihaz", (MarkaId == 0 ? -1 : MarkaId));
+
+        dto.MarkaId = MarkaId;
+        dto.ModelId = 0;
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task SelectAllSiparisCihazClicked(SiparisDTO dto, object aChecked)
+    {
+        foreach (var siparisCihazDTO in dto.SiparisCihazList)
+        {
+            siparisCihazDTO.Checked = (bool)aChecked;
+        }
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task AddSiparisCihaz(SiparisDTO dto)
+    {
+        bool AcilmisKayitVar = false;
+
+        foreach (var SiparisDTO in DSSiparis)
+        {
+            var exist = SiparisDTO.SiparisCihazList.SingleOrDefault(x => x.Id == 0);
+
+            if (exist != null)
+            {
+                AcilmisKayitVar = true;
+                break;
+            }
+        }
+
+        if (AcilmisKayitVar == false)
+        {
+            currentSiparisCihazDTO = new SiparisCihazDTO()
+                {
+                    SiparisId = dto.Id,
+                    DataSourceModel = new List<LookupBasicDTO>()
+                };
+
+            dto.SiparisCihazList.Add(currentSiparisCihazDTO);
+
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    async Task EditSiparisCihaz(SiparisCihazDTO dto)
+    {
+        bool AcilmisKayitVar = false;
+
+        foreach (var SiparisDTO in DSSiparis)
+        {
+            var exist = SiparisDTO.SiparisCihazList.SingleOrDefault(x => x.Id == 0 & x.SiparisId > 0);
+
+            if (exist != null)
+            {
+                AcilmisKayitVar = true;
+                break;
+            }
+        }
+
+        if (AcilmisKayitVar == false)
+        {
+            currentSiparisCihazDTO = dto;
+
+            dto.DataSourceModel = new List<LookupBasicDTO>();
+            dto.DataSourceModel.AddRange(await lookupService.GetLookupFromMasterDetail("Cihaz", (dto.MarkaId == 0 ? -1 : dto.MarkaId)));
+
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    async Task KaydetSiparisCihaz(SiparisCihazDTO dto)
+    {
+        if (dto.MarkaId == 0 || dto.ModelId == 0 || string.IsNullOrEmpty(dto.SeriNo) || dto.Fiyat <= 0)
+        {
+            await js.InvokeVoidAsync("SweetMessage", "Uyarı", $"Marka, model, seri no ve fiyat girilmelidir", "error");
+
+            return;
+        }
+
+        var result = await siparisService.InsertOrUpdateSiparisCihaz(dto);
+
+        if (result.Success == false)
+        {
+            await InvokeAsync(StateHasChanged);
+
+            await js.InvokeVoidAsync("SweetMessage", "Uyarı", result.Message, "error");
+
+            return;
+        }
+
+        await GetData();
+
+        currentSiparisCihazDTO = new SiparisCihazDTO();
+
+        var DSSiparisRow = DSSiparis.SingleOrDefault(x => x.Id == dto.SiparisId);
+
+        DSSiparisRow.Expanded = true;
+
+        await InvokeAsync(StateHasChanged);
+
+        await js.InvokeVoidAsync("SweetToast", "Kaydedildi", "success");
+    }
+
+    async Task VazgecSiparisCihaz(SiparisDTO dto)
+    {
+        if (currentSiparisCihazDTO.Id == 0)
+        {
+            dto.SiparisCihazList.Remove(currentSiparisCihazDTO);
+        }
+        else
+        {
+            currentSiparisCihazDTO = new SiparisCihazDTO();
+        }
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task SiparisCihazHareketGoster(SiparisCihazDTO dto)
+    {
+        var result = await siparisService.GetSiparisCihazHareket(dto.Id);
+
+        if (result.Success == false)
+        {
+            await InvokeAsync(StateHasChanged);
+
+            await js.InvokeVoidAsync("SweetMessage", "Uyarı", result.Message, "error");
+
+            return;
+        }
+
+        DSSiparisCihazHareket = result.Value;
+
+        await InvokeAsync(StateHasChanged);
+
+        await js.InvokeVoidAsync("bsPopupAc", "popupSiparisCihazHareket");
+    }
+
+    async Task currentSiparisCihazHareketDTOSiparisCihazHareketTuruSec(object value)
+    {
+        int SiparisCihazHareketTuruId = Convert.ToInt32(value.ToString());
+
+        currentSiparisCihazHareketDTO.SiparisCihazHareketTuruId = SiparisCihazHareketTuruId;
+        currentSiparisCihazHareketDTO.SiparisCihazHareketTuru = DSSiparisCihazHareketTuru.SingleOrDefault(x => x.Id == SiparisCihazHareketTuruId).Ad;
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task IslemSiparis(SiparisDTO dto)
+    {
+        if (dto.SiparisCihazList.Where(x => x.Checked).Count() == 0)
+        {
+            await js.InvokeVoidAsync("SweetMessage", "Hata", "En az bir satırı işaretlemelisiniz", "error");
+
+            return;
+        }
+
+        currentSiparisCihazHareketDTO = new SiparisCihazHareketDTO() { IslemZamani = DateTime.Now, KargoFirmasiId = dto.KargoFirmasiId, KargoFirmasi = dto.KargoFirmasi };
+
+        currentDTO = dto;
+
+        await InvokeAsync(StateHasChanged);
+
+        await js.InvokeVoidAsync("bsPopupAc", "popupKayitIslem");
+    }
+
+    async Task KaydetKayitIslem()
+    {
+        if (currentSiparisCihazHareketDTO.SiparisCihazHareketTuruId == 0)
+        {
+            await js.InvokeVoidAsync("SweetMessage", "Hata", "İşlem türünü seçiniz", "error");
+
+            return;
+        }
+
+        if (currentSiparisCihazHareketDTO.IslemZamani.HasValue == false)
+        {
+            await js.InvokeVoidAsync("SweetMessage", "Hata", "İşlem zamanını giriniz", "error");
+
+            return;
+        }
+
+        foreach (var siparisCihaz in currentDTO.SiparisCihazList)
+        {
+            if (siparisCihaz.Checked)
+            {
+                var dto = new SiparisCihazHareketDTO()
+                {
+                    SiparisCihazId = siparisCihaz.Id,
+                    IslemZamani = currentSiparisCihazHareketDTO.IslemZamani,
+                    SiparisCihazHareketTuruId = currentSiparisCihazHareketDTO.SiparisCihazHareketTuruId,
+                    SiparisCihazHareketTuru = currentSiparisCihazHareketDTO.SiparisCihazHareketTuru
+                };
+
+                if (currentSiparisCihazHareketDTO.SiparisCihazHareketTuru == "Kargolandı")
+                {
+                    dto.KargoFirmasiId = currentSiparisCihazHareketDTO.KargoFirmasiId;
+                    dto.KargoFirmasi = currentSiparisCihazHareketDTO.KargoFirmasi;
+                    dto.KargoTakipNo = currentSiparisCihazHareketDTO.KargoTakipNo;
+                }
+                else if (currentSiparisCihazHareketDTO.SiparisCihazHareketTuru == "Faturalandı")
+                {
+                    dto.FaturaNo = currentSiparisCihazHareketDTO.FaturaNo;
+                }
+                else if (currentSiparisCihazHareketDTO.SiparisCihazHareketTuru == "Diger")
+                {
+                    dto.FaturaNo = currentSiparisCihazHareketDTO.Aciklama;
+                }
+
+                var result = await siparisService.InsertSiparisCihazHareket(dto);
+
+                if (result.Success == false)
+                {
+                    await InvokeAsync(StateHasChanged);
+
+                    await js.InvokeVoidAsync("SweetMessage", "Uyarı", result.Message, "error");
+
+                    return;
+                }
+            }
+        }
+
+        await GetData();
+
+        var DSSiparisRow = DSSiparis.SingleOrDefault(x => x.Id == currentDTO.Id);
+
+        DSSiparisRow.Expanded = true;
+
+        if (KaydederkenBilgilendir)
+        {
+            string unvan = TurkceKaraktersiz(DSSiparisRow.AdSoyadSiparis);
+
+            if (unvan.Length > 40) unvan = unvan.Substring(40) + "..";
+
+            string mesajara = $"{DSSiparisRow.Id.ToString()} numaralı ";
+
+            if (currentSiparisCihazHareketDTO.SiparisCihazHareketTuru == "Kargolandı" & currentSiparisCihazHareketDTO.IslemZamani.HasValue)
+            {
+                mesajara = "siparisiniz kargolanmistir";
+            }
+            else if (currentSiparisCihazHareketDTO.SiparisCihazHareketTuru == "Teslim edildi" & currentSiparisCihazHareketDTO.IslemZamani.HasValue)
+            {
+                mesajara = "siparisiniz teslim edilmistir";
+            }
+            else if (currentSiparisCihazHareketDTO.SiparisCihazHareketTuru == "Faturalandı" & currentSiparisCihazHareketDTO.IslemZamani.HasValue)
+            {
+                mesajara = "siparisinizin faturasi kesilmistir";
+            }
+            else if (currentSiparisCihazHareketDTO.SiparisCihazHareketTuru == "İptal" & currentSiparisCihazHareketDTO.IslemZamani.HasValue)
+            {
+                mesajara = "siparisinizin iptal islemi gerceklestirilmistir";
+            }
+            else if (currentSiparisCihazHareketDTO.SiparisCihazHareketTuru == "İade sürecinde" & currentSiparisCihazHareketDTO.IslemZamani.HasValue)
+            {
+                mesajara = "siparisinizin iade islemi gerceklestirilmistir";
+            }
+            else if (currentSiparisCihazHareketDTO.SiparisCihazHareketTuru == "İade edildi" & currentSiparisCihazHareketDTO.IslemZamani.HasValue)
+            {
+                mesajara = "siparisinizin iade islemi gerceklestirilmistir";
+            }
+            else
+            {
+                mesajara = "siparisinizin durumu guncellendi";
+            }
+
+            var mailDTO = new MailDTO()
+                {
+                    Subject = "RADLAB Online Satış",
+                    Body = $@"Sayin {unvan} {mesajara}. <a href='https://www.radlab.com.tr/musteritakip'>https://www.radlab.com.tr/musteritakip</a> adresinden takip edebilirsiniz.",
+                    Mesaj = $@"Sayin {unvan} {mesajara}. https:[BCKSPC][BCKSPC]www.radlab.com.tr[BCKSPC]musteritakip adresinden takip edebilirsiniz.",
+                    ToList = new List<string>() { DSSiparisRow.Mail },
+                    KendisineDeGonder = true,
+                    GSM = DSSiparisRow.GSM
+                };
+
+            var resultSMS = await smsMailService.SendSMSAndMail(mailDTO);
+
+            await InvokeAsync(StateHasChanged);
+
+            await js.InvokeVoidAsync("bsPopupKapat", "popupKayitIslem");
+
+            if (resultSMS.Success)
+            {
+                await js.InvokeVoidAsync("SweetToast", "Veriler kaydedildi. Müşteriye bilgilendirme yapıldı.", "success");
+            }
+            else
+            {
+                await js.InvokeVoidAsync("SweetToast", "Veriler kaydedildi." + resultSMS.Message, "error");
+            }
+        }
+        else
+        {
+            await InvokeAsync(StateHasChanged);
+
+            await js.InvokeVoidAsync("bsPopupKapat", "popupKayitIslem");
+
+            await js.InvokeVoidAsync("SweetToast", "Kaydedildi", "success");
+        }
+    }
+
+    async Task DeleteSiparisCihaz(SiparisCihazDTO dto)
+    {
+        var resultSiparis = await siparisService.GetSiparisList(new SiparisFilterDTO() { Id = dto.SiparisId, PageNo = 1, PageSize = 1 });
+
+        if (resultSiparis.Success == false)
+        {
+            await InvokeAsync(StateHasChanged);
+
+            await js.InvokeVoidAsync("SweetMessage", "Hata", resultSiparis.Message, "error");
+
+            return;
+        }
+
+        if (resultSiparis.Value[0].SiparisCihazList.Count() == 1)
+        {
+            await InvokeAsync(StateHasChanged);
+
+            await js.InvokeVoidAsync("SweetMessage", "Hata", "Son cihazı da silerseniz kayıt geçersiz olacak. Cihaz özelliklerini değiştirebilir veya sipariş kaydını tamamen silebilirsiniz.", "error");
+
+            return;
+        }
+
+        var confirm = await js.InvokeAsync<bool>("SweetConfirm", "Uyarı", "Kayıt silinecek, emin misiniz?", "question", "Evet", "Hayır");
+
+        if (confirm)
+        {
+            dto.DataSourceModel = new List<LookupBasicDTO>();
+
+            var resultDelete = await siparisService.DeleteSiparisCihaz(new List<SiparisCihazDTO>() { dto } );
+
+            if (resultDelete.Success == false)
+            {
+                await js.InvokeVoidAsync("SweetMessage", "Hata", resultDelete.Message, "error");
+                return;
+            }
+
+            await GetData();
+
+            DSSiparis.SingleOrDefault(x => x.Id == dto.SiparisId).Expanded = true;
+
+            await InvokeAsync(StateHasChanged);
+
+            await js.InvokeVoidAsync("SweetToast", "Kayıt silindi", "success");
+        }
+    }
+}

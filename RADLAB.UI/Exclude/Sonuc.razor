@@ -1,0 +1,1416 @@
+﻿@page "/Main/Sonuc"
+
+@inject IJSRuntime js
+
+@using System.Threading
+@using System.Threading.Tasks
+@using System.Net.Http
+@using System.Text.Json
+@using Newtonsoft.Json
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="card info-card">
+            <table class="table table-bordered Grid" style="margin-bottom:0 !important;">
+                <thead>
+                    <tr class="grid-row-header">
+                        <td width="4%" align="center">Dağıtım ID</td>
+                        <td width="4%" align="center">Dönem</td>
+                        <td width="6%" align="center">Kuruluş</td>
+                        <td width="6%" align="center">Birim</td>
+                        <td width="5%" align="center">Adı Soyadı</td>
+                        <td width="5%" align="center">TC Kimik No</td>
+                        <td width="4%" align="center">Kullanım Yeri</td>
+                        <td width="4%" align="center">Dz. No</td>
+                        <td width="4%" align="center">Dz. No Kap</td>
+                        <td width="5%" align="center">Rapor No</td>
+                        <td width="4%" align="center">Üst Yazı No</td>
+                        <td width="4%" align="center">Referans ID</td>
+                        <td width="5%" align="center">Kullanım Başlangıç Tarihi</td>
+                        <td width="5%" align="center">Kullanım Bitiş Tarihi</td>
+                        <td width="4%" align="center">P1</td>
+                        <td width="4%" align="center">P4</td>
+                        <td width="4%" align="center">Sonuç Türü</td>
+                        <td width="4%" align="center">Sonuç Tipi</td>
+                        <td width="5%" align="center">Geliş Tarihi</td>
+                        <td width="5%" align="center">Değ. Tarihi</td>
+                        <td width="5%" align="center">Kayıp Tarihi</td>
+                        <td width="4%" align="center">
+                            <div class="btn-group">
+                                <div class="dropdown">
+                                    <button class="btn text-success grid-command" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                        <i class="bi bi-chevron-down"></i>
+                                    </button>
+                                    <ul class="dropdown-menu">
+                                        <li>
+                                            <button class="dropdown-item" @onclick="ImportAc">
+                                                <i class="bi bi-cloud-arrow-down text-success"></i>Dağıtım Sonuçlarını Aktar
+                                            </button>
+                                        </li>
+                                        <li>
+                                            <button class="dropdown-item" @onclick="IcmalAc">
+                                                <i class="bi bi-graph-up-arrow text-info"></i>Rapor Numarası ve Üst Yazı Numarası İstatistikleri
+                                            </button>
+                                        </li>
+                                        <li>
+                                            <button class="dropdown-item" @onclick="TopluIslemAc">
+                                                <i class="bi bi-grid-3x3-gap text-primary"></i>Listelenen Tüm Kayıtlar İçin Toplu İşlemler
+                                            </button>
+                                        </li>
+                                        <li>
+                                            <button class="dropdown-item" @onclick="ExportToExcel">
+                                                <i class="bi bi-file-earmark-excel text-success"></i>Görünen Kayıtları Excele Aktar
+                                            </button>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr class="grid-row-add">
+                        <td width="4%" align="center">
+                            <input class="form-control form-control-sm SpinButtonWithoutButtons" type="number" style="text-align:center;" @bind-value="filterDTO.DagitimMasterId" />
+                        </td>
+                        <td width="4%" align="center">
+                            <select class="form-control form-control-sm" style="appearance:none" @bind="filterDTO.Donem">
+                                <option value="0"></option>
+                                @foreach (var item in DataSourceDonemSorgu)
+                                {
+                                    <option value="@item.Id">@item.Ad</option>
+                                }
+                            </select>
+                        </td>
+                        <td width="6%" align="center">
+                            <select class="form-select form-select-sm" @onchange="eventArgs => { KurulusSecSorgu(eventArgs.Value); }">
+                                <option value="0"></option>
+                                @foreach (var item in DataSourceKurulusSorgu)
+                                {
+                                    if (filterDTO.KurulusId == item.Id)
+                                    {
+                                        <option selected value="@item.Id">@item.Ad</option>
+                                    }
+                                    else
+                                    {
+                                        <option value="@item.Id">@item.Ad</option>
+                                    }
+                                }
+                            </select>
+                        </td>
+                        <td width="6%" align="center">
+                            <RadzenDropDown AllowClear="true" AllowFiltering="true" FilterCaseSensitivity="Radzen.FilterCaseSensitivity.CaseInsensitive" 
+                                            @bind-Value="@SelectedBirimIdler" Multiple="true" Data="@DataSourceBirimSorgu" TextProperty="Ad" ValueProperty="Id"
+                                            Change=@(args => BirimSecSorgu(args, "Çoklu seçim yapabilirsiniz")) Class="w-100" />
+                        </td>
+                        <td width="10%" align="center" colspan="2">
+                            <input class="form-control form-control-sm" type="text" style="text-align:center;" @bind-value="filterDTO.AdSoyadTCKimlikNo" placeholder="İsim veya TC kimlik no" />
+                        </td>
+                        <td width="4%" align="center">
+                            <select class="form-select form-select-sm" @bind="filterDTO.VucutBolgesiId">
+                                <option value="0"></option>
+                                @foreach (var item in DataSourceVucutBolgesiSorgu)
+                                {
+                                    <option value="@item.Id">@item.Ad</option>
+                                }
+                            </select>
+                        </td>
+                        <td width="4%" align="center">
+                            <input class="form-control form-control-sm SpinButtonWithoutButtons" type="number" style="text-align:center;" @bind-value="filterDTO.DozimetreNo" />
+                        </td>
+                        <td width="4%" align="center">
+                            <input class="form-control form-control-sm SpinButtonWithoutButtons" type="number" style="text-align:center;" @bind-value="filterDTO.DozimetreNoKap" />
+                        </td>
+                        <td width="5%" align="center">
+                            <input class="form-control form-control-sm SpinButtonWithoutButtons" type="number" style="text-align:center;" @bind-value="filterDTO.RaporNo" />
+                        </td>
+                        <td width="4%" align="center">
+                            <input class="form-control form-control-sm SpinButtonWithoutButtons" type="number" style="text-align:center;" @bind-value="filterDTO.UstYaziNo" />
+                        </td>
+                        <td width="4%" align="center"></td>
+                        <td width="5%" align="center"></td>
+                        <td width="5%" align="center"></td>
+                        <td width="4%" align="center"></td>
+                        <td width="4%" align="center"></td>
+                        <td width="4%" align="center">
+                            <select class="form-select form-select-sm" @bind="filterDTO.SonucTuru">
+                                <option value="0"></option>
+                                @foreach (var item in DataSourceSonucTuruSorgu)
+                                {
+                                    <option value="@item.Id">@item.Ad</option>
+                                }
+                            </select>
+                        </td>
+                        <td width="4%" align="center">
+                            <select class="form-select form-select-sm" @bind="filterDTO.SonucTipi">
+                                <option value="0"></option>
+                                @foreach (var item in DataSourceSonucTipiSorgu)
+                                {
+                                    <option value="@item.Id">@item.Ad</option>
+                                }
+                            </select>
+                        </td>
+                        <td width="5%" align="center"></td>
+                        <td width="5%" align="center"></td>
+                        <td width="5%" align="center"></td>
+                        <td width="4%" align="center">
+                            <div class="btn-group">
+                                <button class="btn text-primary grid-command" @onclick="@(() => { Sorgula(); })"><i class="bi bi-search"></i></button>
+                            </div>
+                        </td>
+                    </tr>
+                </thead>
+                @if (DataSource.ToList().Count == 0)
+                {
+                    <tbody>
+                        <tr>
+                            <td colspan="22" align="center" valign="bottom" height="64px">
+                                <h6>Görüntülenecek Veri Yok</h6>
+                            </td>
+                        </tr>
+                    </tbody>
+                }
+                else
+                {
+                    <tbody>
+                        @foreach (var data in DataSource)
+                        {
+                            @if (currentDTO.Id == data.Id)
+                            {
+                                <tr style="display: table; table-layout: fixed; width: 100%;">
+                                    <td width="4%" align="center">@data.DagitimMasterId</td>
+                                    <td width="4%" align="center">@data.DonemString</td>
+                                    <td width="6%" align="center">@data.Kurulus</td>
+                                    <td width="6%" align="center">@data.Birim</td>
+                                    <td width="5%" align="center">@data.AdSoyad</td>
+                                    <td width="5%" align="center">@data.TCKimlikNo</td>
+                                    <td width="4%" align="center">@data.VucutBolgesiKod</td>
+                                    <td width="4%" align="center">@data.DozimetreNo</td>
+                                    <td width="4%" align="center">@data.DozimetreNoKap</td>
+                                    <td width="5%" align="center">@data.RaporNo</td>
+                                    <td width="4%" align="center">@data.UstYaziNo</td>
+                                    <td width="4%" align="center">
+                                        <input class="form-control form-control-sm" type="text" @bind-value="currentDTO.ReferansId" />
+                                    </td>
+                                    <td width="5%" align="center">
+                                        <div class="ForRadzenWidth100">
+                                            <RadzenDatePicker TValue="DateTime?" DateFormat="dd.MM.yyyy" @bind-Value="currentDTO.KullanimBaslangicTarihi"></RadzenDatePicker>
+                                        </div>
+                                    </td>
+                                    <td width="5%" align="center">
+                                        <div class="ForRadzenWidth100">
+                                            <RadzenDatePicker TValue="DateTime?" DateFormat="dd.MM.yyyy" @bind-Value="currentDTO.KullanimBitisTarihi"></RadzenDatePicker>
+                                        </div>
+                                    </td>
+                                    <td width="4%" align="center">
+                                        <input class="form-control form-control-sm SpinButtonWithoutButtons" type="number" style="text-align:end;" @bind-value="currentDTO.P1" />
+                                    </td>
+                                    <td width="4%" align="center">
+                                        <input class="form-control form-control-sm SpinButtonWithoutButtons" type="number" style="text-align:end;" @bind-value="currentDTO.P4" />
+                                    </td>
+                                    <td width="4%" align="center">
+                                        <select class="form-select form-select-sm" @bind="currentDTO.SonucTuru">
+                                            <option value="0"></option>
+                                            @foreach (var item in DataSourceSonucTuruData)
+                                            {
+                                                <option value="@item.Id">@item.Ad</option>
+                                            }
+                                        </select>
+                                    </td>
+                                    <td width="4%" align="center">
+                                        <select class="form-select form-select-sm" @bind="currentDTO.SonucTipi">
+                                            <option value="0"></option>
+                                            @foreach (var item in DataSourceSonucTipiData)
+                                            {
+                                                <option value="@item.Id">@item.Ad</option>
+                                            }
+                                        </select>
+                                    </td>
+                                    <td width="5%" align="center">
+                                        <div class="ForRadzenWidth100">
+                                            <RadzenDatePicker TValue="DateTime?" DateFormat="dd.MM.yyyy" @bind-Value="currentDTO.GelisTarihi"></RadzenDatePicker>
+                                        </div>
+                                    </td>
+                                    <td width="5%" align="center">
+                                        <div class="ForRadzenWidth100">
+                                            <RadzenDatePicker TValue="DateTime?" DateFormat="dd.MM.yyyy" @bind-Value="currentDTO.DegerlendirmeTarihi"></RadzenDatePicker>
+                                        </div>
+                                    </td>
+                                    <td width="5%" align="center">
+                                        <div class="ForRadzenWidth100">
+                                            <RadzenDatePicker TValue="DateTime?" DateFormat="dd.MM.yyyy" @bind-Value="currentDTO.DurumTarihi"></RadzenDatePicker>
+                                        </div>
+                                    </td>
+                                    <td width="4%" align="center">
+                                        <div class="btn-group">
+                                            <button class="btn text-success grid-command" @onclick="Kaydet"><i class="bi bi-check-circle"></i></button>
+                                            <button class="btn text-primary grid-command" @onclick="Vazgec"><i class="bi bi-x-circle"></i></button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                            else
+                            {
+                                <tr style="display: table; table-layout: fixed; width: 100%;">
+                                    <td width="4%" align="center">@data.DagitimMasterId</td>
+                                    <td width="4%" align="center">@data.DonemString</td>
+                                    <td width="6%" align="center">@data.Kurulus</td>
+                                    <td width="6%" align="center">@data.Birim</td>
+                                    <td width="5%" align="center">@data.AdSoyad</td>
+                                    <td width="5%" align="center">@data.TCKimlikNo</td>
+                                    <td width="4%" align="center">@data.VucutBolgesiKod</td>
+                                    <td width="4%" align="center">@data.DozimetreNo</td>
+                                    <td width="4%" align="center">@data.DozimetreNoKap</td>
+                                    <td width="5%" align="center">@data.RaporNo</td>
+                                    <td width="4%" align="center">@data.UstYaziNo</td>
+                                    <td width="4%" align="center">@data.ReferansId</td>
+                                    <td width="5%" align="center">@(data.KullanimBaslangicTarihi.HasValue ? data.KullanimBaslangicTarihi.Value.ToString("dd.MM.yyyy") : "")</td>
+                                    <td width="5%" align="center">@(data.KullanimBitisTarihi.HasValue ? data.KullanimBitisTarihi.Value.ToString("dd.MM.yyyy") : "")</td>
+                                    <td width="4%" align="center">@data.P1</td>
+                                    <td width="4%" align="center">@data.P4</td>
+                                    <td width="4%" align="center">@(data.SonucTuru == 0 ? "" : data.SonucTuruString.Substring(0, 1))</td>
+                                    <td width="4%" align="center">@data.SonucTipi</td>
+                                    <td width="5%" align="center">@(data.GelisTarihi.HasValue ? data.GelisTarihi.Value.ToString("dd.MM.yyyy") : "")</td>
+                                    <td width="5%" align="center">@(data.DegerlendirmeTarihi.HasValue ? data.DegerlendirmeTarihi.Value.ToString("dd.MM.yyyy") : "")</td>
+                                    <td width="5%" align="center">@(data.DurumTarihi.HasValue ? data.DurumTarihi.Value.ToString("dd.MM.yyyy") : "")</td>
+                                    <td width="4%" align="center">
+                                        @if (YetkiYaz)
+                                        {
+                                            <button class="btn text-info grid-command" @onclick="@(() => { Edit(data); })"><i class="bi bi-pencil"></i></button>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                }
+                <thead>
+                    <tr>
+                        <td colspan="22" align="center">
+                            <Pager RowCount="@RowCount"
+                                   PageNoChanged="@((int pageNo) => PageNoChanged(pageNo))"
+                                   PageSizeChanged="@((int pageSize) => PageSizeChanged(pageSize))"></Pager>
+                        </td>
+                    </tr>
+                </thead>
+            </table>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card info-card">
+            <table class="table table-bordered Grid" style="margin-bottom:0 !important;">
+                <tbody>
+                    @foreach (var data in DataSourceOzetSonucTuru)
+                    {
+                        <tr style="display: table; table-layout: fixed; width: 100%;">
+                            <td width="80%" align="center">@data.GruplananAlan</td>
+                            <td width="20%" align="center">@data.KayitSayisi</td>
+                        </tr>
+                    }
+                    <tr class="grid-row-header">
+                        <td width="80%" align="center">TOPLAM</td>
+                        <td width="20%" align="center">@DataSourceOzetSonucTuru.Sum(x => x.KayitSayisi)</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card info-card">
+            <table class="table table-bordered Grid" style="margin-bottom:0 !important;">
+                <tbody>
+                    @foreach (var data in DataSourceOzetVucutBolgesi)
+                    {
+                        <tr style="display: table; table-layout: fixed; width: 100%;">
+                            <td width="80%" align="center">@data.GruplananAlan</td>
+                            <td width="20%" align="center">@data.KayitSayisi</td>
+                        </tr>
+                    }
+                    <tr class="grid-row-header">
+                        <td width="80%" align="center">TOPLAM</td>
+                        <td width="20%" align="center">@DataSourceOzetVucutBolgesi.Sum(x => x.KayitSayisi)</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<button id="popupImportAc" type="button" data-bs-toggle="modal" data-bs-target="#popupImport" style="visibility:hidden;">
+</button>
+<div class="modal fade" id="popupImport" tabindex="-1" aria-labelledby="popupImportLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="popupImportLabel">Dağıtım Sonuçları Aktarımı</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div style="border-style: solid;border-color: lavender;border-width: 1px;">
+                    <table class="table table-bordered Grid" style="margin-bottom:0 !important;">
+                        <thead>
+                            <tr class="grid-row-header" style="width: calc(100% - 1.3em);">
+                                <td width="10%" align="center">Dağıtım ID</td>
+                                <td width="10%" align="center">Dönem</td>
+                                <td width="30%" align="center">Kuruluş</td>
+                                <td width="30%" align="center">Birim</td>
+                                <td width="10%" align="center">Dağıtım Tarihi</td>
+                                <td width="10%" align="center">Dağıtım Sayısı</td>
+                            </tr>
+                            <tr class="grid-row-add" style="width: calc(100% - 1.3em);">
+                                <td width="10%" align="center">
+                                    <input class="form-control form-control-sm SpinButtonWithoutButtons" type="number" style="text-align:center;" @bind-value="filterDTOImportDagitimMaster.Id" />
+                                </td>
+                                <td width="10%" align="center">
+                                    <select class="form-select form-select-sm" @bind="filterDTOImportDagitimMaster.Donem">
+                                        <option value="0"></option>
+                                        @foreach (var item in DataSourceDonemImport)
+                                        {
+                                            <option value="@item.Id">@item.Ad</option>
+                                        }
+                                    </select>
+                                </td>
+                                <td width="30%" align="center">
+                                    <select class="form-select form-select-sm" @onchange="eventArgs => { KurulusSecImport(eventArgs.Value); }">
+                                        <option value="0"></option>
+                                        @foreach (var item in DataSourceKurulusImport)
+                                        {
+                                            if (filterDTOImportDagitimMaster.KurulusId == item.Id)
+                                            {
+                                                <option selected value="@item.Id">@item.Ad</option>
+                                            }
+                                            else
+                                            {
+                                                <option value="@item.Id">@item.Ad</option>
+                                            }
+                                        }
+                                    </select>
+                                </td>
+                                <td width="30%" align="center">
+                                    <select class="form-select form-select-sm" @bind="filterDTOImportDagitimMaster.BirimId">
+                                        <option value="0"></option>
+                                        @foreach (var item in DataSourceBirimImport)
+                                        {
+                                            <option value="@item.Id">@item.Ad</option>
+                                        }
+                                    </select>
+                                </td>
+                                <td width="20%" align="center" colspan="2">
+                                    <div class="btn-group">
+                                        <button class="btn text-primary grid-command" @onclick="SorgulaImport"><i class="bi bi-search"></i></button>
+                                    </div>
+                                </td>
+                            </tr>
+                        </thead>
+                        @if (DataSourceDagitimMasterImport.ToList().Count == 0)
+                        {
+                            <tbody>
+                                <tr>
+                                    <td colspan="7" align="center" valign="bottom" height="64px">
+                                        <h6>Görüntülenecek Veri Yok</h6>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        }
+                        else
+                        {
+                            <tbody style="display: block; max-height: 120px; overflow-y: scroll;">
+                                @foreach (var data in DataSourceDagitimMasterImport)
+                                {
+                                    string stil = currentDagitimMasterDTO.Id == data.Id ? "color:white; background-color:blue" : "";
+
+                                    <tr style="display: table; table-layout: fixed; width: 100%; cursor:pointer; @stil" @onclick="@(() => { DagitimMasterSec(data); })">
+                                        <td width="10%" align="center">@data.Id</td>
+                                        <td width="10%" align="center">@data.DonemString</td>
+                                        <td width="30%" align="center">@data.Kurulus</td>
+                                        <td width="30%" align="center">@(data.BirimId == 0 ? "Tüm Birimler" : data.Birim)</td>
+                                        <td width="10%" align="center">@(data.DagitimTarihi.HasValue ? data.DagitimTarihi.Value.ToString("dd.MM.yyyy") : "")</td>
+                                        <td width="10%" align="center">@data.Toplam</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        }
+                    </table>
+                </div>
+                <br />
+                <div style="border-style: solid;border-color: lavender;border-width: 1px;">
+                    <table class="table table-bordered Grid" style="margin-bottom:0 !important;">
+                        <thead>
+                            <tr class="grid-row-header" style="width: calc(100% - 1.3em);">
+                                <td width="10%" align="center">Birim</td>
+                                <td width="8%" align="center">Adı Soyadı</td>
+                                <td width="8%" align="center">TC Kimlik No</td>
+                                <td width="4%" align="center">Vücut Böl.</td>
+                                <td width="6%" align="center">Dz. No</td>
+                                <td width="8%" align="center">Kullanım Başlangıç Tarihi</td>
+                                <td width="8%" align="center">Kullanım Bitiş Tarihi</td>
+                                <td width="6%" align="center">P1</td>
+                                <td width="6%" align="center">P4</td>
+                                <td width="6%" align="center">Sonuç Türü</td>
+                                <td width="6%" align="center">Sonuç Tipi</td>
+                                <td width="8%" align="center">Geliş Tarihi</td>
+                                <td width="8%" align="center">Değ. Tarihi</td>
+                                <td width="8%" align="center">Kayıp Tarihi</td>
+                            </tr>
+                        </thead>
+                        @if (DataSourceDagitimDetailImport.ToList().Count == 0)
+                        {
+                            <tbody>
+                                <tr>
+                                    <td colspan="14" align="center" valign="bottom" height="64px">
+                                        <h6>Görüntülenecek Veri Yok</h6>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        }
+                        else
+                        {
+                            <tbody style="display: block; max-height: 160px; overflow-y: scroll;">
+                                @foreach (var data in DataSourceDagitimDetailImport)
+                                {
+                                    <tr style="display: table; table-layout: fixed; width: 100%;">
+                                        <td width="10%" align="center">@data.Birim</td>
+                                        <td width="8%" align="center">@data.AdSoyad</td>
+                                        <td width="8%" align="center">@data.TCKimlikNo</td>
+                                        <td width="4%" align="center">@data.VucutBolgesiKod</td>
+                                        <td width="6%" align="center">@data.DozimetreNo</td>
+                                        <td width="8%" align="center">
+                                            <div class="ForRadzenWidth100">
+                                                <RadzenDatePicker TValue="DateTime?" DateFormat="dd.MM.yyyy" @bind-Value="data.KullanimBaslangicTarihi"></RadzenDatePicker>
+                                            </div>
+                                        </td>
+                                        <td width="8%" align="center">
+                                            <div class="ForRadzenWidth100">
+                                                <RadzenDatePicker TValue="DateTime?" DateFormat="dd.MM.yyyy" @bind-Value="data.KullanimBitisTarihi"></RadzenDatePicker>
+                                            </div>
+                                        </td>
+                                        <td width="6%" align="center">
+                                            <input class="form-control form-control-sm SpinButtonWithoutButtons" type="number" style="text-align:end;" @bind-value="data.P1" />
+                                        </td>
+                                        <td width="6%" align="center">
+                                            <input class="form-control form-control-sm SpinButtonWithoutButtons" type="number" style="text-align:end;" @bind-value="data.P4" />
+                                        </td>
+                                        <td width="6%" align="center">
+                                            <select class="form-select form-select-sm" @bind="data.SonucTuru">
+                                                <option value="0"></option>
+                                                @foreach (var item in DataSourceSonucTuruData)
+                                                {
+                                                    <option value="@item.Id">@item.Ad</option>
+                                                }
+                                            </select>
+                                        </td>
+                                        <td width="6%" align="center">
+                                            <select class="form-select form-select-sm" @bind="data.SonucTipi">
+                                                <option value="0"></option>
+                                                @foreach (var item in DataSourceSonucTipiData)
+                                                {
+                                                    <option value="@item.Id">@item.Ad</option>
+                                                }
+                                            </select>
+                                        </td>
+                                        <td width="8%" align="center">
+                                            <div class="ForRadzenWidth100">
+                                                <RadzenDatePicker TValue="DateTime?" DateFormat="dd.MM.yyyy" @bind-Value="data.GelisTarihi"></RadzenDatePicker>
+                                            </div>
+                                        </td>
+                                        <td width="8%" align="center">
+                                            <div class="ForRadzenWidth100">
+                                                <RadzenDatePicker TValue="DateTime?" DateFormat="dd.MM.yyyy" @bind-Value="data.DegerlendirmeTarihi"></RadzenDatePicker>
+                                            </div>
+                                        </td>
+                                        <td width="8%" align="center">
+                                            <div class="ForRadzenWidth100">
+                                                <RadzenDatePicker TValue="DateTime?" DateFormat="dd.MM.yyyy" @bind-Value="data.DurumTarihi"></RadzenDatePicker>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        }
+                    </table>
+                </div>
+                <br />
+                <textarea rows="6" class="form-control form-control-sm" @bind="ImportText"
+                            placeholder="Şablon excel dosyasından başlıklar hariç verilerin olduğu bölümü kopyalayıp buraya yapıştırınız" />
+                <br />
+                <button type="button" class="btn btn-primary btn-sm" @onclick="SablonIndir">Şablon Excel Dosyasını İndir</button>
+                &nbsp;&nbsp;
+                <button type="button" class="btn btn-success btn-sm" @onclick="ImportTexttenOku">Verileri Oku</button>
+            </div>
+            <div class="modal-footer">
+                <button type="submit" class="btn btn-success btn-sm" @onclick="KaydetImport"><i class="bi bi-check-circle"></i>&nbsp;Kaydet</button>
+                <button id="popupImportKapat" type="button" class="btn btn-danger btn-sm" data-bs-dismiss="modal"><i class="bi bi-x-circle"></i>&nbsp;Vazgeç</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<button id="popupIcmalAc" type="button" data-bs-toggle="modal" data-bs-target="#popupIcmal" style="visibility:hidden;">
+</button>
+<div class="modal fade" id="popupIcmal" tabindex="-1" aria-labelledby="popupIcmalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="popupIcmalLabel">Rapor Numarası ve Üst Yazı Numarası İstatistikleri</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <table class="table table-bordered Grid" style="margin-bottom:0 !important;">
+                    <thead>
+                        <tr class="grid-row-header">
+                            <td width="20%" align="center">Yıl</td>
+                            <td width="40%" align="center">Rapor No Sayısı</td>
+                            <td width="40%" align="center">Üst Yazı No Sayısı</td>
+                        </tr>
+                    </thead>
+                    @if (DataSourceIcmal.ToList().Count == 0)
+                    {
+                        <tbody>
+                            <tr>
+                                <td colspan="3" align="center" valign="bottom" height="64px">
+                                    <h6>Görüntülenecek Veri Yok</h6>
+                                </td>
+                            </tr>
+                        </tbody>
+                    }
+                    else
+                    {
+                        <tbody>
+                            @foreach (var data in DataSourceIcmal)
+                            {
+                                <tr style="display: table; table-layout: fixed; width: 100%;">
+                                    <td width="20%" align="center">@data.Yil</td>
+                                    <td width="40%" align="center">@data.RaporNoSayisi</td>
+                                    <td width="40%" align="center">@data.UstYaziNoSayisi</td>
+                                </tr>
+                            }
+                        </tbody>
+                    }
+                </table>
+            </div>
+            <div class="modal-footer">
+                <button id="popupIcmalKapat" type="button" class="btn btn-primary btn-sm" data-bs-dismiss="modal">Kapat</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<button id="popupTopluIslemAc" type="button" data-bs-toggle="modal" data-bs-target="#popupTopluIslem" style="visibility:hidden;">
+</button>
+<div class="modal fade" id="popupTopluIslem" tabindex="-1" aria-labelledby="popupTopluIslemLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="popupTopluIslemLabel">Listelenen Tüm Kayıtlara Uygulanacak İşlemler</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="form-group mb-5">
+                            <label for="ddlRaporNoIslemTipi" class="mb-2">Rapor Numarası İşlem Tipi</label>
+                            <select id="ddlRaporNoIslemTipi" class="form-select form-select-sm mb-2" @bind="topluIslemSonucFilterDTO.RaporNoIslemTipi">
+                                <option>İşlem Yapma</option>
+                                <option>Her Birim İçin Sıradan Rapor Numarası Ver</option>
+                                <option>Tüm Kayıtlar İçin Şu Rapor Numarasını Ver</option>
+                                <option>Tüm Kayıtların Rapor Numaralarını Sil</option>
+                            </select>
+                            @if (topluIslemSonucFilterDTO.RaporNoIslemTipi.Contains("Şu"))
+                            {
+                                <input class="form-control form-control-sm SpinButtonWithoutButtons" type="number" style="text-align:center;" @bind-value="topluIslemSonucFilterDTO.RaporNoGirilen" />
+                            }
+                        </div>
+                    </div>
+                    <div class="col-md-12">
+                        <div class="form-group mb-5">
+                            <label for="ddlUstYaziNoIslemTipi" class="mb-2">Üst Yazı Numarası İşlem Tipi</label>
+                            <select id="ddlUstYaziNoIslemTipi" class="form-select form-select-sm mb-2" @bind="topluIslemSonucFilterDTO.UstYaziNoIslemTipi">
+                                <option>İşlem Yapma</option>
+                                <option>Her Birim İçin Sıradan Üst Yazı Numarası Ver</option>
+                                <option>Tüm Kayıtlar İçin Şu Üst Yazı Numarasını Ver</option>
+                                <option>Tüm Kayıtların Üst Yazı Numaralarını Sil</option>
+                            </select>
+                            @if (topluIslemSonucFilterDTO.UstYaziNoIslemTipi.Contains("Şu"))
+                            {
+                                <input class="form-control form-control-sm SpinButtonWithoutButtons" type="number" style="text-align:center;" @bind-value="topluIslemSonucFilterDTO.UstYaziNoGirilen" />
+                            }
+                        </div>
+                    </div>
+                    <div class="col-md-12">
+                        <div class="form-group mb-5">
+                            <label for="ddlGelisTarihiIslemTipi" class="mb-2">Geliş Tarihi İşlem Tipi</label>
+                            <select id="ddlGelisTarihiIslemTipi" class="form-select form-select-sm mb-2" @bind="topluIslemSonucFilterDTO.GelisTarihiIslemTipi">
+                                <option>İşlem Yapma</option>
+                                <option>Tüm Kayıtlar İçin Şu Geliş Tarihini Setle</option>
+                                <option>Tüm Kayıtların Geliş Tarihlerini Sil</option>
+                            </select>
+                            @if (topluIslemSonucFilterDTO.GelisTarihiIslemTipi.Contains("Şu"))
+                            {
+                                <div class="ForRadzenWidth100">
+                                    <RadzenDatePicker TValue="DateTime?" DateFormat="dd.MM.yyyy" @bind-Value="topluIslemSonucFilterDTO.GelisTarihiGirilen"></RadzenDatePicker>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                    <div class="col-md-12">
+                        <div class="form-group mb-5">
+                            <label for="ddlDegerlendirmeTarihiIslemTipi" class="mb-2">Değerlendirme Tarihi İşlem Tipi</label>
+                            <select id="ddlDegerlendirmeTarihiIslemTipi" class="form-select form-select-sm mb-2" @bind="topluIslemSonucFilterDTO.DegerlendirmeTarihiIslemTipi">
+                                <option>İşlem Yapma</option>
+                                <option>Tüm Kayıtlar İçin Şu Değerlendirme Tarihini Setle</option>
+                                <option>Tüm Kayıtların Değerlendirme Tarihlerini Sil</option>
+                            </select>
+                            @if (topluIslemSonucFilterDTO.DegerlendirmeTarihiIslemTipi.Contains("Şu"))
+                            {
+                                <div class="ForRadzenWidth100">
+                                    <RadzenDatePicker TValue="DateTime?" DateFormat="dd.MM.yyyy" @bind-Value="topluIslemSonucFilterDTO.DegerlendirmeTarihiGirilen"></RadzenDatePicker>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>  
+            </div>
+            <div class="modal-footer">
+                <button type="submit" class="btn btn-primary btn-sm" @onclick="KaydetTopluIslem"><i class="bi bi-check-circle"></i>&nbsp;Başlat</button>
+                <button id="popupTopluIslemKapat" type="button" class="btn btn-danger btn-sm" data-bs-dismiss="modal"><i class="bi bi-x-circle"></i>&nbsp;Vazgeç</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (loading)
+{
+    <div class="progressBackground">
+        <div class="progressPopup">
+            <img alt="Bekleyiniz..." src="img/loading.gif" width="100" height="100" />
+        </div>
+    </div>
+}
+
+@code
+{
+    [Inject] protected ILookupService lookupService { get; set; }
+    [Inject] protected IRolService rolService { get; set; }
+    [Inject] protected ISonucService sonucService { get; set; }
+    [Inject] protected IDagitimService dagitimService { get; set; }
+
+    List<SonucDTO> DataSource = new List<SonucDTO>();
+    List<SonucOzetDTO> DataSourceOzetSonucTuru = new List<SonucOzetDTO>();
+    List<SonucOzetDTO> DataSourceOzetVucutBolgesi = new List<SonucOzetDTO>();
+    List<DagitimMasterDTO> DataSourceDagitimMasterImport = new List<DagitimMasterDTO>();
+    List<SonucDTO> DataSourceDagitimDetailImport = new List<SonucDTO>();
+
+    List<LookupBasicDTO> DataSourceDonemSorgu = new List<LookupBasicDTO>();
+    List<LookupBasicDTO> DataSourceKurulusSorgu = new List<LookupBasicDTO>();
+    List<LookupBasicDTO> DataSourceBirimSorgu = new List<LookupBasicDTO>();
+    List<string> SelectedValuesBirimSorgu = new List<string>();
+    List<LookupBasicDTO> DataSourceVucutBolgesiSorgu = new List<LookupBasicDTO>();
+    List<LookupBasicDTO> DataSourceSonucTuruSorgu = new List<LookupBasicDTO>();
+    List<LookupBasicDTO> DataSourceSonucTipiSorgu = new List<LookupBasicDTO>();
+
+    List<LookupBasicDTO> DataSourceDonemImport = new List<LookupBasicDTO>();
+    List<LookupBasicDTO> DataSourceKurulusImport = new List<LookupBasicDTO>();
+    List<LookupBasicDTO> DataSourceBirimImport = new List<LookupBasicDTO>();
+
+    List<LookupBasicDTO> DataSourceSonucTuruData = new List<LookupBasicDTO>();
+    List<LookupBasicDTO> DataSourceSonucTipiData = new List<LookupBasicDTO>();
+
+    List<RaporNoUstYaziNoIcmalDTO> DataSourceIcmal = new List<RaporNoUstYaziNoIcmalDTO>();
+
+    List<LookupBasicDTO> SonucTurleri = new List<LookupBasicDTO>()
+    {
+        new LookupBasicDTO() { Id = 1, Ad = "A - TLD değerlendirilmek üzere laboratuvarımıza iade edilmemiştir" },
+        new LookupBasicDTO() { Id = 2, Ad = "B - Doz değeri 0,1 mSv den daha yüksektir" },
+        new LookupBasicDTO() { Id = 3, Ad = "C - Doz değeri 0,1 mSv den daha düşüktür" },
+        new LookupBasicDTO() { Id = 4, Ad = "D - TLD hasara uğradığından değerlendirilememiştir" },
+        new LookupBasicDTO() { Id = 5, Ad = "E - TLD laboratuvarımıza kullanılmadan iade edilmiştir" },
+        new LookupBasicDTO() { Id = 6, Ad = "H - TLD laboratuvarımıza kullanılmadan iade edilmiştir" },
+        new LookupBasicDTO() { Id = 7, Ad = "F - TLD kayıp" },
+        new LookupBasicDTO() { Id = 8, Ad = "T - Transport dozimetrenin hatalı kullanımı/konumlandırılması" }
+    };
+
+    List<LookupBasicDTO> SonucTipleri = new List<LookupBasicDTO>()
+    {
+        new LookupBasicDTO() { Id = 1, Ad = "1 - Bu Kuruluşa Ait Okunan Veri" },
+        new LookupBasicDTO() { Id = 2, Ad = "2 - Bu Kuruluşa Ait Tahmini Veri" },
+        new LookupBasicDTO() { Id = 3, Ad = "3 - Önceki Kuruluşa Ait Okunan Veri" },
+        new LookupBasicDTO() { Id = 4, Ad = "4 - Önceki Kuruluşa Ait Tahmini Veri" }
+    };
+
+    List<int> SelectedBirimIdler = new List<int>();
+
+    SonucDTO currentDTO = new SonucDTO();
+    DagitimMasterDTO currentDagitimMasterDTO = new DagitimMasterDTO();
+    SonucFilterDTO filterDTO = new SonucFilterDTO() { PageNo = 1, PageSize = 10 };
+    DagitimMasterFilterDTO filterDTOImportDagitimMaster = new DagitimMasterFilterDTO() { PageNo = 1, PageSize = 100000 };
+    SonucFilterDTO filterDTOImportDagitimDetail = new SonucFilterDTO() { PageNo = 1, PageSize = 100000 };
+    ToplulslemSonucFilterDTO topluIslemSonucFilterDTO = new ToplulslemSonucFilterDTO();
+
+    bool loading = false;
+    bool YetkiYaz = false;
+    int RowCount = 0;
+    string ImportText = "";
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            YetkiYaz = await rolService.YetkiKontrolByYetki("Genel İşlemler - Sonuçlar - Yaz");
+
+            DataSourceDonemSorgu = await lookupService.GetDonem("Kisa");
+            DataSourceKurulusSorgu = await lookupService.GetLookupBasic("Kurulus");
+            DataSourceVucutBolgesiSorgu = await lookupService.GetLookupBasicWithKod("VucutBolgesi");
+
+            DataSourceDonemImport = await lookupService.GetDonem("Kisa");
+            DataSourceKurulusImport = await lookupService.GetLookupBasic("Kurulus");
+
+            DataSourceSonucTuruSorgu.AddRange(SonucTurleri);
+            DataSourceSonucTipiSorgu.AddRange(SonucTipleri);
+
+            DataSourceSonucTuruData.AddRange(SonucTurleri);
+            DataSourceSonucTipiData.AddRange(SonucTipleri);
+
+            if (DataSourceDonemSorgu.Count() > 0)
+            {
+                filterDTO.Donem = DataSourceDonemSorgu[0].Id;
+                filterDTOImportDagitimMaster.Donem = DataSourceDonemSorgu[0].Id;
+            }
+
+            await GetData();
+
+            await GetDataImport();
+        }
+    }
+
+    async Task GetData()
+    {
+        if (string.IsNullOrEmpty(filterDTO.BirimIdler)) filterDTO.BirimIdler = "0";
+
+        loading = true;
+        filterDTO.DonusTipi = 0;
+        var result = await sonucService.GetSonucList<SonucDTO>(filterDTO);
+        loading = false;
+
+        if (result.Success)
+        {
+            DataSource = result.Value;
+            RowCount = result.RowCount;
+        }
+
+        loading = true;
+        filterDTO.DonusTipi = 2;
+        var resultSonucTuru = await sonucService.GetSonucOzet(filterDTO);
+        loading = false;
+
+        if (resultSonucTuru.Success)
+        {
+            DataSourceOzetSonucTuru = resultSonucTuru.Value;
+        }
+
+        loading = true;
+        filterDTO.DonusTipi = 3;
+        var resultVucutBolgesi = await sonucService.GetSonucOzet(filterDTO);
+        loading = false;
+
+        if (resultVucutBolgesi.Success)
+        {
+            DataSourceOzetVucutBolgesi = resultVucutBolgesi.Value;
+        }
+
+        topluIslemSonucFilterDTO = JsonConvert.DeserializeObject<ToplulslemSonucFilterDTO>(JsonConvert.SerializeObject(filterDTO));
+
+        await InvokeAsync(StateHasChanged);
+
+        if (result.Success == false)
+        {
+            await js.InvokeVoidAsync("SweetMessage", "Hata", result.Message, "error");
+        }
+    }
+
+    async Task Sorgula()
+    {
+        await GetData();
+    }
+
+    async Task PageNoChanged(int pageNo)
+    {
+        filterDTO.PageNo = pageNo;
+        await GetData();
+    }
+
+    async Task PageSizeChanged(int pageSize)
+    {
+        filterDTO.PageSize = pageSize;
+        await GetData();
+    }
+
+    async Task KurulusSecSorgu(object value)
+    {
+        int KurulusId = Convert.ToInt32(value.ToString());
+
+        filterDTO.KurulusId = KurulusId;
+        filterDTO.BirimIdler = "0";
+
+        DataSourceBirimSorgu = await lookupService.GetBirimByKurulusId(KurulusId);
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task BirimSecSorgu(object value, string name)
+    {
+        //var str = value is IEnumerable<object> ? string.Join(", ", (IEnumerable<object>)value) : value;
+
+        filterDTO.BirimIdler = SelectedBirimIdler == null ? "0" : string.Join("_", SelectedBirimIdler.Select(x => x).ToList());
+
+        //console.Log($"{name} value changed to {str}");
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task Edit(SonucDTO dto)
+    {
+        currentDTO = dto;
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task Kaydet()
+    {
+        loading = true;
+        var result = await sonucService.UpdateSonuc(currentDTO);
+        loading = false;
+
+        if (result.Success)
+        {
+            await GetData();
+
+            currentDTO = new SonucDTO();
+        }
+
+        await InvokeAsync(StateHasChanged);
+
+        if (result.Success == false)
+        {
+            await js.InvokeVoidAsync("SweetMessage", "Hata", result.Message, "error");
+            return;
+        }
+
+        await js.InvokeVoidAsync("SweetToast", "Kaydedildi", "success");
+    }
+
+    async Task Vazgec()
+    {
+        currentDTO = new SonucDTO();
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    public async Task ExportToExcel()
+    {
+        using (var workbook = new XLWorkbook())
+        {
+            IXLWorksheet worksheet = workbook.Worksheets.Add("Sayfa1");
+
+            worksheet.Cell(1, 1).Value = "Dağıtım ID";
+            worksheet.Cell(1, 2).Value = "Dönem";
+            worksheet.Cell(1, 3).Value = "Kuruluş";
+            worksheet.Cell(1, 4).Value = "Birim";
+            worksheet.Cell(1, 5).Value = "Adı Soyadı";
+            worksheet.Cell(1, 6).Value = "TC Kimik No";
+            worksheet.Cell(1, 7).Value = "Kullanım Yeri";
+            worksheet.Cell(1, 8).Value = "Dozimetre No";
+            worksheet.Cell(1, 9).Value = "Dozimetre No Kap";
+            worksheet.Cell(1, 10).Value = "Rapor No";
+            worksheet.Cell(1, 11).Value = "Üst Yazı No";
+            worksheet.Cell(1, 12).Value = "Referans ID";
+            worksheet.Cell(1, 13).Value = "Kullanım Başlangıç Tarihi";
+            worksheet.Cell(1, 14).Value = "Kullanım Bitiş Tarihi";
+            worksheet.Cell(1, 15).Value = "P1";
+            worksheet.Cell(1, 16).Value = "P4";
+            worksheet.Cell(1, 17).Value = "Sonuç Türü";
+            worksheet.Cell(1, 18).Value = "Sonuç Tipi";
+            worksheet.Cell(1, 19).Value = "Geliş Tarihi";
+            worksheet.Cell(1, 20).Value = "Değerlendirme Tarihi";
+            worksheet.Cell(1, 21).Value = "Kayıp Tarihi";
+
+
+            for (int i = 1; i <= 21; i++)
+            {
+                worksheet.Cell(1, i).Style.Font.Bold = true;
+            }
+
+            int index = 1;
+
+            foreach (var data in DataSource)
+            {
+                worksheet.Cell(index + 1, 1).Value = data.DagitimMasterId;
+                worksheet.Cell(index + 1, 2).Value = data.DonemString;
+                worksheet.Cell(index + 1, 3).Value = data.Kurulus;
+                worksheet.Cell(index + 1, 4).Value = data.Birim;
+                worksheet.Cell(index + 1, 5).Value = data.AdSoyad;
+                worksheet.Cell(index + 1, 6).Value = data.TCKimlikNo;
+                worksheet.Cell(index + 1, 7).Value = data.VucutBolgesiKod;
+                worksheet.Cell(index + 1, 8).Value = data.DozimetreNo;
+                worksheet.Cell(index + 1, 9).Value = data.DozimetreNoKap;
+                worksheet.Cell(index + 1, 10).Value = data.RaporNo;
+                worksheet.Cell(index + 1, 11).Value = data.UstYaziNo;
+                worksheet.Cell(index + 1, 12).Value = data.ReferansId;
+                worksheet.Cell(index + 1, 13).Value = data.KullanimBaslangicTarihi.HasValue ? data.KullanimBaslangicTarihi.Value.ToString("dd.MM.yyyy") : "";
+                worksheet.Cell(index + 1, 14).Value = data.KullanimBitisTarihi.HasValue ? data.KullanimBitisTarihi.Value.ToString("dd.MM.yyyy") : "";
+                worksheet.Cell(index + 1, 15).Value = data.P1;
+                worksheet.Cell(index + 1, 16).Value = data.P4;
+                worksheet.Cell(index + 1, 17).Value = data.SonucTuruString;
+                worksheet.Cell(index + 1, 18).Value = data.SonucTipiString;
+                worksheet.Cell(index + 1, 19).Value = data.DurumTarihi.HasValue ? data.DurumTarihi.Value.ToString("dd.MM.yyyy") : "";
+                worksheet.Cell(index + 1, 20).Value = data.GelisTarihi.HasValue ? data.GelisTarihi.Value.ToString("dd.MM.yyyy") : "";
+                worksheet.Cell(index + 1, 21).Value = data.DegerlendirmeTarihi.HasValue ? data.DegerlendirmeTarihi.Value.ToString("dd.MM.yyyy") : "";
+
+                index++;
+            }
+
+            using (var stream = new MemoryStream())
+            {
+                workbook.SaveAs(stream);
+                var content = stream.ToArray();
+                var fileName = "SonucListesi" + DateTime.Now.ToString("yyyyMMddss") + ".xlsx";
+                await js.InvokeAsync<object>("saveAsFile", fileName, Convert.ToBase64String(content));
+            }
+        }
+    }
+
+    //////////////////////////////////////////////// IMPORT //////////////////////////////////////////////////
+
+    async Task ImportAc()
+    {
+        await js.InvokeVoidAsync("bsPopupAc", "popupImport");
+    }
+
+    async Task GetDataImport()
+    {
+        loading = true;
+        var result = await dagitimService.GetDagitimMasterList(filterDTOImportDagitimMaster);
+        loading = false;
+
+        if (result.Success)
+        {
+            DataSourceDagitimMasterImport = result.Value;
+        }
+
+        await InvokeAsync(StateHasChanged);
+
+        if (result.Success == false)
+        {
+            await js.InvokeVoidAsync("SweetMessage", "Hata", result.Message, "error");
+        }
+    }
+
+    async Task SorgulaImport()
+    {
+        await GetDataImport();
+
+        var dto = new DagitimMasterDTO();
+        dto.Id = -1;
+
+        await DagitimMasterSec(dto);
+    }
+
+    async Task KurulusSecImport(object value)
+    {
+        int KurulusId = Convert.ToInt32(value.ToString());
+
+        filterDTOImportDagitimMaster.KurulusId = KurulusId;
+        filterDTOImportDagitimMaster.BirimId = 0;
+
+        DataSourceBirimImport = await lookupService.GetBirimByKurulusId(KurulusId);
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task DagitimMasterSec(DagitimMasterDTO dto)
+    {
+        currentDagitimMasterDTO = dto;
+
+        filterDTOImportDagitimDetail.DagitimMasterId = dto.Id;
+        filterDTOImportDagitimDetail.BirimIdler = "0";
+
+        loading = true;
+        var result = await sonucService.GetSonucList<SonucDTO>(filterDTOImportDagitimDetail);
+        loading = false;
+
+        if (result.Success)
+        {
+            DataSourceDagitimDetailImport = result.Value;
+        }
+
+        await InvokeAsync(StateHasChanged);
+
+        if (result.Success == false)
+        {
+            await js.InvokeVoidAsync("SweetMessage", "Hata", result.Message, "error");
+        }
+    }
+
+    async Task SablonIndir()
+    {
+        using (var workbook = new XLWorkbook())
+        {
+            IXLWorksheet worksheet = workbook.Worksheets.Add("Sayfa1");
+
+            worksheet.Cell(1, 1).Value = "Birim";
+            worksheet.Cell(1, 2).Value = "Adı Soyadı";
+            worksheet.Cell(1, 3).Value = "TC Kimlik No";
+            worksheet.Cell(1, 4).Value = "Vücut Bölgesi";
+            worksheet.Cell(1, 5).Value = "Dozimetre No";
+            worksheet.Cell(1, 6).Value = "Kullanım Başlangıç Tarihi";
+            worksheet.Cell(1, 7).Value = "Kullanım Bitiş Tarihi";
+            worksheet.Cell(1, 8).Value = "P1";
+            worksheet.Cell(1, 9).Value = "P4";
+            worksheet.Cell(1, 10).Value = "Sonuç Türü";
+            worksheet.Cell(1, 11).Value = "Sonuç Tipi";
+            worksheet.Cell(1, 12).Value = "Kayıp Tarihi";
+            worksheet.Cell(1, 13).Value = "Geliş Tarihi";
+            worksheet.Cell(1, 14).Value = "Değerlendirme Tarihi";
+
+            for (int i = 1; i <= 14; i++)
+            {
+                worksheet.Cell(1, i).Style.Font.Bold = true;
+            }
+
+            int index = 1;
+
+            foreach (var data in DataSourceDagitimDetailImport)
+            {
+                worksheet.Cell(index + 1, 1).Value = data.Birim;
+                worksheet.Cell(index + 1, 2).Value = data.AdSoyad;
+                worksheet.Cell(index + 1, 3).Value = data.TCKimlikNo;
+                worksheet.Cell(index + 1, 4).Value = data.VucutBolgesiKod;
+                worksheet.Cell(index + 1, 5).Value = data.DozimetreNo;
+                worksheet.Cell(index + 1, 6).Value = data.KullanimBaslangicTarihi.HasValue ? data.KullanimBaslangicTarihi.Value.ToString("dd.MM.yyyy") : "";
+                worksheet.Cell(index + 1, 7).Value = data.KullanimBitisTarihi.HasValue ? data.KullanimBitisTarihi.Value.ToString("dd.MM.yyyy") : "";
+                worksheet.Cell(index + 1, 8).Value = data.P1;
+                worksheet.Cell(index + 1, 9).Value = data.P4;
+                worksheet.Cell(index + 1, 10).Value = data.SonucTuru == 0 ? "" : data.SonucTuruString.Substring(0, 1);
+                worksheet.Cell(index + 1, 11).Value = data.SonucTipi;
+                worksheet.Cell(index + 1, 12).Value = data.DurumTarihi.HasValue ? data.DurumTarihi.Value.ToString("dd.MM.yyyy") : "";
+                worksheet.Cell(index + 1, 13).Value = data.GelisTarihi.HasValue ? data.GelisTarihi.Value.ToString("dd.MM.yyyy") : "";
+                worksheet.Cell(index + 1, 14).Value = data.DegerlendirmeTarihi.HasValue ? data.DegerlendirmeTarihi.Value.ToString("dd.MM.yyyy") : "";
+
+                index++;
+            }
+
+            using (var stream = new MemoryStream())
+            {
+                workbook.SaveAs(stream);
+                var content = stream.ToArray();
+                var fileName = "SonucAktarimSablonu" + DateTime.Now.ToString("yyyyMMddss") + ".xlsx";
+                await js.InvokeAsync<object>("saveAsFile", fileName, Convert.ToBase64String(content));
+            }
+        }
+    }
+
+    async Task ImportTexttenOku()
+    {
+        if (ImportText == "")
+        {
+            await js.InvokeVoidAsync("SweetMessage", "Hata", "Şablon excel dosyasından başlıklar hariç verilerin olduğu bölümü kopyalayıp metin bölümüne yapıştırınız", "error");
+            return;
+        }
+
+        string msg = "";
+
+        int satir = 0;
+
+        string[] data = ImportText.Split(("\n").ToCharArray());
+
+        foreach (var row in data)
+        {
+            if (row != "")
+            {
+                try
+                {
+                    satir++;
+
+                    string[] cells = row.Split(("\t").ToCharArray());
+
+                    if (cells.Length == 14)
+                    {
+                        bool uygun = true;
+
+                        string Birim = cells[0];
+                        string AdSoyad = cells[1];
+                        string TCKimlikNo = cells[2];
+                        string VucutBolgesi = cells[3];
+                        string DozimetreNo = cells[4];
+                        string KullanimBaslangicTarihi = cells[5];
+                        string KullanimBitisTarihi = cells[6];
+                        string P1 = "0" + cells[7];
+                        string P4 = "0" + cells[8];
+                        string SonucTuru = cells[9];
+                        string SonucTipi = cells[10];
+                        string GelisTarihi = cells[11];
+                        string DegerlendirmeTarihi = cells[12];
+                        string DurumTarihi = cells[13];
+
+                        decimal P1Decimal;
+                        decimal P4Decimal;
+                        DateTime KullanimBaslangicTarihiDateTime = new DateTime(1900, 1, 1);
+                        DateTime KullanimBitisTarihiDateTime = new DateTime(1900, 1, 1);
+                        DateTime GelisTarihiDateTime = new DateTime(1900, 1, 1);
+                        DateTime DegerlendirmeTarihiDateTime = new DateTime(1900, 1, 1);
+                        DateTime DurumTarihiDateTime = new DateTime(1900, 1, 1);
+                        int SonucTuruInt = 0;
+
+                        if (decimal.TryParse(P1, out P1Decimal) == false)
+                        {
+                            uygun = false;
+                            msg += $"{satir.ToString()}. satırda P1 değeri uygun değil ";
+                        }
+
+                        if (decimal.TryParse(P4, out P4Decimal) == false)
+                        {
+                            uygun = false;
+                            msg += $"{satir.ToString()}. satırda P4 değeri uygun değil ";
+                        }
+
+                        if (!string.IsNullOrEmpty(KullanimBaslangicTarihi))
+                        {
+                            if (DateTime.TryParse(KullanimBaslangicTarihi, out KullanimBaslangicTarihiDateTime) == false)
+                            {
+                                uygun = false;
+                                msg += $"{satir.ToString()}. satırda kullanım başlangıç tarihi değeri uygun değil ";
+                            }
+                        }
+
+                        if (!string.IsNullOrEmpty(KullanimBitisTarihi))
+                        {
+                            if (DateTime.TryParse(KullanimBitisTarihi, out KullanimBitisTarihiDateTime) == false)
+                            {
+                                uygun = false;
+                                msg += $"{satir.ToString()}. satırda kullanım bitiş tarihi değeri uygun değil ";
+                            }
+                        }
+
+                        if (!string.IsNullOrEmpty(GelisTarihi))
+                        {
+                            if (DateTime.TryParse(GelisTarihi, out GelisTarihiDateTime) == false)
+                            {
+                                uygun = false;
+                                msg += $"{satir.ToString()}. satırda geliş tarihi değeri uygun değil ";
+                            }
+                        }
+                        
+                        if (!string.IsNullOrEmpty(DegerlendirmeTarihi))
+                        {
+                            if (DateTime.TryParse(DegerlendirmeTarihi, out DegerlendirmeTarihiDateTime) == false)
+                            {
+                                uygun = false;
+                                msg += $"{satir.ToString()}. satırda değerlendirme tarihi değeri uygun değil ";
+                            }
+                        }                        
+
+                        if (!string.IsNullOrEmpty(DurumTarihi))
+                        {
+                            if (DateTime.TryParse(DurumTarihi, out DurumTarihiDateTime) == false)
+                            {
+                                uygun = false;
+                                msg += $"{satir.ToString()}. satırda kayıp tarihi değeri uygun değil ";
+                            }
+                        }
+
+                        if (SonucTuru == "A") SonucTuruInt = 1;
+                        else if (SonucTuru == "B") SonucTuruInt = 2;
+                        else if (SonucTuru == "C") SonucTuruInt = 3;
+                        else if (SonucTuru == "D") SonucTuruInt = 4;
+                        else if (SonucTuru == "E") SonucTuruInt = 5;
+                        else if (SonucTuru == "F") SonucTuruInt = 6;
+                        else if (SonucTuru == "H") SonucTuruInt = 7;
+                        else if (SonucTuru == "T") SonucTuruInt = 8;
+
+                        if (SonucTuruInt == 0)
+                        {
+                            uygun = false;
+                            msg += $"{satir.ToString()}. satırda sonuç türü değeri uygun değil ";
+                        }
+
+                        if (SonucTipi != "1" & SonucTipi != "2" & SonucTipi != "3" & SonucTipi != "4")
+                        {
+                            uygun = false;
+                            msg += $"{satir.ToString()}. satırda sonuç tipi değeri uygun değil ";
+                        }
+
+                        var dto = DataSourceDagitimDetailImport.SingleOrDefault(x => x.Birim == Birim & x.AdSoyad == AdSoyad & x.TCKimlikNo == TCKimlikNo & x.VucutBolgesiKod == VucutBolgesi & x.DozimetreNo.ToString() == DozimetreNo);
+
+                        if (dto == null)
+                        {
+                            uygun = false;
+                            msg += $"{satir.ToString()}. satırdaki bilgilere uygun kayıt bulunamadı ";
+                        }
+
+                        if (uygun)
+                        {
+                            dto.P1 = P1Decimal;
+                            dto.P4 = P4Decimal;
+                            dto.KullanimBaslangicTarihi = KullanimBaslangicTarihiDateTime.Year == 1900 ? null : KullanimBaslangicTarihiDateTime;
+                            dto.KullanimBitisTarihi = KullanimBitisTarihiDateTime.Year == 1900 ? null : KullanimBitisTarihiDateTime;
+                            dto.GelisTarihi = GelisTarihiDateTime.Year == 1900 ? null : GelisTarihiDateTime;
+                            dto.DegerlendirmeTarihi = DegerlendirmeTarihiDateTime.Year == 1900 ? null : DegerlendirmeTarihiDateTime;
+                            dto.DurumTarihi = DurumTarihiDateTime.Year == 1900 ? null : DurumTarihiDateTime;
+                            dto.SonucTuru = SonucTuruInt;
+                            dto.SonucTipi = Convert.ToInt32(SonucTipi);
+                        }
+                    }
+                    else
+                    {
+                        msg += $"Sütun sayısı 14 olmalıdır. {satir.ToString()}. satırda 14 değil ";
+                    }
+                }
+                catch (Exception ex)
+                {
+                    msg += ex.Message.Replace("'", "") + " ";
+                }
+            }
+        }
+
+        StateHasChanged();
+
+        if (msg != "")
+        {
+            await js.InvokeVoidAsync("SweetMessage", "Hata", msg, "error");
+        }
+    }
+
+    async Task KaydetImport()
+    {
+        if (DataSourceDagitimDetailImport.Count() == 0)
+        {
+            await js.InvokeVoidAsync("SweetMessage", "Hata", "Kayıt bulunamadı", "error");
+            return;
+        }
+
+        string msg = "";
+
+        int SuccesCount = 0;
+        int ErrorCount = 0;
+
+        foreach (var dto in DataSourceDagitimDetailImport)
+        {
+            loading = true;
+            var result = await sonucService.UpdateSonuc(dto);
+            loading = false;
+
+            if (result.Success)
+            {
+                SuccesCount++;
+            }
+            else
+            {
+                ErrorCount++;
+                msg += result.Message + " ";
+            }
+        }
+
+        await InvokeAsync(StateHasChanged);
+
+        if (ErrorCount > 0 & SuccesCount == 0)
+        {
+            await js.InvokeVoidAsync("SweetMessage", "Hata", ErrorCount.ToString() + " satırda hata oluştu: " + msg, "error");
+        }
+        else if (ErrorCount > 0 & SuccesCount > 0)
+        {
+            await GetData();
+
+            await js.InvokeVoidAsync("SweetMessage", "Hata", SuccesCount.ToString() + " satır kaydedildi. " + ErrorCount.ToString() + " satırda hata oluştu: " + msg, "error");
+        }
+        else if (ErrorCount == 0 & SuccesCount > 0)
+        {
+            await GetData();
+
+            await js.InvokeVoidAsync("bsPopupKapat", "popupImport");
+
+            await js.InvokeVoidAsync("SweetToast", SuccesCount.ToString() + " satır kaydedildi", "success");
+        }
+    }
+
+    //////////////////////////////////////////////// RAPOR NO, ÜST YAZI NO, TARİHLER //////////////////////////////////////////////////
+
+    async Task IcmalAc()
+    {
+        loading = true;
+        var result = await sonucService.GetRaporNoUstYaziNoIcmal();
+        loading = false;
+
+        if (result.Success)
+        {
+            DataSourceIcmal = result.Value;
+        }
+
+        await InvokeAsync(StateHasChanged);
+
+        if (result.Success == false)
+        {
+            await js.InvokeVoidAsync("SweetMessage", "Hata", result.Message, "error");
+        }
+        else
+        {
+            await js.InvokeVoidAsync("bsPopupAc", "popupIcmal");
+        }
+    }
+
+    async Task TopluIslemAc()
+    {
+        if (DataSource.Count() == 0)
+        {
+            await js.InvokeVoidAsync("SweetMessage", "Hata", "İşlem yapılacak kayıt bulunamadı", "error");
+            return;
+        }
+
+        if (topluIslemSonucFilterDTO.Donem == 0)
+        {
+            await js.InvokeVoidAsync("SweetMessage", "Hata", "Bu işlem için dönem kriterini seçip kayıtları filtrelemelisiniz", "error");
+            return;
+        }
+
+        topluIslemSonucFilterDTO.RaporNoIslemTipi = "İşlem Yapma";
+        topluIslemSonucFilterDTO.UstYaziNoIslemTipi = "İşlem Yapma";
+        topluIslemSonucFilterDTO.GelisTarihiIslemTipi = "İşlem Yapma";
+        topluIslemSonucFilterDTO.DegerlendirmeTarihiIslemTipi = "İşlem Yapma";
+
+        topluIslemSonucFilterDTO.GelisTarihiGirilen = null;
+        topluIslemSonucFilterDTO.DegerlendirmeTarihiGirilen = null;
+
+        await InvokeAsync(StateHasChanged);
+
+        await js.InvokeVoidAsync("bsPopupAc", "popupTopluIslem");
+    }
+
+    async Task KaydetTopluIslem()
+    {
+        if (topluIslemSonucFilterDTO.RaporNoIslemTipi == "İşlem Yapma" & 
+            topluIslemSonucFilterDTO.UstYaziNoIslemTipi == "İşlem Yapma" & 
+            topluIslemSonucFilterDTO.GelisTarihiIslemTipi == "İşlem Yapma" & 
+            topluIslemSonucFilterDTO.DegerlendirmeTarihiIslemTipi == "İşlem Yapma")
+        {
+            await js.InvokeVoidAsync("SweetMessage", "Hata", "En az bir işlem seçmelisiniz", "error");
+            return;
+        }
+
+        var confirm = await js.InvokeAsync<bool>("SweetConfirm", "Uyarı", "Dikkat! Seçtiğiniz işlemler listelenen tüm kayıtlar için uygulanacak, devam edilsin mi?", "question", "Evet", "Hayır");
+
+        if (confirm)
+        {
+            var result = await sonucService.UpdateSonucRaporNoUstYaziNoTarih(topluIslemSonucFilterDTO);
+
+            if (result.Success == false)
+            {
+                await js.InvokeVoidAsync("SweetMessage", "Hata", result.Message, "error");
+                return;
+            }
+
+            await GetData();
+
+            await InvokeAsync(StateHasChanged);
+
+            await js.InvokeVoidAsync("bsPopupKapat", "popupTopluIslem");
+
+            await js.InvokeVoidAsync("SweetToast", "Kayıtlar güncellendi", "success");
+        }
+    }
+}

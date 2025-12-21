@@ -1,0 +1,300 @@
+﻿@page "/Main/OnlineEgitimTestSonuc"
+
+@inject IJSRuntime js
+
+@using System.Threading
+@using System.Threading.Tasks
+@using System.Net.Http
+@using System.Text.Json
+
+<style>
+    .badge {
+        font-size:0.9em;
+    }
+
+    .form-floating > .form-select {
+        padding-left: 0.8rem;
+    }
+</style>
+
+<div class="card info-card">
+    <div class="table-responsive">
+        <table class="table table-bordered table-hover">
+            <thead>
+                <tr>
+                    <th width="15%" style="text-align:center">Online Eğitim Adı</th>
+                    <th width="5%" style="text-align:center">Başlanguç</th>
+                    <th width="5%" style="text-align:center">Bitiş</th>
+                    <th width="5%" style="text-align:center">Grup No</th>
+                    <th width="10%" style="text-align:center">Test Adı</th>
+                    <th width="10%" style="text-align:center">Öğrenci Adı Soyadı</th>
+                    <th width="30%" style="text-align:center">Soru</th>
+                    <th width="5%" style="text-align:center">Soru Sıra No</th>
+                    <th width="5%" style="text-align:center">Doğru Cevap</th>
+                    <th width="5%" style="text-align:center">Öğrenci Cevabı</th>
+                    <th width="5%" style="text-align:center">Sonuç</th>
+                </tr>
+                <tr>
+                    <th width="15%">
+                        <select class="form-select form-select-sm" @onchange="async eventArgs => { await OnlineEgitimSecSorgu(eventArgs.Value); }">
+                            <option value="0"></option>
+                            @foreach (var item in DSOnlineEgitim)
+                            {
+                                if (filterDTO.OnlineEgitimId == item.Id)
+                                {
+                                    <option selected value="@item.Id">@item.Ad</option>
+                                }
+                                else
+                                {
+                                    <option value="@item.Id">@item.Ad</option>
+                                }
+                            }
+                        </select>
+                    </th>
+                    <th width="5%">
+                        <input class="form-control form-control-sm" type="date" @bind-value="filterDTO.Tarih1">
+                    </th>
+                    <th width="5%">
+                        <input class="form-control form-control-sm" type="date" @bind-value="filterDTO.Tarih2">
+                    </th>
+                    <th width="5%">
+                        <input class="form-control form-control-sm" type="text" @bind-value="filterDTO.Grup">
+                    </th>
+                    <th width="10%">
+                        <select class="form-select form-select-sm" @onchange="async eventArgs => { await TestSecSorgu(eventArgs.Value); }">
+                            <option value="0"></option>
+                            @foreach (var item in DSTest)
+                            {
+                                if (filterDTO.TestId == item.Id)
+                                {
+                                    <option selected value="@item.Id">@item.Ad</option>
+                                }
+                                else
+                                {
+                                    <option value="@item.Id">@item.Ad</option>
+                                }
+                            }
+                        </select>
+                    </th>
+                    <th width="15%">
+                        <input class="form-control form-control-sm" type="text" @bind-value="filterDTO.AdSoyad">
+                    </th>
+                    <th width="30%">
+                        <select class="form-select form-select-sm" @onchange="async eventArgs => { await SoruSecSorgu(eventArgs.Value); }">
+                            <option value="0"></option>
+                            @foreach (var item in DSSoru)
+                            {
+                                if (filterDTO.SoruId == item.Id)
+                                {
+                                    <option selected value="@item.Id">@item.Ad</option>
+                                }
+                                else
+                                {
+                                    <option value="@item.Id">@item.Ad</option>
+                                }
+                            }
+                        </select>
+                    </th>
+                    <th width="5%" style="text-align:center" colspan="4">
+                        <div class="btn-group">
+                            <button class="btn text-success grid-command" @onclick="Sorgula"><i class="bi bi-search"></i></button>
+                            <button class="btn text-success grid-command" @onclick="ExportToExcel"><i class="bi bi-file-earmark-excel"></i></button>
+                        </div>
+                    </th>
+                </tr>
+            </thead>
+            @if (DataSource.ToList().Count == 0)
+            {
+                <tbody>
+                    <tr>
+                        <td colspan="11" align="center" valign="bottom" height="64px">
+                            <h6>Görüntülenecek Veri Yok</h6>
+                        </td>
+                    </tr>
+                </tbody>
+            }
+            else
+            {
+                <tbody>
+                    @foreach (var data in DataSource)
+                    {
+                        <tr>
+                            <td width="15%" align="center">@data.OnlineEgitim</td>
+                            <td width="5%" align="center">@data.Tarih1.ToString("dd.MM.yyyy")</td>
+                            <td width="5%" align="center">@data.Tarih2.ToString("dd.MM.yyyy")</td>
+                            <td width="5%" align="center">@data.Grup</td>
+                            <td width="10%" align="center">@data.Test</td>
+                            <td width="10%" align="center">@data.AdSoyad</td>
+                            <td width="30%" align="center">@data.Soru</td>
+                            <td width="5%" align="center">@data.SoruSira</td>
+                            <td width="5%" align="center">@data.DogruCevap</td>
+                            <td width="5%" align="center">@data.OgrenciCevap</td>
+                            <td width="5%" align="center"><span class=@(data.SoruSonucu == "Doğru" ? "badge bg-success" : "badge bg-danger")>@data.SoruSonucu</span></td>
+                        </tr>
+                    }
+                </tbody>
+            }
+            <tfoot>
+                <tr>
+                    <td colspan="11" align="center">
+                        <Pager RowCount="@RowCount"
+                               PageNoChanged="@((int pageNo) => PageNoChanged(pageNo))"
+                               PageSizeChanged="@((int pageSize) => PageSizeChanged(pageSize))"></Pager>
+                    </td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+</div>
+
+@if (loading)
+{
+    <div class="progressBackground">
+        <div class="progressPopup">
+            <img alt="Bekleyiniz..." src="img/loading.gif" width="100" height="100" />
+        </div>
+    </div>
+}
+
+@code
+{
+    [Inject] protected IRolService rolService { get; set; }
+    [Inject] protected IOnlineEgitimService onlineEgitimService { get; set; }
+    [Inject] protected ILookupService lookupService { get; set; }
+
+    List<LookupBasicDTO> DSOnlineEgitim = new List<LookupBasicDTO>();
+    List<LookupBasicDTO> DSTest = new List<LookupBasicDTO>();
+    List<LookupBasicDTO> DSSoru = new List<LookupBasicDTO>();
+    List<OnlineEgitimTestSonucDTO> DataSource = new List<OnlineEgitimTestSonucDTO>();
+
+    OnlineEgitimTestSonucFilterDTO filterDTO = new OnlineEgitimTestSonucFilterDTO() { PageNo = 1, PageSize = 10 };
+
+    bool loading = false;
+
+    int RowCount = 0;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            DSOnlineEgitim = await lookupService.GetLookupBasic("OnlineEgitim");
+            DSTest = await lookupService.GetLookupBasic("Test");
+            DSSoru = await lookupService.GetLookupBasic("Soru");
+
+            await GetData();
+
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    async Task GetData()
+    {
+        var result = await onlineEgitimService.GetOnlineEgitimTestSonuc(filterDTO);
+
+        if (result.Success)
+        {
+            DataSource = result.Value;
+            RowCount = result.RowCount;
+        }
+        else
+        {
+            await js.InvokeVoidAsync("SweetMessage", "Hata", result.Message, "error");
+        }
+    }
+
+    async Task Sorgula()
+    {
+        await GetData();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task PageNoChanged(int pageNo)
+    {
+        filterDTO.PageNo = pageNo;
+        await GetData();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task PageSizeChanged(int pageSize)
+    {
+        filterDTO.PageSize = pageSize;
+        await GetData();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task OnlineEgitimSecSorgu(object value)
+    {
+        filterDTO.OnlineEgitimId = Convert.ToInt32(value.ToString());
+
+        await GetData();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task TestSecSorgu(object value)
+    {
+        filterDTO.TestId = Convert.ToInt32(value.ToString());
+
+        await GetData();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task SoruSecSorgu(object value)
+    {
+        filterDTO.SoruId = Convert.ToInt32(value.ToString());
+
+        await GetData();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    public async Task ExportToExcel()
+    {
+        using (var workbook = new XLWorkbook())
+        {
+            IXLWorksheet worksheet = workbook.Worksheets.Add("Sayfa1");
+
+            worksheet.Cell(1, 1).Value = "Online Eğitim Adı";
+            worksheet.Cell(1, 2).Value = "Başlangıç";
+            worksheet.Cell(1, 3).Value = "Bitiş";
+            worksheet.Cell(1, 4).Value = "Grup No";
+            worksheet.Cell(1, 5).Value = "Test Adı";
+            worksheet.Cell(1, 6).Value = "Öğrenci Adı Soyadı";
+            worksheet.Cell(1, 7).Value = "Soru";
+            worksheet.Cell(1, 8).Value = "Soru Sıra No";
+            worksheet.Cell(1, 9).Value = "Doğru Cevap";
+            worksheet.Cell(1, 10).Value = "Öğrenci Cevabı";
+            worksheet.Cell(1, 11).Value = "Sonuç";
+
+            for (int i = 1; i <= 11; i++)
+            {
+                worksheet.Cell(1, i).Style.Font.Bold = true;
+            }
+
+            int index = 1;
+
+            foreach (var data in DataSource)
+            {
+                worksheet.Cell(index + 1, 1).Value = data.OnlineEgitim;
+                worksheet.Cell(index + 1, 2).Value = data.Tarih1.ToString("dd.MM.yyyy");
+                worksheet.Cell(index + 1, 3).Value = data.Tarih2.ToString("dd.MM.yyyy");
+                worksheet.Cell(index + 1, 4).Value = data.Grup;
+                worksheet.Cell(index + 1, 5).Value = data.Test;
+                worksheet.Cell(index + 1, 6).Value = data.AdSoyad;
+                worksheet.Cell(index + 1, 7).Value = data.Soru;
+                worksheet.Cell(index + 1, 8).Value = data.SoruSira;
+                worksheet.Cell(index + 1, 9).Value = data.DogruCevap;
+                worksheet.Cell(index + 1, 10).Value = data.OgrenciCevap;
+                worksheet.Cell(index + 1, 11).Value = data.SoruSonucu;
+
+                index++;
+            }
+
+            using (var stream = new MemoryStream())
+            {
+                workbook.SaveAs(stream);
+                var content = stream.ToArray();
+                var fileName = "OnlineEgitimTestSonucuListesi" + DateTime.Now.ToString("yyyyMMddss") + ".xlsx";
+                await js.InvokeAsync<object>("saveAsFile", fileName, Convert.ToBase64String(content));
+            }
+        }
+    }
+}

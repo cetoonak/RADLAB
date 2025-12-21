@@ -1,0 +1,96 @@
+﻿@using System.Security.Claims
+@using Microsoft.AspNetCore.Components.Authorization
+
+@inject AuthenticationStateProvider authStateProvider
+@inject ILoginService loginService
+
+<aside id="sidebar" class="sidebar">
+
+    <ul class="sidebar-nav" id="sidebar-nav">
+
+        <li class="nav-item">
+            <a class="nav-link " href="/index">
+                <i class="bi bi-grid text-success"></i>
+                <span>Ana Sayfa</span>
+            </a>
+        </li>
+
+        @foreach (var MenuBaslik in MenuBasliklar)
+        {
+            <li class="nav-item">
+                <a class="nav-link collapsed" data-bs-target="#nav-@MenuBaslik.Id" data-bs-toggle="collapse" href="#">
+                    <i class="@MenuBaslik.Icon"></i><span>@MenuBaslik.Ad</span><i class="bi bi-chevron-down ms-auto"></i>
+                </a>
+                <ul id="nav-@MenuBaslik.Id" class="nav-content collapse " data-bs-parent="#sidebar-nav">
+                    @{
+                        var MenuLinklerByMenuBaslik = MenuLinkler.Where(x => x.ParentId == MenuBaslik.Id);
+                    }
+
+                    @foreach (var MenuLink in MenuLinklerByMenuBaslik)
+                    {
+                        <li>
+                            <a href="@MenuLink.Link">
+                                <i class="bi bi-circle"></i><span>@MenuLink.Ad</span>
+                            </a>
+                        </li>
+                    }
+                </ul>
+            </li>
+        }
+
+        @{
+            var MenuLinklerByFavori = MenuLinkler.Where(x => x.Favori == true);
+        }
+
+        @if (MenuLinklerByFavori.Count() > 0)
+        {
+            <li class="nav-heading">Sık Kullanılanlar</li>
+        }
+
+        @foreach (var MenuLink in MenuLinklerByFavori)
+        {
+            <li class="nav-item">
+                <a class="nav-link collapsed" href="@MenuLink.Link">
+                    <i class="@MenuLink.Icon"></i><span>@MenuLink.Ad</span>
+                </a>
+            </li>
+        }
+
+    </ul>
+
+</aside>
+
+@code
+{
+    public List<MenuBaslikDTO> MenuBasliklar = new List<MenuBaslikDTO>();
+    public List<MenuLinkDTO> MenuLinkler = new List<MenuLinkDTO>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var authState = await authStateProvider.GetAuthenticationStateAsync();
+            var user = authState.User;
+
+            if (user.Identity != null)
+            {
+                if (user.Identity.IsAuthenticated)
+                {
+                    string Id = user.FindFirst(c => c.Type == ClaimTypes.UserData).Value;
+
+                    var result = await loginService.GetKisiMenu(Convert.ToInt32(Id));
+
+                    if (result.Success)
+                    {
+                        MenuBasliklar = result.Value.MenuBasliklar;
+                        MenuLinkler = result.Value.MenuLinkler;
+                    }
+                }
+            }
+        }
+        catch
+        {
+
+        }
+    }
+}
