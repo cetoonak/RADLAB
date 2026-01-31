@@ -27,9 +27,11 @@ namespace RADLAB.UI.Services.Services
 
             dto.ConnectionString = configuration.GetConnectionString(debug ? "Debug" : "Release");
 
-            var result = await httpClient.PostAsJsonAsync(WebApiUrlFR + "/GetReport", dto);
+            var response = await httpClient.PostAsJsonAsync(WebApiUrlFR + "/GetReport", dto);
 
-            return await result.Content.ReadFromJsonAsync<ServiceResponse<byte[]>>();
+            var result = await response.Content.ReadFromJsonAsync<ServiceResponse<byte[]>>();
+
+            return result;
         }
     }
 }
