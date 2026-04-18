@@ -171,6 +171,7 @@ namespace RADLAB.Business.Concrete
 							                @Cihaz,
                                             @GelisSekli,
                                             @KalibrasyonOdeme,
+                                            @Aciklama,
 							                @Sayfa,
 							                @Order,
 							                @Id,
@@ -283,6 +284,7 @@ namespace RADLAB.Business.Concrete
 	                                @AdresTeslim,
 	                                @GelisSekli,
 	                                @IndirimKodu,
+	                                @Aciklama,
                                     @Id";
 
                 dto.AdSoyadBasvuru = dto.BasvuruTipi == 2 ? "" : dto.AdSoyadBasvuru;
@@ -312,7 +314,7 @@ namespace RADLAB.Business.Concrete
                     {
                         cihaz.KalibrasyonId = Convert.ToInt32(result);
 
-                        await connection.ExecuteScalarAsync<string>("SPInsertUpdateKalibrasyonCihaz @KalibrasyonId, @ModelId, @SeriNo, @TeslimTarihi, @GonderilisTarihi, @Id", cihaz);
+                        await connection.ExecuteAsync("SPInsertUpdateKalibrasyonCihaz @KalibrasyonId, @ModelId, @SeriNo, @KargoGelisTarihi, @TeslimTarihi, @GonderilisTarihi, @Id", cihaz);
                     }
                 }
 
@@ -388,6 +390,7 @@ namespace RADLAB.Business.Concrete
 									KalibrasyonCihaz.SeriNo,
 									KalibrasyonCihaz.KalibrasyonUcreti,
 									KalibrasyonCihaz.KdvOrani,
+									KalibrasyonCihaz.KargoGelisTarihi,
 									KalibrasyonCihaz.TeslimTarihi,
 									KalibrasyonCihaz.OdemeTarihi,
 									KalibrasyonCihaz.ReferansTarihi,
@@ -478,6 +481,7 @@ namespace RADLAB.Business.Concrete
 	                                @SeriNo,
 	                                @Sayfa,
 	                                @KalibrasyonId,
+                                    @Order,
 	                                @Id,
 	                                @PageNo,
 	                                @PageSize,
@@ -546,7 +550,7 @@ namespace RADLAB.Business.Concrete
             {
                 using var connection = new SqlConnection(CS);
 
-                var result = await connection.ExecuteScalarAsync<string>("SPInsertUpdateKalibrasyonCihaz @KalibrasyonId, @ModelId, @SeriNo, @TeslimTarihi, @GonderilisTarihi, @Id", dto);
+                var result = await connection.ExecuteScalarAsync<string>("SPInsertUpdateKalibrasyonCihaz @KalibrasyonId, @ModelId, @SeriNo, @KargoGelisTarihi, @TeslimTarihi, @GonderilisTarihi, @Id", dto);
 
                 R.Value = result;
             }

@@ -1554,7 +1554,7 @@
 
         //////////////// Sistem kullanıcılarına SMS ///////////////
 
-        var resultSMSSistemKullanicilarina = await smsMailService.SendSMS("SMSKalibrasyon", "Kalibrasyon basvurusu yapildi !!");
+        var resultSMSSistemKullanicilarina = await smsMailService.SendSMS("SMSKalibrasyon", $"{unvan} firması {currentDTO.KalibrasyonCihazList.Count()} cihaz icin kalibrasyon basvurusu yapti !!");
 
         if (resultSMSSistemKullanicilarina.Success == false & resultSMSSistemKullanicilarina.Message != "GSM belirlenmemis")
         {

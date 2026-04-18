@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace RADLAB.Model.FilterDTO
+﻿namespace RADLAB.Model.FilterDTO
 {
     public class KalibrasyonCihazFilterDTO : FilterDTO
     {
@@ -16,5 +10,6 @@ namespace RADLAB.Model.FilterDTO
         public int ModelId { get; set; }
         public string SeriNo { get; set; } = string.Empty;
         public string Sayfa { get; set; } = string.Empty;
+        public string Order { get; set; } = string.Empty;
     }
 }

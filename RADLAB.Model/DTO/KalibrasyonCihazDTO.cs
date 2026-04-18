@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace RADLAB.Model.DTO
+﻿namespace RADLAB.Model.DTO
 {
     public class KalibrasyonCihazDTO
     {
@@ -20,6 +14,7 @@ namespace RADLAB.Model.DTO
         public decimal KalibrasyonUcreti { get; set; }
         public decimal KdvOrani { get; set; }
         public string CihazDurumu { get; set; } = string.Empty;
+        public DateTime? KargoGelisTarihi { get; set; }
         public DateTime? TeslimTarihi { get; set; }
         public bool OdemeYapildi { get; set; }
         public List<LookupBasicDTO> DataSourceModel { get; set; }

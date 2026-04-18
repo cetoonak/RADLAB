@@ -48,33 +48,52 @@
             <thead>
                 <tr>
                     <td width="8%"></td>
-                    <td width="8%" align="center">Başvuru ID</td>
+                    <td width="6%" align="center">Başvuru ID</td>
                     <td width="16%">Müşteri</td>
-                    <td width="14%" align="center">Başvuru Takip No</td>
+                    <td width="12%">Not</td>
+                    <td width="12%" align="center">Başvuru Takip No</td>
                     <td width="10%" align="center">Başvuru Zamanı</td>
-                    <td width="8%" align="center">Geliş Şekli</td>
+                    <td width="6%" align="center">Geliş Şekli</td>
                     <td width="8%" align="center">Ödeme Durumu</td>
-                    <td width="6%" align="center">Cihaz Sayısı</td>
-                    <td width="14%" align="center">Kalibrasyon Durumu</td>
-                    <td width="8%"></td>
+                    <td width="4%" align="center">Cihaz Sayısı</td>
+                    <td width="12%" align="center">Kalibrasyon Durumu</td>
+                    <td width="6%">
+                                <select class="form-select form-select-sm" @onchange="async eventArgs => { await OrderSec(eventArgs.Value); }">
+                                    <option value="">Varsayılan Sıralama</option>
+                                    @foreach (var item in DSOrder)
+                                    {
+                                        if (filterDTO.Order == item.Value)
+                                        {
+                                            <option selected value="@item.Value">@item.Name</option>
+                                        }
+                                        else
+                                        {
+                                            <option value="@item.Value">@item.Name</option>
+                                        }
+                                    }
+                                </select>
+                    </td>
                 </tr>
                 <tr>
                     <td width="8%">
                         <input class="form-control form-control-sm" type="text" @bind-value="filterDTO.Cihaz" placeholder="Cihaz özellikleri...">
                     </td>
-                    <td width="8%">
+                    <td width="6%">
                         <input class="form-control form-control-sm text-center" type="text" @bind-value="filterDTO.Id">
                     </td>
                     <td width="16%">
                         <input class="form-control form-control-sm" type="text" @bind-value="filterDTO.AdSoyadUnvan">
                     </td>
-                    <td width="14%">
+                    <td width="12%">
+                        <input class="form-control form-control-sm" type="text" @bind-value="filterDTO.Aciklama">
+                    </td>
+                    <td width="12%">
                         <input class="form-control form-control-sm" type="text" @bind-value="filterDTO.BasvuruTakipNo">
                     </td>
                     <td width="10%">
                         <input id="tbTarihAraligi" class="form-control form-control-sm" type="text" @bind-value="filterDTO.BasvuruTarihiAraligi" autocomplete="off" />
                     </td>
-                    <td width="8%">
+                    <td width="6%">
                         <select class="form-select form-select-sm" @onchange="async eventArgs => { await GelisSekliSecSorgu(eventArgs.Value); }">
                             <option value="0"></option>
                             @foreach (var item in DSGelisSekliSorgu)
@@ -106,11 +125,11 @@
                             }
                         </select>
                     </td>
-                    <td width="6%">
+                    <td width="4%">
                     </td>
-                    <td width="14%">
+                    <td width="12%">
                     </td>
-                    <td width="8%" align="center">
+                    <td width="6%" align="center">
                         <div class="btn-group">
                             <button class="btn text-success grid-command" @onclick="Sorgula"><i class="bi bi-search"></i></button>
                             <button class="btn text-success grid-command" @onclick="ExportToExcel"><i class="bi bi-file-earmark-excel"></i></button>
@@ -122,7 +141,7 @@
             {
                 <tbody>
                     <tr>
-                        <td colspan="10" align="center" valign="bottom" height="64px">
+                        <td colspan="11" align="center" valign="bottom" height="64px">
                             <h6>Görüntülenecek Veri Yok</h6>
                         </td>
                     </tr>
@@ -165,13 +184,13 @@
                         else if (data.KalibrasyonOdeme == 3) kalibrasyonOdemeString = "Yapılmadı";
 
                         <tr>
-                            <td width="6%" align="center" style="@tdLeftStyle">
+                            <td width="8%" align="center" style="@tdLeftStyle">
                                 <div class="ExpandCollapseDiv">
                                     <input id="@checkBoxId" type="checkbox" name="@checkBoxId" @bind="@data.Expanded" />
                                     <label for="@checkBoxId"></label>
                                 </div>
                             </td>
-                            <td width="8%" align="center" style="@tdCenterStyle">@data.Id</td>
+                            <td width="6%" align="center" style="@tdCenterStyle">@data.Id</td>
                             <td width="16%" style="@tdCenterStyle">
                                 @data.AdSoyadUnvan 
                                 @if (data.IndirimTutari > 0)
@@ -180,13 +199,14 @@
                                     <i class="bi bi-arrow-down-circle text-danger"></i>
                                 }
                             </td>
-                            <td width="14%" align="center" style="@tdCenterStyle">@data.BasvuruTakipNo</td>
+                            <td width="12%" style="@tdCenterStyle">@data.Aciklama</td>
+                            <td width="12%" align="center" style="@tdCenterStyle">@data.BasvuruTakipNo</td>                            
                             <td width="10%" align="center" style="@tdCenterStyle">@data.BasvuruZamani.ToString("dd.MM.yyyy HH:mm")</td>
-                            <td width="8%" align="center" style="@tdCenterStyle"><span class=@data.GelisSekliBadge>@data.GelisSekliString</span></td>
+                            <td width="6%" align="center" style="@tdCenterStyle"><span class=@data.GelisSekliBadge>@data.GelisSekliString</span></td>
                             <td width="8%" align="center" style="@tdCenterStyle"><span class=@kalibrasyonOdemeBadge>@kalibrasyonOdemeString</span></td>
-                            <td width="6%" align="center" style="@tdCenterStyle">@data.DetailCount</td>
-                            <td width="14%" align="center" style="@tdCenterStyle"><span class=@kalibrasyonDurumuBadge>@data.KalibrasyonDurumu</span></td>
-                            <td width="8%" align="center" style="@tdRightStyle">
+                            <td width="4%" align="center" style="@tdCenterStyle">@data.DetailCount</td>
+                            <td width="12%" align="center" style="@tdCenterStyle"><span class=@kalibrasyonDurumuBadge>@data.KalibrasyonDurumu</span></td>
+                            <td width="6%" align="center" style="@tdRightStyle">
                                 <div class="btn-group">
                                     @if (YetkiYaz)
                                     {
@@ -202,7 +222,7 @@
                         @if (data.Expanded)
                         {
                             <tr>
-                                <td colspan="10" style="border: 2px solid orange; border-top:none;">
+                                <td colspan="11" style="border: 2px solid orange; border-top:none;">
                                     <table class="table table-bordered table-hover" style="font-size:0.75rem;">
                                         <thead>
                                             <tr>
@@ -210,13 +230,14 @@
                                                     <input type="checkbox" class="form-check-input" @onchange="async eventArgs => { await SelectAllKalibrasyonCihazClicked(data, eventArgs.Value); }" />
                                                 </td>
                                                 <td width="6%" align="center">Cihaz ID</td>
-                                                <td width="8%">Marka</td>
-                                                <td width="8%">Model</td>
-                                                <td width="8%">Seri No</td>
-                                                <td width="8%" align="center">Ödeme</td>
-                                                <td width="8%" align="center">Teslim Tarihi</td>
-                                                <td width="8%" align="center">Geri Gönderiliş Tarihi</td>
-                                                <td width="22%">Durumu</td>
+                                                <td width="7%">Marka</td>
+                                                <td width="7%">Model</td>
+                                                <td width="7%">Seri No</td>
+                                                <td width="7%" align="center">Ödeme</td>
+                                                <td width="7%" align="center">Kargo Geliş Tarihi</td>
+                                                <td width="7%" align="center">Teslim Tarihi</td>
+                                                <td width="7%" align="center">Geri Gönderiliş Tarihi</td>
+                                                <td width="21%">Durumu</td>
                                                 <td width="18%" align="center">
                                                     @if (YetkiYaz)
                                                     {
@@ -259,7 +280,7 @@
                                                     </td>
                                                     @if (editingKalibrasyonCihazDTO.Id == cihaz.Id)
                                                     {
-                                                        <td width="8%" align="center">
+                                                        <td width="7%" align="center">
                                                             <select class="form-select form-select-sm" @onchange="async eventArgs => { await MarkaSec(eventArgs.Value, cihaz); }">
                                                                 <option value="0"></option>
                                                                 @foreach (var item in DSMarka)
@@ -275,7 +296,7 @@
                                                                 }
                                                             </select>
                                                         </td>
-                                                        <td width="8%" align="center">
+                                                        <td width="7%" align="center">
                                                             <select class="form-select form-select-sm" @bind="cihaz.ModelId">
                                                                 <option value="0"></option>
                                                                 @foreach (var item in cihaz.DataSourceModel)
@@ -284,10 +305,10 @@
                                                                 }
                                                             </select>
                                                         </td>
-                                                        <td width="8%">
+                                                        <td width="7%">
                                                             <input class="form-control form-control-sm" type="text" @bind-value="cihaz.SeriNo">
                                                         </td>
-                                                        <td width="8%" align="center">
+                                                        <td width="7%" align="center">
                                                             @if (cihaz.OdemeYapildi)
                                                             {
                                                                 <span class="badge bg-success">Evet</span>
@@ -297,13 +318,16 @@
                                                                 <span class="badge bg-danger">Hayır</span>
                                                             }
                                                         </td>
-                                                        <td width="8%" align="center">
+                                                        <td width="7%" align="center">
+                                                            <input class="form-control form-control-sm" type="date" @bind-value="cihaz.KargoGelisTarihi">
+                                                        </td>
+                                                        <td width="7%" align="center">
                                                             <input class="form-control form-control-sm" type="date" @bind-value="cihaz.TeslimTarihi">
                                                         </td>
-                                                        <td width="8%" align="center">
+                                                        <td width="7%" align="center">
                                                             <input class="form-control form-control-sm" type="date" @bind-value="cihaz.GonderilisTarihi">
                                                         </td>
-                                                        <td width="22%" align="center">
+                                                        <td width="21%" align="center">
                                                             <span class=@cihazDurumuBadge>@cihaz.CihazDurumu</span>
                                                         </td>
                                                         <td width="18%" align="center">
@@ -315,10 +339,10 @@
                                                     }
                                                     else
                                                     {
-                                                        <td width="8%">@cihaz.Marka</td>
-                                                        <td width="8%">@cihaz.Model</td>
-                                                        <td width="8%">@cihaz.SeriNo</td>
-                                                        <td width="8%" align="center">
+                                                        <td width="7%">@cihaz.Marka</td>
+                                                        <td width="7%">@cihaz.Model</td>
+                                                        <td width="7%">@cihaz.SeriNo</td>
+                                                        <td width="7%" align="center">
                                                             @if (cihaz.OdemeYapildi)
                                                             {
                                                                 <span class="badge bg-success">Evet</span>
@@ -328,7 +352,17 @@
                                                                 <span class="badge bg-danger">Hayır</span>
                                                             }
                                                         </td>
-                                                        <td width="8%" align="center">
+                                                        <td width="7%" align="center">
+                                                            @if (cihaz.KargoGelisTarihi.HasValue)
+                                                            {
+                                                                <span class="badge bg-success">@cihaz.KargoGelisTarihi.Value.ToString("dd.MM.yyyy")</span>
+                                                            }
+                                                            else
+                                                            {
+                                                                <span class="badge bg-danger">Gelmedi</span>
+                                                            }
+                                                        </td>
+                                                        <td width="7%" align="center">
                                                             @if (cihaz.TeslimTarihi.HasValue)
                                                             {
                                                                 <span class="badge bg-success">@cihaz.TeslimTarihi.Value.ToString("dd.MM.yyyy")</span>
@@ -338,7 +372,7 @@
                                                                 <span class="badge bg-danger">Gelmedi</span>
                                                             }
                                                         </td>
-                                                        <td width="8%" align="center">
+                                                        <td width="7%" align="center">
                                                             @if (cihaz.GonderilisTarihi.HasValue)
                                                             {
                                                                 <span class="badge bg-success">@cihaz.GonderilisTarihi.Value.ToString("dd.MM.yyyy")</span>
@@ -348,7 +382,7 @@
                                                                 <span class="badge bg-danger">Gönderilmedi</span>
                                                             }
                                                         </td>
-                                                        <td width="22%" align="center">
+                                                        <td width="21%" align="center">
                                                             <span class=@cihazDurumuBadge>@cihaz.CihazDurumu</span>
                                                             @if (cihaz.CihazDurumu.StartsWith("Laboratuvar Sorumlusu Sonuçlandırdı"))
                                                             {
@@ -389,7 +423,7 @@
             }
             <tfoot>
                 <tr>
-                    <td colspan="10" align="center">
+                    <td colspan="12" align="center">
                         <Pager RowCount="@RowCount" PageNo="@PageNo"
                                PageNoChanged="@((int pageNo) => PageNoChanged(pageNo))"
                                PageSizeChanged="@((int pageSize) => PageSizeChanged(pageSize))"></Pager>
@@ -441,14 +475,14 @@
                                 <div class="col-md-6 mb-3">
                                     <div class="input-group input-group-sm">
                                         <span class="input-group-text" id="spnMail" style="width: 160px;">E-Posta</span>
-                                        <input id="tbMail" class="form-control form-control-sm" type="text" @bind-value="currentDTO.Mail" aria-describedby="spnMail">
+                                        <input id="tbMail" class="form-control form-control-sm" type="text" @bind-value="currentDTO.Mail" aria-describedby="spnMail"/>
                                     </div>
                                 </div>
                                 <div class="col-md-6 mb-3">
                                     <div class="input-group input-group-sm">
                                         <span class="input-group-text" id="spnTelefonCep" style="width: 160px;">GSM Numarası</span>
                                         <input id="tbTelefonCep" class="form-control form-control-sm" type="text" @bind-value="currentDTO.TelefonCep" aria-describedby="spnTelefonCep"
-                                               placeholder="Başında 0 olmadan 10 karakter giriniz">
+                                               placeholder="Başında 0 olmadan 10 karakter giriniz"/>
                                     </div>
                                 </div>
                             </div>
@@ -463,13 +497,13 @@
                                     <div class="col-md-6 mb-3">
                                         <div class="input-group input-group-sm">
                                             <span class="input-group-text" id="spnAdSoyadBasvuru" style="width: 160px;">Ad Soyad</span>
-                                            <input id="tbAdSoyadBasvuru" class="form-control form-control-sm" type="text" @bind-value="currentDTO.AdSoyadBasvuru" aria-describedby="spnAdSoyadBasvuru">
+                                            <input id="tbAdSoyadBasvuru" class="form-control form-control-sm" type="text" @bind-value="currentDTO.AdSoyadBasvuru" aria-describedby="spnAdSoyadBasvuru"/>
                                         </div>
                                     </div>
                                     <div class="col-md-6 mb-3">
                                         <div class="input-group input-group-sm">
                                             <span class="input-group-text" id="spnTCKimlikNoBasvuru" style="width: 160px;">TC Kimlik No</span>
-                                            <input id="tbTCKimlikNoBasvuru" class="form-control form-control-sm" type="text" @bind-value="currentDTO.TCKimlikNoBasvuru" aria-describedby="spnTCKimlikNoBasvuru">
+                                            <input id="tbTCKimlikNoBasvuru" class="form-control form-control-sm" type="text" @bind-value="currentDTO.TCKimlikNoBasvuru" aria-describedby="spnTCKimlikNoBasvuru"/>
                                         </div>
                                     </div>
                                 }
@@ -478,19 +512,19 @@
                                     <div class="col-md-12 mb-3">
                                         <div class="input-group input-group-sm">
                                             <span class="input-group-text" id="spnUnvanBasvuru" style="width: 160px;">Şirket Unvanı</span>
-                                            <input id="tbUnvanBasvuru" class="form-control form-control-sm" type="text" @bind-value="currentDTO.UnvanBasvuru" aria-describedby="spnUnvanBasvuru">
+                                            <input id="tbUnvanBasvuru" class="form-control form-control-sm" type="text" @bind-value="currentDTO.UnvanBasvuru" aria-describedby="spnUnvanBasvuru"/>
                                         </div>
                                     </div>
                                     <div class="col-md-6 mb-3">
                                         <div class="input-group input-group-sm">
                                             <span class="input-group-text" id="spnVergiDairesiBasvuru" style="width: 160px;">Vergi Dairesi</span>
-                                            <input id="tbVergiDairesiBasvuru" class="form-control form-control-sm" type="text" @bind-value="currentDTO.VergiDairesiBasvuru" aria-describedby="spnVergiDairesiBasvuru">
+                                            <input id="tbVergiDairesiBasvuru" class="form-control form-control-sm" type="text" @bind-value="currentDTO.VergiDairesiBasvuru" aria-describedby="spnVergiDairesiBasvuru"/>
                                         </div>
                                     </div>
                                     <div class="col-md-6 mb-3">
                                         <div class="input-group input-group-sm">
                                             <span class="input-group-text" id="spnVergiNoBasvuru" style="width: 160px;">Vergi No</span>
-                                            <input id="tbVergiNoBasvuru" class="form-control form-control-sm" type="text" @bind-value="currentDTO.VergiNoBasvuru" aria-describedby="spnVergiNoBasvuru">
+                                            <input id="tbVergiNoBasvuru" class="form-control form-control-sm" type="text" @bind-value="currentDTO.VergiNoBasvuru" aria-describedby="spnVergiNoBasvuru"/>
                                         </div>
                                     </div>
                                 }
@@ -535,7 +569,7 @@
                                     <div class="input-group input-group-sm">
                                         <span class="input-group-text" id="spnAdresBasvuru" style="width: 160px;">Adres</span>
                                         <input id="tbAdresBasvuru" class="form-control form-control-sm" type="text" @bind-value="currentDTO.AdresBasvuru" aria-describedby="spnAdresBasvuru"
-                                               placeholder="Mahalle, cadde, sokak, bina no, daire no, posta kodu..">
+                                               placeholder="Mahalle, cadde, sokak, bina no, daire no, posta kodu.."/>
                                     </div>
                                 </div>
                             </div>
@@ -563,13 +597,13 @@
                                         <div class="col-md-6 mb-3">
                                             <div class="input-group input-group-sm">
                                                 <span class="input-group-text" id="spnAdSoyadFatura" style="width: 160px;">Ad Soyad</span>
-                                                <input id="tbAdSoyadFatura" class="form-control form-control-sm" type="text" @bind-value="currentDTO.AdSoyadFatura" aria-describedby="spnAdSoyadFatura">
+                                                <input id="tbAdSoyadFatura" class="form-control form-control-sm" type="text" @bind-value="currentDTO.AdSoyadFatura" aria-describedby="spnAdSoyadFatura"/>
                                             </div>
                                         </div>
                                         <div class="col-md-6 mb-3">
                                             <div class="input-group input-group-sm">
                                                 <span class="input-group-text" id="spnTCKimlikNoFatura" style="width: 160px;">TC Kimlik No</span>
-                                                <input id="tbTCKimlikNoFatura" class="form-control form-control-sm" type="text" @bind-value="currentDTO.TCKimlikNoFatura" aria-describedby="spnTCKimlikNoFatura">
+                                                <input id="tbTCKimlikNoFatura" class="form-control form-control-sm" type="text" @bind-value="currentDTO.TCKimlikNoFatura" aria-describedby="spnTCKimlikNoFatura"/>
                                             </div>
                                         </div>
                                     }
@@ -578,19 +612,19 @@
                                         <div class="col-md-12 mb-3">
                                             <div class="input-group input-group-sm">
                                                 <span class="input-group-text" id="spnUnvanFatura" style="width: 160px;">Şirket Unvanı</span>
-                                                <input id="tbUnvanFatura" class="form-control form-control-sm" type="text" @bind-value="currentDTO.UnvanFatura" aria-describedby="spnUnvanFatura">
+                                                <input id="tbUnvanFatura" class="form-control form-control-sm" type="text" @bind-value="currentDTO.UnvanFatura" aria-describedby="spnUnvanFatura"/>
                                             </div>
                                         </div>
                                         <div class="col-md-6 mb-3">
                                             <div class="input-group input-group-sm">
                                                 <span class="input-group-text" id="spnVergiDairesiFatura" style="width: 160px;">Vergi Dairesi</span>
-                                                <input id="tbVergiDairesiFatura" class="form-control form-control-sm" type="text" @bind-value="currentDTO.VergiDairesiFatura" aria-describedby="spnVergiDairesiFatura">
+                                                <input id="tbVergiDairesiFatura" class="form-control form-control-sm" type="text" @bind-value="currentDTO.VergiDairesiFatura" aria-describedby="spnVergiDairesiFatura"/>
                                             </div>
                                         </div>
                                         <div class="col-md-6 mb-3">
                                             <div class="input-group input-group-sm">
                                                 <span class="input-group-text" id="spnVergiNoFatura" style="width: 160px;">Vergi No</span>
-                                                <input id="tbVergiNoFatura" class="form-control form-control-sm" type="text" @bind-value="currentDTO.VergiNoFatura" aria-describedby="spnVergiNoFatura">
+                                                <input id="tbVergiNoFatura" class="form-control form-control-sm" type="text" @bind-value="currentDTO.VergiNoFatura" aria-describedby="spnVergiNoFatura"/>
                                             </div>
                                         </div>
                                     }
@@ -635,7 +669,7 @@
                                         <div class="input-group input-group-sm">
                                             <span class="input-group-text" id="spnAdresFatura" style="width: 160px;">Adres</span>
                                             <input id="tbAdresFatura" class="form-control form-control-sm" type="text" @bind-value="currentDTO.AdresFatura" aria-describedby="spnAdresFatura"
-                                                   placeholder="Mahalle, cadde, sokak, bina no, daire no, posta kodu..">
+                                                   placeholder="Mahalle, cadde, sokak, bina no, daire no, posta kodu.."/>
                                         </div>
                                     </div>
                                 }
@@ -699,21 +733,33 @@
                                         <div class="input-group input-group-sm">
                                             <span class="input-group-text" id="spnAdresTeslim" style="width: 160px;">Adres</span>
                                             <input id="tbAdresTeslim" class="form-control form-control-sm" type="text" @bind-value="currentDTO.AdresTeslim" aria-describedby="spnAdresTeslim"
-                                                   placeholder="Mahalle, cadde, sokak, bina no, daire no, posta kodu..">
+                                                   placeholder="Mahalle, cadde, sokak, bina no, daire no, posta kodu.."/>
                                         </div>
                                     </div>
                                 }
                             </div>
                         </div>
                     </div>
-                    <div class="card mb-3">
-                        <div class="card-body" style="padding-bottom:4px;">
-                            <h5 class="card-title">İndirim</h5>
-                            <div class="row">
-                                <div class="col-md-6 mb-3">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card mb-3">
+                                <div class="card-body mb-0">
+                                    <h5 class="card-title">İndirim</h5>
                                     <div class="input-group input-group-sm">
                                         <span class="input-group-text" id="spnIndirimKodu" style="width: 160px;">İndirim Kodu</span>
-                                        <input class="form-control form-control-sm" type="text" @bind-value="currentDTO.IndirimKodu" aria-describedby="spnIndirimKodu">
+                                        <input class="form-control form-control-sm" type="text" @bind-value="currentDTO.IndirimKodu" aria-describedby="spnIndirimKodu"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card mb-3">
+                                <div class="card-body mb-0">
+                                    <h5 class="card-title">Not</h5>
+                                    <div class="input-group input-group-sm">
+                                        <span class="input-group-text" id="spnAciklama" style="width: 160px;">Not</span>
+                                        <InputTextArea class="form-control form-control-sm" type="text" @bind-Value="currentDTO.Aciklama" rows="3">
+                                        </InputTextArea>
                                     </div>
                                 </div>
                             </div>
@@ -1149,6 +1195,28 @@
         new LookupBasicDTO() { Id = 303, Ad = "Laboratuvar Görevlisine İade Edilenler" }
     };
 
+    List<ValueNameDTO> DSOrder = new List<ValueNameDTO>()
+    {
+        new ValueNameDTO() { Value = "Id", Name = "Başvuru ID (Artan)" },
+        new ValueNameDTO() { Value = "Id DESC", Name = "Başvuru ID (Azalan)" },
+        new ValueNameDTO() { Value = "AdSoyadUnvan", Name = "Müşteri (Artan)" },
+        new ValueNameDTO() { Value = "AdSoyadUnvan DESC", Name = "Müşteri (Azalan)" },
+        new ValueNameDTO() { Value = "Aciklama", Name = "Not (Artan)" },
+        new ValueNameDTO() { Value = "Aciklama DESC", Name = "Not (Azalan)" },
+        new ValueNameDTO() { Value = "BasvuruTakipNo", Name = "Başvuru Takip No (Artan)" },
+        new ValueNameDTO() { Value = "BasvuruTakipNo DESC", Name = "Başvuru Takip No (Azalan)" },
+        new ValueNameDTO() { Value = "BasvuruZamani", Name = "Başvuru Zamanı (Artan)" },
+        new ValueNameDTO() { Value = "BasvuruZamani DESC", Name = "Başvuru Zamanı (Azalan)" },
+        new ValueNameDTO() { Value = "GelisSekli", Name = "Geliş Şekli (Artan)" },
+        new ValueNameDTO() { Value = "GelisSekli DESC", Name = "Geliş Şekli (Azalan)" },
+        new ValueNameDTO() { Value = "KalibrasyonOdeme", Name = "Ödeme Durumu (Artan)" },
+        new ValueNameDTO() { Value = "KalibrasyonOdeme DESC", Name = "Ödeme Durumu (Azalan)" },
+        new ValueNameDTO() { Value = "CihazSayisi", Name = "Cihaz Sayısı (Artan)" },
+        new ValueNameDTO() { Value = "CihazSayisi DESC", Name = "Cihaz Sayısı (Azalan)" },
+        new ValueNameDTO() { Value = "KalibrasyonDurumu", Name = "Kalibrasyon Durumu (Artan)" },
+        new ValueNameDTO() { Value = "KalibrasyonDurumu DESC", Name = "Kalibrasyon Durumu (Azalan)" }        
+    };
+
     KalibrasyonDTO currentDTO = new KalibrasyonDTO();
     KalibrasyonCihazDTO currentKalibrasyonCihazDTO = new KalibrasyonCihazDTO();
     KalibrasyonFilterDTO filterDTO = new KalibrasyonFilterDTO() { PageNo = 1, PageSize = 10, Sayfa = "0" };
@@ -1334,6 +1402,17 @@
 
         await GetData();
 
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task OrderSec(object value)
+    {
+        PageNo = 1;
+        filterDTO.PageNo = 1;
+
+        filterDTO.Order = value.ToString();
+
+        await GetData();
         await InvokeAsync(StateHasChanged);
     }
 

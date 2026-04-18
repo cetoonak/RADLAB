@@ -128,6 +128,8 @@ namespace RADLAB.Model.DTO
         public string IndirimKodu { get; set; } = string.Empty;
         public decimal IndirimTutari { get; set; }
 
+        public string Aciklama { get; set; } = string.Empty;
+
         public int DetailCount { get; set; }
 
         public bool Expanded { get; set; }

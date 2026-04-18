@@ -51,12 +51,28 @@
                     <td width="6%" align="center">Cihaz ID</td>
                     <td width="6%" align="center">Başvuru ID</td>
                     <td width="10%" align="center">Başvuru Takip No</td>
-                    <td width="10%" align="center">Marka</td>
-                    <td width="10%" align="center">Model</td>
-                    <td width="10%" align="center">Seri No</td>
+                    <td width="8%" align="center">Marka</td>
+                    <td width="8%" align="center">Model</td>
+                    <td width="8%" align="center">Seri No</td>
                     <td width="12%" align="center">Cihaz Durumu</td>
-                    <td width="10%" align="center">Türkak Bilgileri</td>
-                    <td width="26%"></td>
+                    <td width="8%" align="center">Kalibrasyon Tarihi</td>
+                    <td width="8%" align="center">Türkak Bilgileri</td>
+                    <td width="24%">
+                        <select class="form-select form-select-sm" @onchange="async eventArgs => { await OrderSec(eventArgs.Value); }">
+                            <option value="">Varsayılan Sıralama</option>
+                            @foreach (var item in DSOrder)
+                            {
+                                if (filterDTO.Order == item.Value)
+                                {
+                                    <option selected value="@item.Value">@item.Name</option>
+                                }
+                                else
+                                {
+                                    <option value="@item.Value">@item.Name</option>
+                                }
+                            }
+                        </select>
+                    </td>
                 </tr>
                 <tr>
                     <td width="6%">
@@ -68,7 +84,7 @@
                     <td width="10%">
                         <input class="form-control form-control-sm" type="text" @bind-value="filterDTO.BasvuruTakipNo">
                     </td>
-                    <td width="10%">
+                    <td width="8%">
                         <select class="form-select form-select-sm" @onchange="async eventArgs => { await MarkaSec(eventArgs.Value); }">
                             <option value="0"></option>
                             @foreach (var item in DSMarka)
@@ -84,7 +100,7 @@
                             }
                         </select>
                     </td>
-                    <td width="10%">
+                    <td width="8%">
                         <select class="form-select form-select-sm" @onchange="async eventArgs => { await ModelSec(eventArgs.Value); }">
                             <option value="0"></option>
                             @foreach (var item in DSModel)
@@ -100,7 +116,7 @@
                             }
                         </select>
                     </td>
-                    <td width="10%">
+                    <td width="8%">
                         <input class="form-control form-control-sm" type="text" @bind-value="filterDTO.SeriNo">
                     </td>
                     <td width="12%">
@@ -119,9 +135,11 @@
                             }
                         </select>*@
                     </td>
-                    <td width="10%">
+                    <td width="8%">
                     </td>
-                    <td width="16%" align="center">
+                    <td width="8%">
+                    </td>
+                    <td width="14%" align="center">
                         <div class="btn-group">
                             <button class="btn text-success grid-command" @onclick="Sorgula"><i class="bi bi-search"></i></button>
                             <button class="btn text-success grid-command" @onclick="ExportToExcel"><i class="bi bi-file-earmark-excel"></i></button>
@@ -133,7 +151,7 @@
             {
                 <tbody>
                     <tr>
-                        <td colspan="9" align="center" valign="bottom" height="64px">
+                        <td colspan="10" align="center" valign="bottom" height="64px">
                             <h6>Görüntülenecek Veri Yok</h6>
                         </td>
                     </tr>
@@ -169,12 +187,13 @@
                             <td width="6%" align="center">@data.Id</td>
                             <td width="6%" align="center">@data.KalibrasyonId</td>
                             <td width="10%" align="center">@data.BasvuruTakipNo</td>
-                            <td width="10%" align="center">@data.Marka</td>
-                            <td width="10%" align="center">@data.Model</td>
-                            <td width="10%" align="center">@data.SeriNo</td>
+                            <td width="8%" align="center">@data.Marka</td>
+                            <td width="8%" align="center">@data.Model</td>
+                            <td width="8%" align="center">@data.SeriNo</td>
                             <td width="12%" align="center"><span class=@cihazDurumuBadge>@data.CihazDurumu</span></td>
-                            <td width="10%" align="center">@(data.TurkakCertificateGuid + " TBDS No: " + (string.IsNullOrEmpty(data.TurkakTBDSNumber) ? "Alınmadı" : data.TurkakTBDSNumber))</td>
-                            <td width="26%" align="center">
+                            <td width="8%" align="center">@(data.KalibrasyonTarihi.HasValue ? data.KalibrasyonTarihi.Value.ToString("dd.MM.yyyy") : "")</td>
+                            <td width="8%" align="center">@(data.TurkakCertificateGuid + " TBDS No: " + (string.IsNullOrEmpty(data.TurkakTBDSNumber) ? "Alınmadı" : data.TurkakTBDSNumber))</td>
+                            <td width="24%" align="center">
                                 <div class="btn-group">
                                     @if (YetkiLaboratuvarGorevlisi & KabulIcinUygunDurumLaboratuvarGorevlisi)
                                     {
@@ -224,7 +243,7 @@
             }
             <thead>
                 <tr>
-                    <td colspan="9" align="center">
+                    <td colspan="10" align="center">
                         <Pager RowCount="@RowCount" PageNo="@PageNo" PageSize="@PageSize" 
                         PageNoChanged="@((int pageNo) => PageNoChanged(pageNo))"
                         PageSizeChanged="@((int pageSize) => PageSizeChanged(pageSize))"></Pager>
@@ -343,6 +362,22 @@
     {
         new LookupBasicDTO() { Id = 0, Ad = "Tüm Cihazlar" },
     };
+
+    List<ValueNameDTO> DSOrder = new List<ValueNameDTO>()
+    {
+        new ValueNameDTO() { Value = "Id", Name = "Cihaz ID (Artan)" },
+        new ValueNameDTO() { Value = "Id DESC", Name = "Cihaz ID (Azalan)" },
+        new ValueNameDTO() { Value = "KalibrasyonId", Name = "Başvuru ID (Artan)" },
+        new ValueNameDTO() { Value = "KalibrasyonId DESC", Name = "Başvuru ID (Azalan)" },
+        new ValueNameDTO() { Value = "BasvuruTakipNo", Name = "Başvuru Takip No (Artan)" },
+        new ValueNameDTO() { Value = "BasvuruTakipNo DESC", Name = "Başvuru Takip No (Azalan)" },
+        new ValueNameDTO() { Value = "Marka, Model, SeriNo", Name = "Marka, Model, Seri No (Artan)" },
+        new ValueNameDTO() { Value = "Marka DESC, Model DESC, SeriNo DESC", Name = "Marka, Model, Seri No (Azalan)" },
+        new ValueNameDTO() { Value = "CihazDurumuHareketTuru", Name = "Cihaz Durumu (Artan)" },
+        new ValueNameDTO() { Value = "CihazDurumuHareketTuru DESC", Name = "Cihaz Durumu (Azalan)" },
+        new ValueNameDTO() { Value = "KalibrasyonTarihi", Name = "Kalibrasyon Tarihi (Artan)" },
+        new ValueNameDTO() { Value = "KalibrasyonTarihi DESC", Name = "Kalibrasyon Tarihi (Azalan)" },
+    };                 
 
     KalibrasyonCihazDTO currentDTO = new KalibrasyonCihazDTO();
     KalibrasyonCihazFilterDTO filterDTO = new KalibrasyonCihazFilterDTO() { PageNo = 1, PageSize = 25, Sayfa = "0" };
@@ -481,6 +516,17 @@
         filterDTO.PageNo = 1;
 
         filterDTO.ModelId = Convert.ToInt32(value.ToString());
+
+        await GetData();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task OrderSec(object value)
+    {
+        PageNo = 1;
+        filterDTO.PageNo = 1;
+
+        filterDTO.Order = value.ToString();
 
         await GetData();
         await InvokeAsync(StateHasChanged);
