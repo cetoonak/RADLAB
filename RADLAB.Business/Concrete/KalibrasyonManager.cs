@@ -1107,8 +1107,8 @@ namespace RADLAB.Business.Concrete
 	                                        Ayar.TurkakCountryID AS CountryID,
 	                                        Il.TurkakGuid AS CityID,
 	                                        Ayar.TurkakFileID AS FileID,
-	                                        dbo.FAdSoyad(Kalibrasyon.AdSoyadBasvuru, 1) AS Name,
-	                                        dbo.FAdSoyad(Kalibrasyon.AdSoyadBasvuru, 0) AS Surname,
+	                                        --dbo.FAdSoyad(Kalibrasyon.AdSoyadBasvuru, 1) AS Name,
+	                                        --dbo.FAdSoyad(Kalibrasyon.AdSoyadBasvuru, 0) AS Surname,
 	                                        LTRIM(RTRIM(Kalibrasyon.AdresBasvuru + ISNULL(' ' + Ilce.IlIlce, '') + ISNULL(' ' + Il.IlIlce, ''))) AS Address,
 	                                        CONVERT(BIT, 0) AS UseTitleFromTaxNumber,
 	                                        CASE

@@ -6,8 +6,8 @@
         public string CountryID { get; set; } = string.Empty;
         public string CityID { get; set; } = string.Empty;
         public string FileID { get; set; } = string.Empty;
-        public string Name { get; set; } = string.Empty;
-        public string Surname { get; set; } = string.Empty;
+        //public string Name { get; set; } = string.Empty;
+        //public string Surname { get; set; } = string.Empty;
         public string Address { get; set; } = string.Empty;
         public bool UseTitleFromTaxNumber { get; set; }
         public string BrandInformation { get; set; } = string.Empty;
