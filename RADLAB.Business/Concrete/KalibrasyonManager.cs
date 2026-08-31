@@ -1163,6 +1163,11 @@ namespace RADLAB.Business.Concrete
                             {
                                 turkakCustomerGuid = resultCustomerSave.Item2[0].ErrorDescription.Replace("Aynı kuruluş birden fazla kez eklenemez! ID: ", "");
                             }
+
+                            if (resultCustomerSave.Item2[0].ErrorDescription.StartsWith("Aynı müşteri birden fazla kez eklenemez"))
+                            {
+                                turkakCustomerGuid = resultCustomerSave.Item2[0].ErrorDescription.Replace("Aynı müşteri birden fazla kez eklenemez! ID: ", "");
+                            }
                         }
 
                         if (string.IsNullOrEmpty(turkakCustomerGuid))
