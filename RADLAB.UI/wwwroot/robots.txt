@@ -1,0 +1,11 @@
+User-agent: *
+Allow: /
+
+Disallow: /Auth/
+Disallow: /Rapor/
+Disallow: /Mesaj/
+Disallow: /MusteriTakip
+Disallow: /Sepet
+Disallow: /Index
+
+Sitemap: https://www.radlab.com.tr/sitemap.xml

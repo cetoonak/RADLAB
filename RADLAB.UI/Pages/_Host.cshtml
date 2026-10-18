@@ -5,5 +5,32 @@
     Layout = "_Layout";
 }
 
-<component type="typeof(App)" render-mode="Server" />
-@*<component type="typeof(App)" render-mode="ServerPrerendered" />*@
+@{
+    var path = HttpContext.Request.Path.Value ?? "/";
+
+    var seoPages = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+    {
+        "/",
+        "/Hakkinda",
+        "/KalibrasyonBasvurusu",
+        "/Egitim",
+        "/OnlineSatis",
+        "/RadyoaktifKaynakYukleme",
+        "/IthalatIhracatTasima",
+        "/Zirhlama",
+        "/Danismanlik",
+        "/Teklif",
+        "/Iletisim"
+    };
+
+    bool prerender = seoPages.Contains(path.TrimEnd('/') is "" ? "/" : path.TrimEnd('/'));
+}
+
+@if (prerender)
+{
+    <component type="typeof(App)" render-mode="ServerPrerendered" />
+}
+else
+{
+    <component type="typeof(App)" render-mode="Server" />
+}

@@ -1,0 +1,95 @@
+﻿@inject NavigationManager Navigation
+
+<PageTitle>@Title</PageTitle>
+
+<HeadContent>
+    <meta name="description" content="@Description" />
+    <link rel="canonical" href="@CanonicalUrl" />
+</HeadContent>
+
+@code {
+    private string Title = "";
+    private string Description = "";
+    private string CanonicalUrl = "";
+
+    protected override void OnParametersSet()
+    {
+        var path = new Uri(Navigation.Uri)
+            .AbsolutePath
+            .TrimEnd('/')
+            .ToLowerInvariant();
+
+        var seo = path switch
+        {
+            "" => (
+                "RADLAB | Dozimetri, Radyasyon Ölçümü ve Kalibrasyon",
+                "RADLAB resmi web sitesi. Radyasyon ölçüm sistemleri, kalibrasyon ve radyasyon güvenliği hizmetleri."
+            ),
+
+            "/hakkinda" => (
+                "Hakkımızda | RADLAB",
+                "RADLAB İkincil Standart Dozimetri Laboratuvarı hakkında bilgi edinin."
+            ),
+
+            "/kalibrasyonbasvurusu" => (
+                "Kalibrasyon Başvurusu | RADLAB",
+                "RADLAB radyasyon ölçüm cihazları kalibrasyon hizmetleri ve kalibrasyon başvurusu."
+            ),
+
+            "/egitim" => (
+                "Radyasyondan Korunma Eğitimleri | RADLAB",
+                "RADLAB radyasyondan korunma eğitimleri ve eğitim başvuruları."
+            ),
+
+            "/onlinesatis" => (
+                "Radyasyon Ölçüm Cihazları | RADLAB",
+                "RADLAB radyasyon ölçüm cihazları ve online satış hizmetleri."
+            ),
+
+            "/radyoaktifkaynakyukleme" => (
+                "Radyoaktif Kaynak Enerji Dolumu | RADLAB",
+                "RADLAB radyoaktif kaynak enerji dolumu ve kaynak değişimi hizmetleri."
+            ),
+
+            "/ithalatihracattasima" => (
+                "Radyoaktif Kaynak İthalat, İhracat ve Taşıma | RADLAB",
+                "RADLAB radyoaktif kaynak ithalatı, ihracatı ve taşıma hizmetleri."
+            ),
+
+            "/zirhlama" => (
+                "Radyolojik Zırhlama Hesaplamaları | RADLAB",
+                "RADLAB radyolojik zırhlama hesaplamaları ve radyasyon güvenliği hizmetleri."
+            ),
+
+            "/danismanlik" => (
+                "Radyasyon Güvenliği Danışmanlığı | RADLAB",
+                "RADLAB radyasyon güvenliği danışmanlığı hizmetleri."
+            ),
+
+            "/teklif" => (
+                "Teklif Talebi | RADLAB",
+                "RADLAB radyasyon ölçüm cihazları, kalibrasyon ve radyasyon güvenliği hizmetleri için teklif talep formu."
+            ),
+
+            "/iletisim" => (
+                "İletişim | RADLAB",
+                "RADLAB iletişim bilgileri ve iletişim kanalları."
+            ),
+
+            _ => (
+                "RADLAB",
+                "RADLAB resmi web sitesi."
+            )
+        };
+
+        Title = seo.Item1;
+        Description = seo.Item2;
+
+        var originalPath = new Uri(Navigation.Uri)
+            .AbsolutePath
+            .TrimEnd('/');
+
+        CanonicalUrl = "https://www.radlab.com.tr" +
+            (string.IsNullOrEmpty(originalPath) ? "/" : originalPath);
+    }
+}
