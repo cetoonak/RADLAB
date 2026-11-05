@@ -197,27 +197,27 @@
                                 <div class="btn-group">
                                     @if (YetkiLaboratuvarGorevlisi & KabulIcinUygunDurumLaboratuvarGorevlisi)
                                     {
-                                        <button class="btn btn-sm btn-success" @onclick="@(async () => { await KabulEt(data); })"><i class="bi bi-check"></i>&nbsp;Kabul Et</button>
+                                        <button class="btn btn-sm btn-success" style="font-size:0.7rem" @onclick="@(async () => { await KabulEt(data); })"><i class="bi bi-check"></i>&nbsp;Kabul Et</button>
                                     }
                                     @if (YetkiLaboratuvarGorevlisi & OlcumIcinUygunDurumLaboratuvarGorevlisi) 
                                     {
-                                        <a href=@("/Main/KalibrasyonCihazOlcum/LaboratuvarGorevlisi/" + data.Id.ToString()) class="btn btn-sm btn-success">
+                                        <a href=@("/Main/KalibrasyonCihazOlcum/LaboratuvarGorevlisi/" + data.Id.ToString()) class="btn btn-sm btn-success" style="font-size:0.7rem">
                                             <i class="bi bi-check"></i>&nbsp;Ölçüm
                                         </a>
                                     }
                                     @if (YetkiLaboratuvarSorumlusu & OlcumIcinUygunDurumLaboratuvarSorumlusu)
                                     {
-                                        <a href=@("/Main/KalibrasyonCihazOlcum/LaboratuvarSorumlusu/" + data.Id.ToString()) class="btn btn-sm btn-primary">
+                                        <a href=@("/Main/KalibrasyonCihazOlcum/LaboratuvarSorumlusu/" + data.Id.ToString()) class="btn btn-sm btn-primary" style="font-size:0.7rem">
                                             <i class="bi bi-check"></i>&nbsp;Kontrol
                                         </a>
                                     }
                                     @if (YetkiLaboratuvarGorevlisi & IadeIcinUygunDurumLaboratuvarGorevlisi)
                                     {
-                                        <button class="btn btn-sm btn-danger" @onclick="@(async () => { await IadeEt(data, "Sekretere"); })"><i class="bi bi-x"></i>&nbsp;Sekretere İade Et</button>
+                                        <button class="btn btn-sm btn-danger" style="font-size:0.7rem" @onclick="@(async () => { await IadeEt(data, "Sekretere"); })"><i class="bi bi-x"></i>&nbsp;Sekretere İade Et</button>
                                     }
                                     @if (YetkiLaboratuvarSorumlusu & IadeIcinUygunDurumLaboratuvarSorumlusu)
                                     {
-                                        <button class="btn btn-sm btn-danger" @onclick="@(async () => { await IadeEt(data, "LaboratuvarGorevlisine"); })"><i class="bi bi-x"></i>&nbsp;Laboratuvara İade Et</button>
+                                        <button class="btn btn-sm btn-danger" style="font-size:0.7rem" @onclick="@(async () => { await IadeEt(data, "LaboratuvarGorevlisine"); })"><i class="bi bi-x"></i>&nbsp;Laboratuvara İade Et</button>
                                     }
                                     @if (YetkiLaboratuvarGorevlisi & (OlcumIcinUygunDurumLaboratuvarSorumlusu || IadeIcinUygunDurumLaboratuvarSorumlusu))
                                     {
@@ -225,15 +225,21 @@
                                         {
                                             if (string.IsNullOrEmpty(data.TurkakCertificateGuid))
                                             {
-                                                <button class="btn btn-sm btn-warning" @onclick="@(async () => { await TurkakakGonder(data); })"><i class="bi bi-check"></i>&nbsp;Türkaka Gönder</button>
+                                                <button class="btn btn-sm btn-warning" style="font-size:0.7rem" @onclick="@(async () => { await TurkakakGonder(data); })"><i class="bi bi-check"></i>&nbsp;Türkaka Gönder</button>
                                             }
                                             else if (string.IsNullOrEmpty(data.TurkakTBDSNumber))
                                             {
-                                                 <button class="btn btn-sm btn-warning" @onclick="@(async () => { await QRKodAl(data); })"><i class="bi bi-check"></i>&nbsp;QRKod Al</button>
+                                                <button class="btn btn-sm btn-warning" style="font-size:0.7rem" @onclick="@(async () => { await QRKodAl(data); })"><i class="bi bi-check"></i>&nbsp;QRKod Al</button>
                                             }
                                         }
-
-                                        <button class="btn btn-sm btn-info" @onclick="@(async () => { await Yazdir(data); })"><i class="bi bi-printer"></i>&nbsp;Yazdır</button>
+                                        <div class="filter">
+                                            <a class="btn btn-sm btn-info" href="#" style="font-size:0.7rem" data-bs-toggle="dropdown"><i class="bi bi-printer"></i>&nbsp;Yazdır</a>
+                                            <ul class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
+                                                <li><button class="dropdown-item" @onclick="@(async () => { await Onizle(data, "KalibrasyonOlcum"); })">Ölçüm</button></li>
+                                                <li><button class="dropdown-item" @onclick="@(async () => { await Onizle(data, "Etiket"); })">Etiket</button></li>
+                                                <li><button class="dropdown-item" @onclick="@(async () => { await Onizle(data, "Adres"); })">Adres</button></li>
+                                            </ul>
+                                        </div>
                                     }
                                 </div>
                             </td>
@@ -694,13 +700,13 @@
         }
     }
 
-    async Task Yazdir(KalibrasyonCihazDTO dto)
+    async Task Onizle(KalibrasyonCihazDTO dto, string rapor)
     {
         try
         {
             loading = true;
 
-            var bytes = File.ReadAllBytes("FR/KalibrasyonOlcum.frx");
+            var bytes = File.ReadAllBytes($"FR/{rapor}.frx");
 
             string base64Rapor = Convert.ToBase64String(bytes);
 
@@ -708,7 +714,8 @@
                 {
                     ReportNameOrBase64 = base64Rapor,
                     Uzanti = "pdf",
-                    Id = dto.Id
+                    Id = rapor == "Adres" ? dto.KalibrasyonId : dto.Id,
+                    Idler = dto.Id.ToString()
                 };
 
             var result = await frService.GetReport(frDTO);

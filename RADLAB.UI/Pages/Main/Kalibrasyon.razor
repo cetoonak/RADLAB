@@ -245,6 +245,14 @@
                                                         <button class="btn text-success grid-command" @onclick=@(async () => { await TopluTarihAc(data, "Ödeme"); }) data-bs-toggle="tooltip" data-bs-placement="top" title="Seçilenler için ödeme kaydı"><i class="bi bi-server"></i></button>
                                                         <button class="btn text-info grid-command" @onclick=@(async () => { await TopluTarihAc(data, "Gonderilis"); }) data-bs-toggle="tooltip" data-bs-placement="top" title="Seçilenler için geri gönderiliş kaydı"><i class="bi bi-truck"></i></button>
                                                     }
+                                                    <a href="javascript:void()" class="btn grid-command text-info" title="Seçilenler için toplu etiket yazdır"
+                                                        @onclick="@(async () => { await Onizle(data, null, "Etiket"); })">
+                                                        <i class="bi bi-printer"></i>
+                                                    </a>
+                                                    <a href="javascript:void()" class="btn grid-command text-primary" title="Adres bilgilerini yazdır"
+                                                       @onclick="@(async () => { await Onizle(data, null, "Adres"); })">
+                                                        <i class="bi bi-printer"></i>
+                                                    </a>
                                                 </td>
                                             </tr>
                                         </thead>
@@ -386,10 +394,13 @@
                                                             <span class=@cihazDurumuBadge>@cihaz.CihazDurumu</span>
                                                             @if (cihaz.CihazDurumu.StartsWith("Laboratuvar Sorumlusu Sonuçlandırdı"))
                                                             {
-                                                                <a href="javascript:void()" class="btn grid-command text-info"
-                                                                    @onclick="@(async () => { await OnizleKalibrasyonCihaz(cihaz); })">
-                                                                    <i class="bi bi-printer"></i>
-                                                                </a>
+                                                                <div>
+                                                                    <a class="btn grid-command text-info" href="#" data-bs-toggle="dropdown"><i class="bi bi-printer"></i></a>
+                                                                    <ul class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
+                                                                        <li><button class="dropdown-item" @onclick="@(async () => { await Onizle(null, cihaz, "KalibrasyonOlcum"); })">Ölçüm</button></li>
+                                                                        <li><button class="dropdown-item" @onclick="@(async () => { await Onizle(null, cihaz, "Etiket"); })">Etiket</button></li>
+                                                                    </ul>
+                                                                </div>
                                                             }
                                                         </td>
                                                         <td width="18%" align="center">
@@ -1997,22 +2008,56 @@
         }
     }
 
-    async Task OnizleKalibrasyonCihaz(KalibrasyonCihazDTO dto)
+    async Task Onizle(KalibrasyonDTO? kalibrasyonDTO, KalibrasyonCihazDTO? kalibrasyonCihazDTO, string rapor)
     {
+        if (kalibrasyonDTO != null && rapor == "Etiket")
+        {
+            if (kalibrasyonDTO.KalibrasyonCihazList.Where(x => x.Checked).Count() == 0)
+            {
+                await js.InvokeVoidAsync("SweetMessage", "Hata", "En az bir satırı işaretlemelisiniz", "error");
+
+                return;
+            }
+        }            
+
         try
         {
             loading = true;
 
-            var bytes = File.ReadAllBytes("FR/KalibrasyonOlcum.frx");
+            var bytes = File.ReadAllBytes("FR/" + rapor + ".frx");
 
             string base64Rapor = Convert.ToBase64String(bytes);
 
-            var frDTO = new FRDTO()
+            string idler = "";
+            int id = 0;
+
+            if (rapor == "KalibrasyonOlcum")
+            {
+                id = kalibrasyonCihazDTO.Id;
+            }
+            else if (rapor == "Etiket")
+            {
+                if (kalibrasyonDTO != null)
                 {
-                    ReportNameOrBase64 = base64Rapor,
-                    Uzanti = "pdf",
-                    Id = dto.Id
-                };
+                    idler = string.Join("_", kalibrasyonDTO.KalibrasyonCihazList.Where(x => x.Checked).Select(x => x.Id).ToList());
+                }
+                else if (kalibrasyonCihazDTO != null)
+                {
+                    idler = kalibrasyonCihazDTO.Id.ToString();
+                }
+            }
+            else if (rapor == "Adres")
+            {
+                id = kalibrasyonDTO.Id;
+            }
+
+            var frDTO = new FRDTO()
+            {
+                ReportNameOrBase64 = base64Rapor,
+                Uzanti = "pdf",
+                Idler = idler,
+                Id = id
+            };
 
             var result = await frService.GetReport(frDTO);
 

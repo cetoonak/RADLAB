@@ -164,7 +164,8 @@ namespace RADLAB.Business.Concrete
                                     @OnBilgilendirmeFormuMetni,
                                     @MesafeliSatisSozlesmesiMetni,
                                     @IadeSozlesmesiMetni,
-                                    @MailSablonu";
+                                    @MailSablonu,
+                                    @EtiketIkiTarihli";
 
                 var result = await connection.ExecuteScalarAsync<string>(Q, dto);
 

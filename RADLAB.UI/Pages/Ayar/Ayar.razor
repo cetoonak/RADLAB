@@ -139,7 +139,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="card">
+                <div class="card mb-3">
                     <div class="card-body">
                         <h5 class="card-title">Ücret ve Oranlar</h5>
                         <div class="form-floating mb-3">
@@ -149,6 +149,15 @@
                         <div class="form-floating">
                             <input type="number" class="form-control form-control-sm SpinButtonWithoutButtons" id="tbSozlesmePuluOrani" @bind-value="currentDTO.SozlesmePuluOrani">
                             <label for="tbSozlesmePuluOrani">Sözleşme Pulu Oranı</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Diğer Ayarlar</h5>
+                        <div class="form-control form-control-sm">
+                            <input type="checkbox" class="form-check-input" id="cbEtiketIkiTarihli" @bind="currentDTO.EtiketIkiTarihli">
+                            <label for="cbEtiketIkiTarihli" class="form-check-label">İki Tarihli Etiket Kullan</label>
                         </div>
                     </div>
                 </div>

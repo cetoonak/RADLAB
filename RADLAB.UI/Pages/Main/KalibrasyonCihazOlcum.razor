@@ -399,7 +399,9 @@
                     }
                 }
 
-                <button class="btn btn-sm btn-info" @onclick="OnizleKalibrasyonCihaz"><i class="bi bi-printer"></i>&nbsp;Yazdır</button>
+                <button class="btn btn-sm btn-info" @onclick="@(async () => { await Onizle("KalibrasyonOlcum"); })"><i class="bi bi-printer"></i>&nbsp;Ölçüm</button>
+                <button class="btn btn-sm btn-info" @onclick="@(async () => { await Onizle("Etiket"); })"><i class="bi bi-printer"></i>&nbsp;Etiket</button>
+                <button class="btn btn-sm btn-info" @onclick="@(async () => { await Onizle("Adres"); })"><i class="bi bi-printer"></i>&nbsp;Adres</button>
             }
         </center>
     }
@@ -1266,13 +1268,13 @@
         }
     }
 
-    async Task OnizleKalibrasyonCihaz()
+    async Task Onizle(string rapor)
     {
         try
         {
             loading = true;
 
-            var bytes = File.ReadAllBytes("FR/KalibrasyonOlcum.frx");
+            var bytes = File.ReadAllBytes($"FR/{rapor}.frx");
 
             string base64Rapor = Convert.ToBase64String(bytes);
 
@@ -1280,7 +1282,8 @@
                 {
                     ReportNameOrBase64 = base64Rapor,
                     Uzanti = "pdf",
-                    Id = currentDTO.Id
+                    Id = rapor == "Adres" ? currentDTO.KalibrasyonId : currentDTO.Id,
+                    Idler = currentDTO.Id.ToString()
                 };
 
             var result = await frService.GetReport(frDTO);

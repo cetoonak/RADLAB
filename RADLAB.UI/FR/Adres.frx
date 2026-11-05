@@ -1,0 +1,41 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Report StartReportEvent="_StartReport" ReportInfo.Created="04/10/2011 07:07:18" ReportInfo.Modified="11/05/2026 22:58:19" ReportInfo.CreatorVersion="1.2.47.0">
+  <ScriptText>using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Windows.Forms;
+using System.Drawing;
+using System.Data;
+using FastReport;
+using FastReport.Data;
+using FastReport.Dialog;
+using FastReport.Barcode;
+using FastReport.Table;
+using FastReport.Utils;
+
+namespace FastReport
+{
+  public class ReportScript
+  {
+
+  }
+}</ScriptText>
+  <Dictionary>
+    <MsSqlDataConnection Name="Connection" ConnectionString="rijcmlqvaYz25SK6YfmWbCPIkUQMyDn91xH91nG69bnE76LsmaWeE12pWnb8bZTHNh7ae444qbif3ShmKh2CR9nUg7epLygi1Qhkun7hn62ygWZLFkhK2YlUMgVoxKAhK2fSj6GsxWgiNeZxAyf4dy999mwAnI9ZrizdoExf4BHcDASkZp2UvB9ud2DeNIC5Iec93TiRtyECNNS8vA88jYoRKx61kUZOCgy2/yvpwqWr/VJe9w=">
+      <TableDataSource Name="Table" Alias="Q" DataType="System.Int32" Enabled="true" SelectCommand="SELECT&#13;&#10;	UPPER(CASE&#13;&#10;				WHEN ISNULL(Kalibrasyon.AdSoyadBasvuru, '') != '' THEN Kalibrasyon.AdSoyadBasvuru&#13;&#10;				WHEN ISNULL(Kalibrasyon.UnvanBasvuru, '') != '' THEN Kalibrasyon.UnvanBasvuru&#13;&#10;			END) AS AdSoyadUnvan,&#13;&#10;	UPPER(Kalibrasyon.AdresBasvuru + ' ' + Ilce.IlIlce + ' ' + Il.IlIlce) AS Adres,&#13;&#10;	Kalibrasyon.TelefonCep&#13;&#10;FROM&#13;&#10;	Kalibrasyon&#13;&#10;	LEFT JOIN IlIlce Ilce ON Kalibrasyon.IlIlceIdBasvuru = Ilce.Id&#13;&#10;	LEFT JOIN IlIlce Il ON Ilce.ParentId = Il.Id&#13;&#10;WHERE&#13;&#10;	Kalibrasyon.Id = @PrmId">
+        <Column Name="AdSoyadUnvan" DataType="System.String"/>
+        <Column Name="Adres" DataType="System.String"/>
+        <Column Name="TelefonCep" DataType="System.String"/>
+        <CommandParameter Name="PrmId" DataType="8" Expression="[Id]" DefaultValue="0"/>
+      </TableDataSource>
+    </MsSqlDataConnection>
+    <Parameter Name="Id" DataType="System.Int32" Expression="0"/>
+  </Dictionary>
+  <ReportPage Name="Page1" Landscape="true" PaperWidth="210.06" PaperHeight="148.08" Watermark.ImageTransparency="0.87" Watermark.Text="RADLAB" Watermark.Font="Arial, 96pt, style=Bold">
+    <DataBand Name="BandData" Width="718.43" Height="483.84" DataSource="Table">
+      <TextObject Name="Text475" Width="718.2" Height="241.92" Text="GÖNDEREN:&#13;&#10;&#13;&#10;RADLAB İKİNCİL STANDART DOZİMETRİ LABORATUVARI VE RADYASYON ÖLÇÜM SİSTEMLERİ SANAYİ VE TİCARET A.Ş.&#13;&#10;&#13;&#10;AHİ EVRAN OSB MAH. ERKUNT CAD. NO:3/11 SİNCAN ANKARA&#13;&#10;&#13;&#10;TEL: 0507 033 88 24" VertAlign="Center" Font="Arial, 12pt"/>
+      <TextObject Name="Text476" Top="241.92" Width="718.2" Height="241.92" Text="ALICI:&#13;&#10;&#13;&#10;[Q.AdSoyadUnvan]&#13;&#10;&#13;&#10;[Q.Adres]&#13;&#10;&#13;&#10;TEL: [Q.TelefonCep]" VertAlign="Center" Font="Arial, 12pt"/>
+    </DataBand>
+  </ReportPage>
+</Report>

@@ -70,5 +70,6 @@ namespace RADLAB.Model.DTO
         public string MesafeliSatisSozlesmesiMetni { get; set; } = string.Empty;
         public string IadeSozlesmesiMetni { get; set; } = string.Empty;
         public string MailSablonu { get; set; } = string.Empty;
+        public bool EtiketIkiTarihli { get; set; }
     }
 }
