@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Report StartReportEvent="_StartReport" ReportInfo.Created="04/10/2011 07:07:18" ReportInfo.Modified="11/05/2026 22:27:18" ReportInfo.CreatorVersion="1.2.47.0">
+<Report StartReportEvent="_StartReport" ReportInfo.Created="04/10/2011 07:07:18" ReportInfo.Modified="11/23/2026 22:43:41" ReportInfo.CreatorVersion="1.2.47.0">
   <ScriptText>using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -22,7 +22,7 @@ namespace FastReport
   }
 }</ScriptText>
   <Dictionary>
-    <MsSqlDataConnection Name="Connection" ConnectionString="rijcmlqvaYz25SK6YfmWbCPIkUQMyDn91xH91nG69bnE76LsmaWeE12pWnb8bZTHNh7ae444qbif3ShmKh2CR9nUg7epLygi1Qhkun7hn62ygWZLFkhK2YlUMgVoxKAhK2fSj6GsxWgiNeZxAyf4dy999mwAnI9ZrizdoExf4BHcDASkZp2UvB9ud2DeNIC5Iec93TiRtyECNNS8vA88jYoRKx61oi8ilP3gZYqKMBMAdomUYE=">
+    <MsSqlDataConnection Name="Connection" ConnectionString="rijcmlqvaYz25SK6YfmWbCPIkUQMyDn91xH91nG69bnE76LsmaWeE12pWnb8bZTHNh7ae444qbif3ShmKh2CR9nUg7epLygi1Qhkun7hn62ygWZLFkhK2YlUMgVoxKAhK2fSj6GsxWgiNeZxAyf4dy999mwAnI9ZrizdoExf4BHcDASkZp2UvB9ud2DeNIC5Iec93TiRtyECNNS8vA88jYoRKx61so3WI6ICoUnmAh4Hs7tU10=">
       <TableDataSource Name="Table" Alias="Q" DataType="System.Int32" Enabled="true" SelectCommand="SELECT&#13;&#10;	KalibrasyonCihaz.Id,&#13;&#10;	'KT: ' + CONVERT(VARCHAR(10), KalibrasyonCihaz.KalibrasyonTarihi, 104) AS KalibrasyonTarihi,&#13;&#10;	CASE&#13;&#10;		WHEN Ayar.EtiketIkiTarihli = 0 THEN ''&#13;&#10;		ELSE 'GT: ' + CONVERT(VARCHAR(10), DATEADD(YEAR, 2, KalibrasyonCihaz.KalibrasyonTarihi), 104)&#13;&#10;	END AS KalibrasyonTarihininIkiyilSonrasi&#13;&#10;FROM&#13;&#10;	KalibrasyonCihaz&#13;&#10;	LEFT JOIN Ayar ON 0 = 0&#13;&#10;WHERE&#13;&#10;	KalibrasyonCihaz.Id IN (SELECT Id FROM dbo.FIdList(@PrmIdler))">
         <Column Name="Id" DataType="System.Int32"/>
         <Column Name="KalibrasyonTarihi" DataType="System.String"/>
@@ -32,11 +32,11 @@ namespace FastReport
     </MsSqlDataConnection>
     <Parameter Name="Idler" DataType="System.String" Expression="0"/>
   </Dictionary>
-  <ReportPage Name="Page1" PaperWidth="25" PaperHeight="30" LeftMargin="0" TopMargin="0" RightMargin="0" BottomMargin="0" Watermark.ImageTransparency="0.87" Watermark.Text="RADLAB" Watermark.Font="Arial, 96pt, style=Bold">
-    <DataBand Name="BandData" Width="94.5" Height="113.4" Border.Lines="Left, Right" DataSource="Table">
-      <TextObject Name="Text475" Width="94.5" Height="37.8" Border.Lines="All" Text="AB-0281-K" HorzAlign="Center" VertAlign="Center" Font="Arial, 9pt"/>
-      <TextObject Name="Text476" Top="75.6" Width="94.5" Height="37.8" Border.Lines="All" Text="[Q.KalibrasyonTarihi]&#13;&#10;[Q.KalibrasyonTarihininIkiyilSonrasi]" Format="Number" Format.UseLocale="true" HorzAlign="Center" VertAlign="Center" Font="Arial, 9pt"/>
-      <TextObject Name="Text477" Top="37.8" Width="94.5" Height="37.8" Border.Lines="All" Text="[Q.Id]" HorzAlign="Center" VertAlign="Center" Font="Arial, 9pt"/>
+  <ReportPage Name="Page1" PaperWidth="24" PaperHeight="30" LeftMargin="0" TopMargin="0" RightMargin="0" BottomMargin="0" Watermark.ImageTransparency="0.87" Watermark.Text="RADLAB" Watermark.Font="Arial, 96pt, style=Bold">
+    <DataBand Name="BandData" Width="90.72" Height="113.4" Border.Lines="Left, Right" DataSource="Table">
+      <TextObject Name="Text475" Width="90.72" Height="37.8" Border.Lines="All" Text="AB-0281-K" HorzAlign="Center" VertAlign="Center" Font="Arial, 9pt"/>
+      <TextObject Name="Text476" Top="75.6" Width="90.72" Height="37.8" Border.Lines="All" Text="[Q.KalibrasyonTarihi]&#13;&#10;[Q.KalibrasyonTarihininIkiyilSonrasi]" Format="Number" Format.UseLocale="true" HorzAlign="Center" VertAlign="Center" Font="Arial, 9pt"/>
+      <TextObject Name="Text477" Top="37.8" Width="90.72" Height="37.8" Border.Lines="All" Text="[Q.Id]" HorzAlign="Center" VertAlign="Center" Font="Arial, 9pt"/>
     </DataBand>
   </ReportPage>
 </Report>

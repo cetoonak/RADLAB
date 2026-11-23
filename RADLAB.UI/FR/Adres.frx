@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Report StartReportEvent="_StartReport" ReportInfo.Created="04/10/2011 07:07:18" ReportInfo.Modified="11/06/2026 19:07:45" ReportInfo.CreatorVersion="1.2.47.0">
+<Report StartReportEvent="_StartReport" ReportInfo.Created="04/10/2011 07:07:18" ReportInfo.Modified="11/23/2026 22:43:00" ReportInfo.CreatorVersion="1.2.47.0">
   <ScriptText>using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -22,7 +22,7 @@ namespace FastReport
   }
 }</ScriptText>
   <Dictionary>
-    <MsSqlDataConnection Name="Connection" ConnectionString="rijcmlqvaYz25SK6YfmWbCPIkUQMyDn91xH91nG69bnE76LsmaWeE12pWnb8bZTHNh7ae444qbif3ShmKh2CR9nUg7epLygi1Qhkun7hn62ygWZLFkhK2YlUMgVoxKAhK2fSj6GsxWgiNeZxAyf4dy999mwAnI9ZrizdoExf4BHcDASkZp2UvB9ud2DeNIC5Iec93TiRtyECNNS8vA88jYoRKx61uB03ETBPoI09dc2mSZ8M/Y=">
+    <MsSqlDataConnection Name="Connection" ConnectionString="rijcmlqvaYz25SK6YfmWbCPIkUQMyDn91xH91nG69bnE76LsmaWeE12pWnb8bZTHNh7ae444qbif3ShmKh2CR9nUg7epLygi1Qhkun7hn62ygWZLFkhK2YlUMgVoxKAhK2fSj6GsxWgiNeZxAyf4dy999mwAnI9ZrizdoExf4BHcDASkZp2UvB9ud2DeNIC5Iec93TiRtyECNNS8vA88jYoRKx61sRK4w/kRJ4nN1Q3XRc85g4=">
       <TableDataSource Name="Table" Alias="Q" DataType="System.Int32" Enabled="true" SelectCommand="SELECT&#13;&#10;	UPPER(CASE&#13;&#10;				WHEN ISNULL(Kalibrasyon.AdSoyadBasvuru, '') != '' THEN Kalibrasyon.AdSoyadBasvuru&#13;&#10;				WHEN ISNULL(Kalibrasyon.UnvanBasvuru, '') != '' THEN Kalibrasyon.UnvanBasvuru&#13;&#10;			END) AS AdSoyadUnvan,&#13;&#10;	UPPER(CASE&#13;&#10;				WHEN ISNULL(Kalibrasyon.AdresFatura, '') != '' THEN Kalibrasyon.AdresFatura + ' ' + Ilce.IlIlce + ' ' + Il.IlIlce&#13;&#10;				ELSE Kalibrasyon.AdresBasvuru + ' ' + Ilce.IlIlce + ' ' + Il.IlIlce&#13;&#10;			END) AS Adres,&#13;&#10;	Kalibrasyon.TelefonCep&#13;&#10;FROM&#13;&#10;	Kalibrasyon&#13;&#10;	LEFT JOIN IlIlce Ilce ON ISNULL(Kalibrasyon.IlIlceIdFatura, Kalibrasyon.IlIlceIdBasvuru) = Ilce.Id&#13;&#10;	LEFT JOIN IlIlce Il ON Ilce.ParentId = Il.Id&#13;&#10;WHERE&#13;&#10;	Kalibrasyon.Id = @PrmId">
         <Column Name="AdSoyadUnvan" DataType="System.String"/>
         <Column Name="Adres" DataType="System.String"/>
@@ -32,10 +32,10 @@ namespace FastReport
     </MsSqlDataConnection>
     <Parameter Name="Id" DataType="System.Int32" Expression="0"/>
   </Dictionary>
-  <ReportPage Name="Page1" Landscape="true" PaperWidth="210.06" PaperHeight="148.08" Watermark.ImageTransparency="0.87" Watermark.Text="RADLAB" Watermark.Font="Arial, 96pt, style=Bold">
-    <DataBand Name="BandData" Width="718.43" Height="483.84" DataSource="Table">
-      <TextObject Name="Text475" Width="718.2" Height="241.92" Text="GÖNDEREN:&#13;&#10;&#13;&#10;RADLAB İKİNCİL STANDART DOZİMETRİ LABORATUVARI VE RADYASYON ÖLÇÜM SİSTEMLERİ SANAYİ VE TİCARET A.Ş.&#13;&#10;&#13;&#10;AHİ EVRAN OSB MAH. ERKUNT CAD. NO:3/11 SİNCAN ANKARA&#13;&#10;&#13;&#10;TEL: 0507 033 88 24" VertAlign="Center" Font="Arial, 12pt"/>
-      <TextObject Name="Text476" Top="241.92" Width="718.2" Height="241.92" Text="ALICI:&#13;&#10;&#13;&#10;[Q.AdSoyadUnvan]&#13;&#10;&#13;&#10;[Q.Adres]&#13;&#10;&#13;&#10;TEL: [Q.TelefonCep]" VertAlign="Center" Font="Arial, 12pt"/>
+  <ReportPage Name="Page1" Landscape="true" PaperWidth="150" PaperHeight="100" Watermark.ImageTransparency="0.87" Watermark.Text="RADLAB" Watermark.Font="Arial, 96pt, style=Bold">
+    <DataBand Name="BandData" Width="491.4" Height="302.4" DataSource="Table">
+      <TextObject Name="Text475" Width="491.4" Height="151.2" Text="GÖNDEREN:&#13;&#10;&#13;&#10;RADLAB İKİNCİL STANDART DOZİMETRİ LABORATUVARI VE RADYASYON ÖLÇÜM SİSTEMLERİ SANAYİ VE TİCARET A.Ş.&#13;&#10;&#13;&#10;AHİ EVRAN OSB MAH. ERKUNT CAD. NO:3/11 SİNCAN ANKARA&#13;&#10;&#13;&#10;TEL: 0507 033 88 24" VertAlign="Center"/>
+      <TextObject Name="Text476" Top="151.2" Width="491.4" Height="151.2" Text="ALICI:&#13;&#10;&#13;&#10;[Q.AdSoyadUnvan]&#13;&#10;&#13;&#10;[Q.Adres]&#13;&#10;&#13;&#10;TEL: [Q.TelefonCep]" VertAlign="Center"/>
     </DataBand>
   </ReportPage>
 </Report>
